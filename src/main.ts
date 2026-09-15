@@ -5682,9 +5682,11 @@ class TeamShowcaseManager {
         }
 
         if (displayName) {
+            displayName.style.setProperty('--first-name-color', m.firstNameColor || m.accentColor);
+            displayName.style.setProperty('--last-name-color', m.lastNameColor || m.accentColor);
             displayName.innerHTML = `
-                <span class="hero-first-name" style="background: linear-gradient(135deg, ${m.firstNameColor || '#ff4d4d'}, ${m.accentColor}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${firstName}</span>
-                <span class="hero-last-name" style="background: linear-gradient(135deg, #ffffff 20%, ${m.lastNameColor || m.accentColor}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${lastName}</span>
+                <span class="hero-first-name">${firstName}</span>
+                <span class="hero-last-name">${lastName}</span>
             `;
         }
 

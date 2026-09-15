@@ -7352,11 +7352,17 @@ body.theme-sakura .log-item {
     display: inline-block;
     transition: all 0.3s ease;
     margin-right: 8px;
+    background: linear-gradient(135deg, var(--first-name-color, #ff4d4d), var(--card-accent, #00f0ff));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .hero-last-name {
     display: inline-block;
     transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 20%, var(--last-name-color, #00f0ff));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .hero-social-links {
@@ -7650,57 +7656,339 @@ body.theme-sakura .log-item {
     }
 }
 
-/* Light Theme Overrides */
-body.theme-light .team-hero-card {
-    background: rgba(255, 255, 255, 0.88);
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
-}
+/* =========================================================
+   Theme Overrides for Meet The Developers Showcase
+   ========================================================= */
 
-body.theme-light .hero-tech-grid {
-    background-image: radial-gradient(rgba(2, 132, 199, 0.15) 1px, transparent 1px);
-}
-
-body.theme-light .hero-display-name {
+/* 1. Clean Light Theme Overrides */
+body.theme-light .team-showcase-title {
     color: #0f172a;
 }
 
-body.theme-light .hero-greeting {
-    color: #64748b;
-}
-
-body.theme-light .hero-bio {
-    color: #334155;
-}
-
-body.theme-light .hero-social-pill {
-    background: rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 0, 0, 0.1);
-    color: #1e293b;
-}
-
-body.theme-light .hero-social-pill:hover {
-    background: rgba(2, 132, 199, 0.1);
-    border-color: #0284c7;
-    color: #0284c7;
+body.theme-light .team-glow-text {
+    background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
 }
 
 body.theme-light .team-category-tabs {
-    background: rgba(241, 245, 249, 0.9);
-    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(241, 245, 249, 0.95);
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-light .team-category-tab {
+    color: #475569;
+}
+
+body.theme-light .team-category-tab:hover {
+    color: #0f172a;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.theme-light .team-category-tab .category-count {
+    background: #e2e8f0;
+    color: #334155;
 }
 
 body.theme-light .team-category-tab.active {
     background: #ffffff;
     border-color: rgba(2, 132, 199, 0.4);
     color: #0284c7;
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.2);
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
+}
+
+body.theme-light .team-category-tab.active .category-count {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(2, 132, 199, 0.35);
+}
+
+body.theme-light .team-hero-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(203, 213, 225, 0.9);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), 0 0 25px rgba(2, 132, 199, 0.08);
+}
+
+body.theme-light .hero-tech-grid {
+    background-image: radial-gradient(rgba(2, 132, 199, 0.12) 1px, transparent 1px);
+}
+
+body.theme-light .hero-greeting {
+    color: #475569;
+    font-weight: 600;
+}
+
+body.theme-light .hero-first-name {
+    background: linear-gradient(135deg, #e11d48, var(--first-name-color, #0284c7));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.theme-light .hero-last-name {
+    background: linear-gradient(135deg, #0f172a 25%, var(--last-name-color, #0284c7));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.theme-light .hero-role-pill {
+    background: rgba(2, 132, 199, 0.12) !important;
+    border-color: rgba(2, 132, 199, 0.35) !important;
+    color: #0369a1 !important;
+    box-shadow: 0 2px 10px rgba(2, 132, 199, 0.12) !important;
+    font-weight: 800;
+}
+
+body.theme-light .hero-social-pill {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-light .hero-social-pill .social-icon-svg {
+    fill: #0284c7;
+}
+
+body.theme-light .hero-social-pill:hover {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.25);
+}
+
+body.theme-light .hero-social-pill:hover .social-icon-svg {
+    fill: #ffffff;
+}
+
+body.theme-light .hero-avatar-frame {
+    background: #f8fafc;
+}
+
+body.theme-light .selector-avatar-circle {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    filter: grayscale(30%) brightness(0.9);
+}
+
+body.theme-light .team-avatar-selector:hover .selector-avatar-circle {
+    filter: none;
+    border-color: #0284c7;
+}
+
+body.theme-light .team-avatar-selector.active .selector-avatar-circle {
+    border: none;
+    background: conic-gradient(from 180deg, #0284c7, #8b5cf6, #ec4899, #0284c7);
+    box-shadow: 0 0 20px rgba(2, 132, 199, 0.45);
+}
+
+body.theme-light .selector-avatar-name {
+    color: #475569;
+    font-weight: 600;
+}
+
+body.theme-light .team-avatar-selector:hover .selector-avatar-name {
+    color: #0f172a;
+}
+
+body.theme-light .team-avatar-selector.active .selector-avatar-name {
+    color: #0284c7;
+    font-weight: 800;
+    text-shadow: none;
 }
 
 body.theme-light .team-carousel-arrow {
     background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.12);
-    color: #0284c7;
+    border-color: #cbd5e1;
+    color: #0f172a;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .team-carousel-arrow:hover {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 4px 18px rgba(2, 132, 199, 0.35);
+}
+
+/* 2. Cherry Blossom / Sakura / Pink Theme Overrides */
+body.theme-sakura .team-showcase-title,
+body.theme-pink .team-showcase-title {
+    color: #881337;
+}
+
+body.theme-sakura .team-glow-text,
+body.theme-pink .team-glow-text {
+    background: linear-gradient(135deg, #e11d48 0%, #db2777 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+body.theme-sakura .team-category-tabs,
+body.theme-pink .team-category-tabs {
+    background: rgba(255, 241, 242, 0.95);
+    border: 1px solid #fecdd3;
+    box-shadow: 0 4px 20px rgba(244, 63, 94, 0.08);
+}
+
+body.theme-sakura .team-category-tab,
+body.theme-pink .team-category-tab {
+    color: #9f1239;
+}
+
+body.theme-sakura .team-category-tab:hover,
+body.theme-pink .team-category-tab:hover {
+    color: #881337;
+    background: rgba(244, 63, 94, 0.08);
+}
+
+body.theme-sakura .team-category-tab .category-count,
+body.theme-pink .team-category-tab .category-count {
+    background: #ffe4e6;
+    color: #be123c;
+}
+
+body.theme-sakura .team-category-tab.active,
+body.theme-pink .team-category-tab.active {
+    background: #ffffff;
+    border-color: #f43f5e;
+    color: #e11d48;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.2);
+}
+
+body.theme-sakura .team-category-tab.active .category-count,
+body.theme-pink .team-category-tab.active .category-count {
+    background: #e11d48;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(225, 29, 72, 0.35);
+}
+
+body.theme-sakura .team-hero-card,
+body.theme-pink .team-hero-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: #fecdd3;
+    box-shadow: 0 20px 50px rgba(225, 29, 72, 0.08), 0 0 25px rgba(244, 63, 94, 0.1);
+}
+
+body.theme-sakura .hero-tech-grid,
+body.theme-pink .hero-tech-grid {
+    background-image: radial-gradient(rgba(225, 29, 72, 0.12) 1px, transparent 1px);
+}
+
+body.theme-sakura .hero-greeting,
+body.theme-pink .hero-greeting {
+    color: #9f1239;
+    font-weight: 600;
+}
+
+body.theme-sakura .hero-first-name,
+body.theme-pink .hero-first-name {
+    background: linear-gradient(135deg, #be123c, #f43f5e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.theme-sakura .hero-last-name,
+body.theme-pink .hero-last-name {
+    background: linear-gradient(135deg, #881337 25%, #e11d48);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.theme-sakura .hero-role-pill,
+body.theme-pink .hero-role-pill {
+    background: rgba(225, 29, 72, 0.12) !important;
+    border-color: rgba(225, 29, 72, 0.35) !important;
+    color: #be123c !important;
+    box-shadow: 0 2px 10px rgba(225, 29, 72, 0.12) !important;
+    font-weight: 800;
+}
+
+body.theme-sakura .hero-social-pill,
+body.theme-pink .hero-social-pill {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #881337;
+    box-shadow: 0 2px 6px rgba(225, 29, 72, 0.05);
+}
+
+body.theme-sakura .hero-social-pill .social-icon-svg,
+body.theme-pink .hero-social-pill .social-icon-svg {
+    fill: #e11d48;
+}
+
+body.theme-sakura .hero-social-pill:hover,
+body.theme-pink .hero-social-pill:hover {
+    background: #e11d48;
+    border-color: #e11d48;
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(225, 29, 72, 0.25);
+}
+
+body.theme-sakura .hero-social-pill:hover .social-icon-svg,
+body.theme-pink .hero-social-pill:hover .social-icon-svg {
+    fill: #ffffff;
+}
+
+body.theme-sakura .hero-avatar-frame,
+body.theme-pink .hero-avatar-frame {
+    background: #fff1f2;
+}
+
+body.theme-sakura .selector-avatar-circle,
+body.theme-pink .selector-avatar-circle {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    filter: grayscale(20%) brightness(0.95);
+}
+
+body.theme-sakura .team-avatar-selector:hover .selector-avatar-circle,
+body.theme-pink .team-avatar-selector:hover .selector-avatar-circle {
+    filter: none;
+    border-color: #e11d48;
+}
+
+body.theme-sakura .team-avatar-selector.active .selector-avatar-circle,
+body.theme-pink .team-avatar-selector.active .selector-avatar-circle {
+    border: none;
+    background: conic-gradient(from 180deg, #f43f5e, #fb7185, #fda4af, #f43f5e);
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
+}
+
+body.theme-sakura .selector-avatar-name,
+body.theme-pink .selector-avatar-name {
+    color: #9f1239;
+    font-weight: 600;
+}
+
+body.theme-sakura .team-avatar-selector:hover .selector-avatar-name,
+body.theme-pink .team-avatar-selector:hover .selector-avatar-name {
+    color: #881337;
+}
+
+body.theme-sakura .team-avatar-selector.active .selector-avatar-name,
+body.theme-pink .team-avatar-selector.active .selector-avatar-name {
+    color: #e11d48;
+    font-weight: 800;
+    text-shadow: none;
+}
+
+body.theme-sakura .team-carousel-arrow,
+body.theme-pink .team-carousel-arrow {
+    background: #ffffff;
+    border-color: #fecdd3;
+    color: #be123c;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.08);
+}
+
+body.theme-sakura .team-carousel-arrow:hover,
+body.theme-pink .team-carousel-arrow:hover {
+    background: #e11d48;
+    color: #ffffff;
+    border-color: #e11d48;
+    box-shadow: 0 4px 18px rgba(225, 29, 72, 0.35);
 }
 
 /* ==========================================
