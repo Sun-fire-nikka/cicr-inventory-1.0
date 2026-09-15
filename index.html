@@ -381,6 +381,11 @@
                         <i data-lucide="menu"></i>
                         <span>Menu</span>
                     </button>
+                    <button type="button" class="btn-dev-back" id="btn-dev-back"
+                        onclick="if (window.dashboard && window.dashboard.switchSection) window.dashboard.switchSection('dashboard-view'); else document.getElementById('nav-dashboard')?.click();"
+                        style="display: none; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 8px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--neon-cyan); cursor: pointer; transition: all 0.2s ease;">
+                        <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to Dashboard
+                    </button>
                     <div class="breadcrumbs">
                         <span class="breadcrumb-root">HOME</span>
                         <span class="breadcrumb-separator">/</span>
@@ -593,10 +598,9 @@
                     <div class="team-showcase-container">
                         <!-- Top Header -->
                         <div class="team-showcase-header">
-                            <div style="display: flex; justify-content: flex-start; width: 100%; margin-bottom: 8px;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="if (window.dashboard && window.dashboard.switchSection) window.dashboard.switchSection('dashboard-view'); else document.getElementById('nav-dashboard')?.click();" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12px; border-radius: 8px;">
-                                    <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to Dashboard
-                                </button>
+                            <div class="team-header-pill">
+                                <i data-lucide="code-2"></i>
+                                <span>CICR CORE CREATORS</span>
                             </div>
                             <h1 class="team-showcase-title">Meet Our <span class="team-glow-text">Squad</span></h1>
                         </div>

@@ -1,1 +1,18 @@
-{}
+{
+  "req_1789504765736_67d311b4": {
+    "id": "req_1789504765736_67d311b4",
+    "itemId": "0ba6e5bd-df4b-41f3-a3ab-deea93be8502",
+    "itemName": "RUN CAM",
+    "category": "Tools",
+    "borrowerName": "Vardaan",
+    "borrowerEmail": "vardaansaxena096@gmail.com",
+    "rollNumber": "992501030399",
+    "userId": "612856da-6170-45b7-add0-0d472e2e0bad",
+    "quantity": 1,
+    "purpose": "Testing_",
+    "durationDays": 7,
+    "dueDate": "2026-09-22",
+    "status": "PENDING",
+    "requestedAt": "2026-09-15T20:39:25.737Z"
+  }
+}

@@ -7047,17 +7047,54 @@ body.theme-sakura .log-item {
    MEET THE DEVELOPERS & MENTORS (GDG JIIT INTERACTIVE SHOWCASE)
    ========================================================= */
 
-/* Hide sidebar and slidebar completely on Developers Showcase */
+/* Developers Showcase View: Full-width Centered Immersive Layout */
 body.view-developers-view .app-sidebar {
     display: none !important;
 }
 
+body.view-developers-view .mobile-sidebar-toggle {
+    display: none !important;
+}
+
+body.view-developers-view #btn-dev-back {
+    display: inline-flex !important;
+}
+
+body.view-developers-view .app-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    grid-template-columns: none !important;
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 16px 20px 60px 20px !important;
+    box-sizing: border-box !important;
+}
+
+body.view-developers-view .main-viewport-wrapper {
+    width: 100% !important;
+    max-width: 1000px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    margin: 0 auto !important;
+}
+
+body.view-developers-view .viewport-header {
+    width: 100% !important;
+    max-width: 1000px !important;
+    margin: 0 auto 20px auto !important;
+}
+
 body.view-developers-view #app-main-content,
-body.view-developers-view .app-main-content {
+body.view-developers-view .main-content {
     margin-left: 0 !important;
     width: 100% !important;
-    max-width: 100% !important;
-    padding: 18px 24px 60px 24px !important;
+    max-width: 1000px !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
 }
 
 body.view-developers-view {
@@ -7066,9 +7103,9 @@ body.view-developers-view {
 
 .developers-section {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 10px 20px 40px 20px;
+    padding: 4px 0 40px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -7209,7 +7246,10 @@ body.view-developers-view {
 /* Main Featured Profile Card (Hero Card) */
 .team-hero-card-container {
     width: 100%;
-    max-width: 1020px;
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
 }
 
 .team-hero-card {
@@ -7446,7 +7486,8 @@ body.view-developers-view {
     justify-content: center;
     gap: 20px;
     width: 100%;
-    margin-top: 4px;
+    max-width: 1000px;
+    margin: 8px auto 0 auto;
 }
 
 .team-carousel-arrow {
