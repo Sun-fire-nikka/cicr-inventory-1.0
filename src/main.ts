@@ -119,7 +119,7 @@ class ToastManager {
 
         const iconName = type === 'success' ? 'check-circle'
             : type === 'warning' ? 'alert-triangle'
-            : type === 'error' ? 'alert-octagon' : 'bell';
+                : type === 'error' ? 'alert-octagon' : 'bell';
 
         toast.innerHTML = `
             <div class="toast-icon-wrap">
@@ -225,11 +225,11 @@ class Background3D {
     private scene!: THREE.Scene;
     private camera!: THREE.PerspectiveCamera;
     private renderer!: THREE.WebGLRenderer;
-    
+
     private particles!: THREE.Points;
     private particlePhases: Float32Array = new Float32Array(0);
     private currentTheme = 'cyberpunk';
-    
+
     private mouseX = 0;
     private mouseY = 0;
     private targetCameraX = 0;
@@ -414,7 +414,7 @@ class Background3D {
 
         this.camera.position.x += (this.targetCameraX - this.camera.position.x) * 0.05;
         this.camera.position.y += (this.targetCameraY - this.camera.position.y) * 0.05;
-        
+
         this.camera.lookAt(0, -1, -5);
 
         this.renderer.render(this.scene, this.camera);
@@ -453,10 +453,10 @@ class DatabaseManager {
             try {
                 const parsed = JSON.parse(storedRequests);
                 // Purge any stale mock/test records (e.g. purpose containing "Testing" or "Robo Soccer", or stale test ID)
-                requests = (parsed || []).filter((r: any) => 
-                    r && r.purpose && 
+                requests = (parsed || []).filter((r: any) =>
+                    r && r.purpose &&
                     r.id !== 'req_1789341756703_7d6b6494' &&
-                    !r.purpose.toLowerCase().includes('testing') && 
+                    !r.purpose.toLowerCase().includes('testing') &&
                     !r.purpose.toLowerCase().includes('robo soccer')
                 );
                 localStorage.setItem('cicr_requests', JSON.stringify(requests));
@@ -492,7 +492,7 @@ class DatabaseManager {
                 try {
                     const json = await itemsOutcome.value.json();
                     dbItems = json.data || [];
-                } catch {}
+                } catch { }
             }
 
             let liveBorrows: any[] = [];
@@ -563,7 +563,7 @@ class DatabaseManager {
                         logs = aJson.data.map((l: any) => ({
                             type: l.action.toLowerCase().includes('borrow') ? 'borrow'
                                 : l.action.toLowerCase().includes('return') ? 'return'
-                                : l.action.toLowerCase().includes('add') ? 'add' : 'system',
+                                    : l.action.toLowerCase().includes('add') ? 'add' : 'system',
                             timestamp: l.created_at || new Date().toISOString(),
                             text: l.description || l.action
                         }));
@@ -720,7 +720,7 @@ class DatabaseManager {
                         allPendingHwRequests.push(r);
                     }
                 });
-            } catch {}
+            } catch { }
         }
 
         const pendingHwCount = isAdmin
@@ -949,7 +949,7 @@ class DashboardManager {
 
         const updateTime = () => {
             const now = new Date();
-            
+
             // Format time: hh:mm:ss am/pm
             let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -958,7 +958,7 @@ class DashboardManager {
             hours = hours % 12;
             hours = hours ? hours : 12; // the hour '0' should be '12'
             const formattedHours = String(hours).padStart(2, '0');
-            
+
             const clockEl = document.getElementById('dashboard-clock');
             if (clockEl) {
                 clockEl.innerText = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
@@ -985,7 +985,7 @@ class DashboardManager {
             } else if (curHour < 17) {
                 timeOfDay = 'afternoon';
             }
-            
+
             const username = localStorage.getItem('cicr_auth') || 'Operator';
             const greetingEl = document.getElementById('dashboard-greeting');
             if (greetingEl) {
@@ -1271,7 +1271,7 @@ class DashboardManager {
 
         const selectCategory = (category: string) => {
             this.activeCategory = category;
-            
+
             sidebarItems.forEach(item => {
                 const itemCat = (item as HTMLElement).dataset.category || 'all';
                 if (itemCat === category) {
@@ -1420,9 +1420,9 @@ class DashboardManager {
         const filtered = inventory.filter(item => {
             const matchesCategory = this.activeCategory === 'all' || item.category === this.activeCategory;
             const matchesSearch = item.name.toLowerCase().includes(this.searchQuery) ||
-                                  item.specs.toLowerCase().includes(this.searchQuery) ||
-                                  item.location.toLowerCase().includes(this.searchQuery) ||
-                                  (Array.isArray(item.tags) && item.tags.some((t: string) => t.toLowerCase().includes(this.searchQuery)));
+                item.specs.toLowerCase().includes(this.searchQuery) ||
+                item.location.toLowerCase().includes(this.searchQuery) ||
+                (Array.isArray(item.tags) && item.tags.some((t: string) => t.toLowerCase().includes(this.searchQuery)));
 
             const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
             const available = typeof item.availableQuantity === 'number'
@@ -1447,7 +1447,7 @@ class DashboardManager {
             return matchesCategory && matchesSearch && matchesStock;
         });
 
-        const currentFingerprint = `${role}_${this.activeCategory}_${this.activeStockFilter}_${this.searchQuery}_` + 
+        const currentFingerprint = `${role}_${this.activeCategory}_${this.activeStockFilter}_${this.searchQuery}_` +
             filtered.map(i => `${i.id}_${i.availableQuantity}_${i.quantity}_${i.name}_${i.location}_${(i.borrowedBy || []).length}`).join('|');
 
         if (!force && this.lastRenderedFingerprint === currentFingerprint && this.inventoryGrid.children.length === filtered.length) {
@@ -1459,7 +1459,7 @@ class DashboardManager {
         this.lastRenderedFingerprint = currentFingerprint;
 
         this.inventoryGrid.innerHTML = '';
-        
+
         if (filtered.length === 0) {
             this.noResults.style.display = 'flex';
             this.resultsCount.innerText = "Showing 0 items";
@@ -1468,8 +1468,8 @@ class DashboardManager {
 
         this.noResults.style.display = 'none';
         const filterSuffix = this.activeStockFilter === 'low' ? ' (Low Reserves)' :
-                             this.activeStockFilter === 'borrowed' ? ' (Active Loans)' :
-                             this.activeStockFilter === 'out' ? ' (Out of Stock)' : '';
+            this.activeStockFilter === 'borrowed' ? ' (Active Loans)' :
+                this.activeStockFilter === 'out' ? ' (Out of Stock)' : '';
         this.resultsCount.innerText = `Showing ${filtered.length} component${filtered.length > 1 ? 's' : ''}${filterSuffix}`;
 
         filtered.forEach((item, index) => {
@@ -1480,7 +1480,7 @@ class DashboardManager {
                 card.style.transitionDelay = '0s';
             }
             this.inventoryGrid.appendChild(card);
-            
+
             if (isInitial) {
                 requestAnimationFrame(() => {
                     setTimeout(() => {
@@ -1504,7 +1504,7 @@ class DashboardManager {
     private createCardElement(item: InventoryItem): HTMLElement {
         const card = document.createElement('div');
         card.className = 'inventory-card glass reveal';
-        
+
         const borrowedSum = (item.borrowedBy || []).reduce(
             (sum: number, rec: any) => sum + rec.qty,
             0
@@ -1930,7 +1930,7 @@ class ModalManager {
                 }
 
                 return 'MEMBER';
-            } catch {}
+            } catch { }
         }
 
         const storedRole = localStorage.getItem('cicr_role');
@@ -2107,7 +2107,7 @@ class ModalManager {
 
     static openDetailModal(item: InventoryItem) {
         selectedItem = item;
-        
+
         const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
         const available = typeof item.availableQuantity === 'number'
             ? item.availableQuantity
@@ -2117,7 +2117,7 @@ class ModalManager {
         document.getElementById('detail-location')!.innerText = item.location;
         document.getElementById('detail-specs')!.innerText = item.specs;
         document.getElementById('detail-quantity')!.innerHTML = `<strong>${available}</strong> / ${item.quantity} available`;
-        
+
         const catMap: Record<string, string> = {
             microcontrollers: "Microcontroller / Development Board",
             sensors: "Sensor & Module",
@@ -2128,8 +2128,8 @@ class ModalManager {
         document.getElementById('detail-category')!.innerText = catMap[item.category] || item.category;
 
         const badge = document.getElementById('detail-status')!;
-        badge.className = 'modal-status-badge'; 
-        
+        badge.className = 'modal-status-badge';
+
         const borrowBtn = document.getElementById('btn-borrow') as HTMLButtonElement;
         const returnBtn = document.getElementById('btn-return') as HTMLButtonElement;
         const role = this.getCurrentRole();
@@ -2233,20 +2233,20 @@ class ModalManager {
                         ${statusBadge}
                         <span class="borrower-qty-badge">${rec.qty} units</span>
                         ${canReturn ? (
-                            isRecPendingReturn
-                                ? `<button class="btn btn-secondary" disabled style="padding: 6px 10px; font-size: 11px; opacity: 0.6; cursor: not-allowed;"><i data-lucide="clock" style="width:12px;height:12px;"></i> Verification Pending</button>`
-                                : `<button class="btn btn-secondary btn-inline-return" style="padding: 6px 10px; font-size: 11px;"><i data-lucide="corner-up-left" style="width:12px;height:12px;"></i> Return</button>`
-                        ) : ''}
+                        isRecPendingReturn
+                            ? `<button class="btn btn-secondary" disabled style="padding: 6px 10px; font-size: 11px; opacity: 0.6; cursor: not-allowed;"><i data-lucide="clock" style="width:12px;height:12px;"></i> Verification Pending</button>`
+                            : `<button class="btn btn-secondary btn-inline-return" style="padding: 6px 10px; font-size: 11px;"><i data-lucide="corner-up-left" style="width:12px;height:12px;"></i> Return</button>`
+                    ) : ''}
                     </div>
                 `;
-                
+
                 if (canReturn && !isRecPendingReturn) {
                     recEl.querySelector('.btn-inline-return')?.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.openReturnModal(rec, item, origIdx);
                     });
                 }
-                
+
                 listContainer.appendChild(recEl);
             });
         } else {
@@ -2259,7 +2259,7 @@ class ModalManager {
 
     static openBorrowFormModal() {
         if (!selectedItem) return;
-        
+
         const borrowedSum = (selectedItem.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
         const available = typeof selectedItem.availableQuantity === 'number'
             ? selectedItem.availableQuantity
@@ -2281,7 +2281,7 @@ class ModalManager {
                     if (match) currentUserRoll = match[1];
                 }
             }
-        } catch {}
+        } catch { }
 
         if (!currentUserName) {
             currentUserName = localStorage.getItem('cicr_auth') || '';
@@ -2722,7 +2722,7 @@ class ModalManager {
             visibleRequests.forEach(req => {
                 const el = document.createElement('div');
                 el.className = `notif-card card-request card-request-${(req.status || 'PENDING').toLowerCase()}`;
-                
+
                 let statusBadge = '';
                 if (req.status === 'APPROVED') {
                     statusBadge = `<span class="notif-status-badge badge-green"><i data-lucide="check-circle-2"></i> APPROVED</span>`;
@@ -3396,7 +3396,7 @@ class AuthManager {
                 const currentType = loginPass.getAttribute('type');
                 const newType = currentType === 'password' ? 'text' : 'password';
                 loginPass.setAttribute('type', newType);
-                
+
                 const icon = loginToggle.querySelector('i')!;
                 if (icon) {
                     icon.setAttribute('data-lucide', newType === 'password' ? 'eye' : 'eye-off');
@@ -3412,7 +3412,7 @@ class AuthManager {
                 const currentType = signupPass.getAttribute('type');
                 const newType = currentType === 'password' ? 'text' : 'password';
                 signupPass.setAttribute('type', newType);
-                
+
                 const icon = signupToggle.querySelector('i')!;
                 if (icon) {
                     icon.setAttribute('data-lucide', newType === 'password' ? 'eye' : 'eye-off');
@@ -3463,7 +3463,7 @@ class AuthManager {
         const cachedRole = (localStorage.getItem('cicr_role') as UserRole) || 'MEMBER';
         if (cachedUserStr || cachedAuth) {
             let userObj = null;
-            try { if (cachedUserStr) userObj = JSON.parse(cachedUserStr); } catch {}
+            try { if (cachedUserStr) userObj = JSON.parse(cachedUserStr); } catch { }
             const fallbackName = userObj?.name || cachedAuth || 'Operator';
             this.loginSuccess(fallbackName, cachedRole, userObj);
             return;
@@ -3496,8 +3496,8 @@ class AuthManager {
         if (currentAdmins.includes(norm)) return true;
         // JIIT student email with enrollment number or institutional domain
         return /^\d+@mail\.jiit\.ac\.in$/i.test(norm) ||
-               /^[a-zA-Z0-9._%+-]+@mail\.jiit\.ac\.in$/i.test(norm) ||
-               /^[a-zA-Z0-9._%+-]+@jiit\.ac\.in$/i.test(norm);
+            /^[a-zA-Z0-9._%+-]+@mail\.jiit\.ac\.in$/i.test(norm) ||
+            /^[a-zA-Z0-9._%+-]+@jiit\.ac\.in$/i.test(norm);
     }
 
     private static async handleLogin() {
@@ -3558,7 +3558,7 @@ class AuthManager {
         this.loginErr.innerText = msg;
         this.loginErr.style.display = 'block';
         this.loginErr.style.animation = 'none';
-        this.loginErr.offsetHeight; 
+        this.loginErr.offsetHeight;
         this.loginErr.style.animation = 'shake-error 0.4s ease';
     }
 
@@ -3586,7 +3586,7 @@ class AuthManager {
         const profileUserDisplay = document.getElementById('profile-username-display');
         const profileAvatarInitial = document.getElementById('profile-avatar-initial');
         const profileRoleDisplay = document.querySelector('.sidebar-profile-box .profile-role') as HTMLElement;
-        
+
         if (profileUserDisplay) profileUserDisplay.innerText = username;
         if (profileAvatarInitial) profileAvatarInitial.innerText = username.charAt(0).toUpperCase();
         if (profileRoleDisplay) {
@@ -3658,7 +3658,7 @@ class AuthManager {
         const dashAdminCard = document.getElementById('dash-card-admin');
         const adminViewSection = document.getElementById('admin-view');
         const btnInventoryAdd = document.getElementById('btn-inventory-add-item');
-        
+
         const activeRole = role !== undefined ? role : ModalManager.getCurrentRole();
         const isAdmin = activeRole === 'ADMIN';
 
@@ -3798,12 +3798,12 @@ class AuthManager {
         localStorage.removeItem('cicr_token');
         localStorage.removeItem('cicr_user');
         sessionStorage.clear();
-        
+
         this.updateAdminVisibility('MEMBER');
 
         this.appContainer.style.display = 'none';
         this.globalNavbar.style.display = 'none';
-        
+
         const welcomeScreen = document.getElementById('welcome-screen');
         if (welcomeScreen) {
             welcomeScreen.style.display = 'none';
@@ -3926,7 +3926,7 @@ class PasswordResetManager {
         try {
             const storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}');
             defaultId = storedUser.email || storedUser.roll_number || storedUser.username || '';
-        } catch {}
+        } catch { }
 
         if (!defaultId) {
             defaultId = localStorage.getItem('cicr_auth') || '';
@@ -4354,7 +4354,7 @@ class AdminManager {
                 if (list.length > 200) list.splice(0, list.length - 200);
                 localStorage.setItem('cicr_dismissed_requests', JSON.stringify(list));
             }
-        } catch {}
+        } catch { }
     }
 
     static async loadHardwareRequests(force = false) {
@@ -4398,7 +4398,7 @@ class AdminManager {
                     const txt = l.text || '';
                     if (txt.includes('requested') && (txt.includes('for purpose:') || txt.includes('requested 1x') || txt.includes('requested '))) {
                         const match = txt.match(/^(.*?)\s*\((.*?)\)\s*requested\s*(\d+)x\s*"([^"]+)"\s*for\s*purpose:\s*(.*)$/i) ||
-                                      txt.match(/<span>(.*?)<\/span>\s*requested\s*(\d+)x\s*<span>(.*?)<\/span>\s*for\s*'(.*?)'/i);
+                            txt.match(/<span>(.*?)<\/span>\s*requested\s*(\d+)x\s*<span>(.*?)<\/span>\s*for\s*'(.*?)'/i);
                         if (match) {
                             const bName = match[1].trim();
                             const bEmail = match[2].includes('@') ? match[2].trim() : `${bName.toLowerCase().replace(/\s+/g, '')}@mail.jiit.ac.in`;
@@ -4406,13 +4406,13 @@ class AdminManager {
                             const itemName = (match[4] || match[3] || 'Hardware Component').trim();
                             const purpose = (match[5] || match[4] || 'Testing').trim();
 
-                            const isResolved = Array.from(resolvedEvents).some(resTxt => 
+                            const isResolved = Array.from(resolvedEvents).some(resTxt =>
                                 (resTxt.includes(bName.toLowerCase()) && (resTxt.includes(itemName.toLowerCase()) || resTxt.includes('hardware')))
                             );
 
                             if (!isResolved) {
                                 const id = `req_audit_${new Date(l.timestamp || Date.now()).getTime()}`;
-                                const exists = serverList.some(s => 
+                                const exists = serverList.some(s =>
                                     (s.borrowerName.toLowerCase() === bName.toLowerCase() && s.itemName.toLowerCase() === itemName.toLowerCase()) ||
                                     s.id === id
                                 );
@@ -4446,7 +4446,7 @@ class AdminManager {
         const localStoredRaw = localStorage.getItem('cicr_requests');
         let localRequests: RequestRecord[] = [];
         if (localStoredRaw) {
-            try { localRequests = JSON.parse(localStoredRaw); } catch {}
+            try { localRequests = JSON.parse(localStoredRaw); } catch { }
         }
         const combinedLocal = [...(requests || []), ...localRequests];
         const localPending: AdminHardwareRequest[] = combinedLocal
@@ -4583,8 +4583,8 @@ class AdminManager {
                 <div class="hw-card-details">
                     ${r.rollNumber ? `<div class="hw-detail-row"><span class="hw-lbl">ROLL:</span> <span class="hw-val mono">${r.rollNumber}</span></div>` : ''}
                     ${isReturn
-                        ? `<div class="hw-detail-row"><span class="hw-lbl">RETURNING:</span> <span class="hw-val">${returnQty}x ${r.itemName}</span></div>`
-                        : `<div class="hw-detail-row"><span class="hw-lbl">PURPOSE:</span> <span class="hw-val">${r.purpose}</span></div>`}
+                    ? `<div class="hw-detail-row"><span class="hw-lbl">RETURNING:</span> <span class="hw-val">${returnQty}x ${r.itemName}</span></div>`
+                    : `<div class="hw-detail-row"><span class="hw-lbl">PURPOSE:</span> <span class="hw-val">${r.purpose}</span></div>`}
                     ${isReturn ? '' : `<div class="hw-detail-row"><span class="hw-lbl">DUE DATE:</span> <span class="hw-val due">${r.dueDate || '7 Days'}</span></div>`}
                     <div class="hw-detail-row"><span class="hw-lbl">REQUESTED:</span> <span class="hw-val date">${new Date(r.requestedAt).toLocaleString()}</span></div>
                 </div>
@@ -4625,7 +4625,7 @@ class AdminManager {
                 const parsed = JSON.parse(localStoredRaw);
                 const filtered = parsed.filter((r: any) => r.id !== id);
                 localStorage.setItem('cicr_requests', JSON.stringify(filtered));
-            } catch {}
+            } catch { }
         }
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
@@ -4658,7 +4658,7 @@ class AdminManager {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ reason: 'Approved offline / unlisted inventory item.' })
-                }).catch(() => {});
+                }).catch(() => { });
             }
         } catch (e) {
             console.warn('Background approval sync note:', e);
@@ -4696,7 +4696,7 @@ class AdminManager {
                 const parsed = JSON.parse(localStoredRaw);
                 const updated = parsed.map((r: any) => r.id === id ? { ...r, status: 'REJECTED', reviewNote: 'Declined by Administrator.' } : r);
                 localStorage.setItem('cicr_requests', JSON.stringify(updated));
-            } catch {}
+            } catch { }
         }
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
@@ -4812,7 +4812,7 @@ class AdminManager {
         const renderRow = (u: AdminUserRecord): string => {
             const statusClass = u.status === 'APPROVED' ? 'approved' : u.status === 'PENDING' ? 'pending' : 'rejected';
             const isMaster = u.isMasterAdmin || u.role === 'ADMIN' || ModalManager.isDesignatedAdminUser(u.email, u.name, u.username);
-            
+
             // Format registration date & time in 2 separate lines
             const dt = DashboardManager.formatLogDateTime(u.created_at);
             const dateHtml = `
@@ -4851,7 +4851,7 @@ class AdminManager {
                 const roleBtn = u.role === 'ADMIN'
                     ? `<button class="btn-table-action btn-demote" onclick="window.adminSetRole('${u.id}', 'MEMBER')" title="Demote to Member"><i data-lucide="shield-off"></i> Demote</button>`
                     : `<button class="btn-table-action btn-make-admin" onclick="window.adminSetRole('${u.id}', 'ADMIN')" title="Promote to Admin"><i data-lucide="shield-alert"></i> Make Admin</button>`;
-                
+
                 const deleteBtn = `<button class="btn-table-action btn-del" onclick="window.adminDeleteUser('${u.id}', '${this.escapeHtml(u.name)}')" title="Permanently Delete User"><i data-lucide="trash-2"></i></button>`;
 
                 actionsHtml = `${roleBtn} ${deleteBtn}`;
@@ -5216,7 +5216,7 @@ class AdminManager {
 
         let filtered = this.auditLogs;
         if (this.auditSearchTerm) {
-            filtered = filtered.filter(l => 
+            filtered = filtered.filter(l =>
                 (l.action && l.action.toLowerCase().includes(this.auditSearchTerm)) ||
                 (l.description && l.description.toLowerCase().includes(this.auditSearchTerm)) ||
                 (l.users?.name && l.users.name.toLowerCase().includes(this.auditSearchTerm)) ||
@@ -5336,7 +5336,7 @@ class TerminalSimulator {
         ];
 
         let lineIdx = 0;
-        
+
         function appendNextLine() {
             if (lineIdx >= lines.length) return;
 
@@ -5349,7 +5349,7 @@ class TerminalSimulator {
             let charIdx = 0;
             lineEl.innerHTML = `<span style="color: ${line.color}">&rarr;&nbsp;&rarr;&nbsp;</span><span class="txt-content" style="color: ${line.color}"></span>`;
             const txtSpan = lineEl.querySelector('.txt-content') as HTMLElement;
-            
+
             lineEl.classList.add('visible');
 
             const cursorSpan = document.createElement('span');
@@ -5363,12 +5363,12 @@ class TerminalSimulator {
                     setTimeout(typeChar, 25);
                 } else {
                     cursorSpan.remove();
-                    
+
                     if (lineIdx === lines.length - 1) {
                         const finalCursor = document.createElement('span');
                         finalCursor.className = 'cursor';
                         lineEl.appendChild(finalCursor);
-                        
+
                         // Always keep typing: clear terminal logs and restart after 4 seconds!
                         setTimeout(() => {
                             body!.innerHTML = '';
@@ -6023,11 +6023,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const centerY = rect.height / 2;
             const rotateX = ((y - centerY) / centerY) * -maxRotation;
             const rotateY = ((x - centerX) / centerX) * maxRotation;
-            
+
             el.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.01, 1.01, 1.01)`;
             el.style.transition = 'transform 0.1s ease-out';
         });
-        
+
         el.addEventListener('mouseleave', () => {
             el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
             el.style.transition = 'transform 0.5s ease';
