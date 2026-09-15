@@ -7047,65 +7047,11 @@ body.theme-sakura .log-item {
    MEET THE DEVELOPERS & MENTORS (GDG JIIT INTERACTIVE SHOWCASE)
    ========================================================= */
 
-/* Developers Showcase View: Full-width Centered Immersive Layout */
-body.view-developers-view .app-sidebar {
-    display: none !important;
-}
-
-body.view-developers-view .mobile-sidebar-toggle {
-    display: none !important;
-}
-
-body.view-developers-view #btn-dev-back {
-    display: inline-flex !important;
-}
-
-body.view-developers-view .app-container {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    grid-template-columns: none !important;
-    width: 100% !important;
-    max-width: 1200px !important;
-    margin: 0 auto !important;
-    padding: 16px 20px 60px 20px !important;
-    box-sizing: border-box !important;
-}
-
-body.view-developers-view .main-viewport-wrapper {
-    width: 100% !important;
-    max-width: 1000px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    margin: 0 auto !important;
-}
-
-body.view-developers-view .viewport-header {
-    width: 100% !important;
-    max-width: 1000px !important;
-    margin: 0 auto 20px auto !important;
-}
-
-body.view-developers-view #app-main-content,
-body.view-developers-view .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-    max-width: 1000px !important;
-    padding: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
-}
-
-body.view-developers-view {
-    overflow-x: hidden !important;
-}
-
 .developers-section {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1040px;
     margin: 0 auto;
-    padding: 4px 0 40px 0;
+    padding: 0 8px 40px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;

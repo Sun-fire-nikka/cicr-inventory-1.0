@@ -381,11 +381,6 @@
                         <i data-lucide="menu"></i>
                         <span>Menu</span>
                     </button>
-                    <button type="button" class="btn-dev-back" id="btn-dev-back"
-                        onclick="if (window.dashboard && window.dashboard.switchSection) window.dashboard.switchSection('dashboard-view'); else document.getElementById('nav-dashboard')?.click();"
-                        style="display: none; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 8px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--neon-cyan); cursor: pointer; transition: all 0.2s ease;">
-                        <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to Dashboard
-                    </button>
                     <div class="breadcrumbs">
                         <span class="breadcrumb-root">HOME</span>
                         <span class="breadcrumb-separator">/</span>
@@ -598,10 +593,7 @@
                     <div class="team-showcase-container">
                         <!-- Top Header -->
                         <div class="team-showcase-header">
-                            <div class="team-header-pill">
-                                <i data-lucide="code-2"></i>
-                                <span>CICR CORE CREATORS</span>
-                            </div>
+
                             <h1 class="team-showcase-title">Meet Our <span class="team-glow-text">Squad</span></h1>
                         </div>
 
@@ -614,7 +606,8 @@
                                     <span>Mentors</span>
                                     <span class="category-count">1</span>
                                 </button>
-                                <button type="button" class="team-category-tab active" data-category="team" id="team-tab-team">
+                                <button type="button" class="team-category-tab active" data-category="team"
+                                    id="team-tab-team">
                                     <i data-lucide="code-2"></i>
                                     <span>Team</span>
                                     <span class="category-count">4</span>
@@ -1240,7 +1233,8 @@
                 onclick="document.getElementById('return-qty-modal')?.classList.remove('active');"><i
                     data-lucide="x"></i></button>
             <div class="modal-header">
-                <div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; background:rgba(0, 240, 255, 0.1); border:1px solid rgba(0, 240, 255, 0.3); font-size:10.5px; font-weight:700; color:var(--neon-cyan); letter-spacing:1px; margin-bottom:8px;">
+                <div
+                    style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; background:rgba(0, 240, 255, 0.1); border:1px solid rgba(0, 240, 255, 0.3); font-size:10.5px; font-weight:700; color:var(--neon-cyan); letter-spacing:1px; margin-bottom:8px;">
                     <i data-lucide="corner-up-left" style="width:12px; height:12px;"></i>
                     <span>HARDWARE RETURN DISPATCH</span>
                 </div>
@@ -1251,30 +1245,42 @@
             <form id="return-qty-form">
                 <input type="hidden" id="return-borrow-id" value="">
                 <input type="hidden" id="return-borrow-idx" value="">
-                
-                <div class="form-group" style="background:rgba(255, 255, 255, 0.02); border:1px solid rgba(255, 255, 255, 0.06); border-radius:10px; padding:12px 14px; margin-bottom:16px;">
-                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:4px;">Component to Return</div>
-                    <div id="return-modal-item-name" style="font-weight:700; color:#ffffff; font-size:15px; font-family:'Space Grotesk', sans-serif;"></div>
-                    <div id="return-modal-holder-info" style="font-size:11.5px; color:var(--text-muted); margin-top:2px;"></div>
+
+                <div class="form-group"
+                    style="background:rgba(255, 255, 255, 0.02); border:1px solid rgba(255, 255, 255, 0.06); border-radius:10px; padding:12px 14px; margin-bottom:16px;">
+                    <div
+                        style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:4px;">
+                        Component to Return</div>
+                    <div id="return-modal-item-name"
+                        style="font-weight:700; color:#ffffff; font-size:15px; font-family:'Space Grotesk', sans-serif;">
+                    </div>
+                    <div id="return-modal-holder-info"
+                        style="font-size:11.5px; color:var(--text-muted); margin-top:2px;"></div>
                 </div>
 
                 <div class="form-group">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <label for="return-qty-input" style="font-size:12px; font-weight:600; margin:0;">Quantity to Return</label>
-                        <button type="button" id="btn-return-all-qty" style="background:rgba(0, 240, 255, 0.12); border:1px solid rgba(0, 240, 255, 0.35); color:var(--neon-cyan); font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; cursor:pointer;">
+                        <label for="return-qty-input" style="font-size:12px; font-weight:600; margin:0;">Quantity to
+                            Return</label>
+                        <button type="button" id="btn-return-all-qty"
+                            style="background:rgba(0, 240, 255, 0.12); border:1px solid rgba(0, 240, 255, 0.35); color:var(--neon-cyan); font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; cursor:pointer;">
                             Return All
                         </button>
                     </div>
 
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <button type="button" id="btn-return-qty-minus" style="width:38px; height:38px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
+                        <button type="button" id="btn-return-qty-minus"
+                            style="width:38px; height:38px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
                         <input type="number" id="return-qty-input" min="1" max="1" value="1" required
                             style="flex:1; height:38px; font-weight:700; font-size:16px; text-align:center; background:rgba(0,0,0,0.4); border:1px solid rgba(0, 240, 255, 0.3); border-radius:8px; color:#fff;">
-                        <button type="button" id="btn-return-qty-plus" style="width:38px; height:38px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
+                        <button type="button" id="btn-return-qty-plus"
+                            style="width:38px; height:38px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-top:6px;">
+                    <div
+                        style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-top:6px;">
                         <span id="return-qty-max-label">of 1 borrowed</span>
-                        <span id="return-qty-preview" style="color:var(--neon-cyan); font-weight:600;">Full Return</span>
+                        <span id="return-qty-preview" style="color:var(--neon-cyan); font-weight:600;">Full
+                            Return</span>
                     </div>
                 </div>
 
@@ -1282,10 +1288,12 @@
                     style="background:rgba(0, 240, 255, 0.05); border:1px solid rgba(0, 240, 255, 0.18); border-radius:8px; padding:10px 12px; margin-bottom:18px; font-size:11.5px; color:var(--text-muted); display:flex; align-items:flex-start; gap:8px;">
                     <i data-lucide="shield-check"
                         style="width:15px; height:15px; color:var(--neon-cyan); flex-shrink:0; margin-top:2px;"></i>
-                    <span id="return-modal-note-text">Upon clicking submit, this request is dispatched to Administrators for physical verification before warehouse inventory stock is restored.</span>
+                    <span id="return-modal-note-text">Upon clicking submit, this request is dispatched to Administrators
+                        for physical verification before warehouse inventory stock is restored.</span>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block btn-cyber-pulse" id="btn-confirm-return-submit" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                <button type="submit" class="btn btn-primary btn-block btn-cyber-pulse" id="btn-confirm-return-submit"
+                    style="display:flex; align-items:center; justify-content:center; gap:8px;">
                     <i data-lucide="corner-up-left"></i> Submit Return to Admin
                 </button>
             </form>

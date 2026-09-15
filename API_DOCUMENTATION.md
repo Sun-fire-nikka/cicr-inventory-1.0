@@ -295,6 +295,43 @@ path as `POST /api/borrow`).
 
 ---
 
+### `POST /api/borrow/return-request`
+**Auth required.**
+
+Initiates a physical return request for an active loan with customizable return quantity (full or partial). Requests are routed to the Admin Portal queue awaiting administrative inspection and verification.
+
+**Body**
+```json
+{
+  "borrowId": "string (required, loan ID)",
+  "returnQuantity": "number (optional, defaults to all issued units)"
+}
+```
+
+**Response `200`**
+```json
+{
+  "status": "success",
+  "message": "Return request submitted successfully. Awaiting administrator verification in the Admin Portal.",
+  "data": {
+    "id": "req-ret-178950...",
+    "type": "RETURN",
+    "borrowId": "0a666766-...",
+    "returnQuantity": 1,
+    "status": "PENDING"
+  }
+}
+```
+
+---
+
+### `POST /api/borrow/requests/:id/approve`
+**Auth required (Admin only).**
+
+Approves a pending hardware issue or return request. When approving a return, inventory `available_quantity` is restored, and the borrow record is marked as `RETURNED` (or updated with remaining borrowed quantity for partial returns).
+
+---
+
 ### `POST /api/borrow/return`
 **Auth required.**
 

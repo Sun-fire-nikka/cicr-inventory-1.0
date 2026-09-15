@@ -75,7 +75,7 @@
     "992501210090@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T17:51:04.305Z",
+      "approvedAt": "2026-09-13T17:51:04.305+00:00",
       "approvedBy": "ADMIN",
       "name": "Divyam Jain",
       "username": "divyam",
@@ -91,7 +91,7 @@
     "992501040035@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:35:13.917Z",
+      "approvedAt": "2026-09-13T20:35:13.917+00:00",
       "approvedBy": "ADMIN",
       "username": "parivishamidha",
       "batch": "H2 IT",
@@ -101,7 +101,7 @@
     "992501030398@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:34:54.959Z",
+      "approvedAt": "2026-09-13T20:34:54.959+00:00",
       "approvedBy": "ADMIN",
       "username": "mahakkatahara",
       "batch": "F7 CSE",
@@ -111,7 +111,7 @@
     "992501040037@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:35:10.247Z",
+      "approvedAt": "2026-09-13T20:35:10.247+00:00",
       "approvedBy": "ADMIN",
       "username": "tanisha",
       "batch": "H2 IT",
@@ -121,7 +121,7 @@
     "992501210022@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:35:06.693Z",
+      "approvedAt": "2026-09-13T20:35:06.693+00:00",
       "approvedBy": "ADMIN",
       "username": "utsavisinha",
       "batch": "E1 ECM",
@@ -131,7 +131,7 @@
     "992501030404@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:34:59.063Z",
+      "approvedAt": "2026-09-13T20:34:59.063+00:00",
       "approvedBy": "ADMIN",
       "username": "agamjotsingh",
       "batch": "F7 CSE",
@@ -141,7 +141,7 @@
     "992501210081@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:34:51.089Z",
+      "approvedAt": "2026-09-13T20:34:51.089+00:00",
       "approvedBy": "ADMIN",
       "username": "tushargoyal",
       "batch": "E3 ECM",
@@ -151,7 +151,7 @@
     "992510170013@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:34:43.853Z",
+      "approvedAt": "2026-09-13T20:34:43.853+00:00",
       "approvedBy": "ADMIN",
       "username": "kanangoyal",
       "batch": "MCA1",
@@ -352,7 +352,7 @@
     "992501030406@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
-      "approvedAt": "2026-09-13T20:34:53.686Z",
+      "approvedAt": "2026-09-13T20:34:53.686+00:00",
       "approvedBy": "ADMIN"
     }
   },

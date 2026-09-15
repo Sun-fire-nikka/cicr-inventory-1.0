@@ -82,6 +82,15 @@ A large frontend pass (~2,500 line diff across `index.html`, `src/main.ts`, `src
 - **Touch & Interactivity Polish**: Enforced `touch-action: manipulation` across all buttons, cards, and pills to eliminate 300ms mobile tap delays; added tactile `:active` tap scale transitions; isolated mouse `:hover` effects using `@media (hover: hover) and (pointer: fine)`.
 - **Notification & Telemetry Sync**: Exposed required admin request queues in `AdminManager`, synchronized badge counters across sidebar and drawer, and wired inline one-click drawer approvals/rejections with real-time refresh.
 
+## 9. Version 2.9.0 — Hardware Return Dispatch, Dynamic Partial Return Stepper, Team Showcase Update & Test Email Routing Engine
+
+- **Hardware Return Dispatch Workflow**: Re-engineered the return mechanism into an authenticated, request-driven lifecycle. Borrowers (and administrators) submit return requests specifying custom return quantities via `POST /api/borrow/return-request`.
+- **Dynamic Quantity Stepper Modal**: Upgraded `#return-qty-modal` with interactive `[-]` and `[+]` steppers, direct `Return All` shortcut, borrower info card, and live preview badge (`Full Return` vs. `Partial Return (X units stay issued)`).
+- **1-Click Card Loan Indicators**: Injected active loan pills directly onto catalog inventory cards (`You have X issued · Return`), giving borrowers immediate visibility and 1-click access to return their hardware.
+- **Admin Verification & Stock Restoration**: Return requests land in the Admin Portal queue with distinctive `RETURN` tags. Upon admin approval, inventory `available_quantity` is restored, and loan records are updated (marked `RETURNED` on full return, or remaining units stay `BORROWED` on partial return).
+- **Roster & Navigation Polish**: Maintained Gunjan Pal as Management Head / Mentor in the showcase; preserved the integrated navigation sidebar across all views including developers view with responsive hero layout.
+- **Transactional Test Email Proxy**: Redirected all transactional emails (login alerts, borrow requests, returns, approvals) strictly to `vardaansaxena096@gmail.com` for safe testing, complete with branded test dispatch headers and mobile-responsive cyber templates.
+
 ---
 
 ## Net effect
