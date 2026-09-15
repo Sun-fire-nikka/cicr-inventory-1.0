@@ -261,7 +261,8 @@ export const submitReturnRequestHandler = async (req: AuthRequest, res: Response
       userId: req.user?.id,
       userName: req.user?.name,
       userEmail: req.user?.email,
-      userRoll: req.user?.roll_number || undefined
+      userRoll: req.user?.roll_number || undefined,
+      userRole: req.user?.role || undefined
     });
 
     if (!result.success) {
@@ -299,7 +300,8 @@ export const returnItem = async (req: AuthRequest, res: Response) => {
         userId,
         userName: req.user?.name,
         userEmail: req.user?.email,
-        userRoll: req.user?.roll_number || undefined
+        userRoll: req.user?.roll_number || undefined,
+        userRole: userRole
       });
 
       if (!result.success) {

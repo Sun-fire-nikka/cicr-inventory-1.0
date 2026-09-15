@@ -593,7 +593,11 @@
                     <div class="team-showcase-container">
                         <!-- Top Header -->
                         <div class="team-showcase-header">
-
+                            <div style="display: flex; justify-content: flex-start; width: 100%; margin-bottom: 8px;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="if (window.dashboard && window.dashboard.switchSection) window.dashboard.switchSection('dashboard-view'); else document.getElementById('nav-dashboard')?.click();" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12px; border-radius: 8px;">
+                                    <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to Dashboard
+                                </button>
+                            </div>
                             <h1 class="team-showcase-title">Meet Our <span class="team-glow-text">Squad</span></h1>
                         </div>
 
@@ -604,7 +608,7 @@
                                     id="team-tab-mentors">
                                     <i data-lucide="shield-check"></i>
                                     <span>Mentors</span>
-                                    <span class="category-count">3</span>
+                                    <span class="category-count">1</span>
                                 </button>
                                 <button type="button" class="team-category-tab active" data-category="team" id="team-tab-team">
                                     <i data-lucide="code-2"></i>
@@ -1227,42 +1231,58 @@
 
     <!-- Return Quantity Selection Modal (Supports Partial & Full Returns with Admin Verification) -->
     <div class="modal-overlay" id="return-qty-modal">
-        <div class="modal-content glass small-modal">
+        <div class="modal-content glass small-modal" style="max-width: 440px;">
             <button type="button" class="close-modal"
                 onclick="document.getElementById('return-qty-modal')?.classList.remove('active');"><i
                     data-lucide="x"></i></button>
             <div class="modal-header">
-                <h2><i data-lucide="corner-up-left" class="text-cyan"
-                        style="vertical-align:middle; width:20px; height:20px;"></i> Return Component</h2>
-                <p id="return-modal-subtitle">Choose the units you wish to return to the lab</p>
+                <div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; background:rgba(0, 240, 255, 0.1); border:1px solid rgba(0, 240, 255, 0.3); font-size:10.5px; font-weight:700; color:var(--neon-cyan); letter-spacing:1px; margin-bottom:8px;">
+                    <i data-lucide="corner-up-left" style="width:12px; height:12px;"></i>
+                    <span>HARDWARE RETURN DISPATCH</span>
+                </div>
+                <h2>Return Issued Component</h2>
+                <p id="return-modal-subtitle">Specify quantity to check back into the CICR inventory vault</p>
             </div>
 
             <form id="return-qty-form">
                 <input type="hidden" id="return-borrow-id" value="">
                 <input type="hidden" id="return-borrow-idx" value="">
-                <div class="form-group">
-                    <label>Component Name</label>
-                    <div id="return-modal-item-name"
-                        style="font-weight:700; color:var(--text-main); font-size:14px; padding:4px 0;"></div>
+                
+                <div class="form-group" style="background:rgba(255, 255, 255, 0.02); border:1px solid rgba(255, 255, 255, 0.06); border-radius:10px; padding:12px 14px; margin-bottom:16px;">
+                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:4px;">Component to Return</div>
+                    <div id="return-modal-item-name" style="font-weight:700; color:#ffffff; font-size:15px; font-family:'Space Grotesk', sans-serif;"></div>
+                    <div id="return-modal-holder-info" style="font-size:11.5px; color:var(--text-muted); margin-top:2px;"></div>
                 </div>
+
                 <div class="form-group">
-                    <label for="return-qty-input">Quantity to Return</label>
-                    <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label for="return-qty-input" style="font-size:12px; font-weight:600; margin:0;">Quantity to Return</label>
+                        <button type="button" id="btn-return-all-qty" style="background:rgba(0, 240, 255, 0.12); border:1px solid rgba(0, 240, 255, 0.35); color:var(--neon-cyan); font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; cursor:pointer;">
+                            Return All
+                        </button>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" id="btn-return-qty-minus" style="width:38px; height:38px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
                         <input type="number" id="return-qty-input" min="1" max="1" value="1" required
-                            style="width:100px; font-weight:700; font-size:16px; text-align:center;">
-                        <span id="return-qty-max-label" style="font-size:12px; color:var(--text-dim);">of 1
-                            borrowed</span>
+                            style="flex:1; height:38px; font-weight:700; font-size:16px; text-align:center; background:rgba(0,0,0,0.4); border:1px solid rgba(0, 240, 255, 0.3); border-radius:8px; color:#fff;">
+                        <button type="button" id="btn-return-qty-plus" style="width:38px; height:38px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-top:6px;">
+                        <span id="return-qty-max-label">of 1 borrowed</span>
+                        <span id="return-qty-preview" style="color:var(--neon-cyan); font-weight:600;">Full Return</span>
                     </div>
                 </div>
+
                 <div class="return-modal-note"
                     style="background:rgba(0, 240, 255, 0.05); border:1px solid rgba(0, 240, 255, 0.18); border-radius:8px; padding:10px 12px; margin-bottom:18px; font-size:11.5px; color:var(--text-muted); display:flex; align-items:flex-start; gap:8px;">
-                    <i data-lucide="shield-alert"
-                        style="width:14px; height:14px; color:var(--neon-cyan); flex-shrink:0; margin-top:2px;"></i>
-                    <span id="return-modal-note-text">Return requests are sent to the Admin Portal for verification.
-                        Stock is checked back into inventory once approved by an administrator.</span>
+                    <i data-lucide="shield-check"
+                        style="width:15px; height:15px; color:var(--neon-cyan); flex-shrink:0; margin-top:2px;"></i>
+                    <span id="return-modal-note-text">Upon clicking submit, this request is dispatched to Administrators for physical verification before warehouse inventory stock is restored.</span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" id="btn-confirm-return-submit">
-                    <i data-lucide="check-circle-2"></i> Submit Return Request
+
+                <button type="submit" class="btn btn-primary btn-block btn-cyber-pulse" id="btn-confirm-return-submit" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i data-lucide="corner-up-left"></i> Submit Return to Admin
                 </button>
             </form>
         </div>

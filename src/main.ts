@@ -516,15 +516,20 @@ class DatabaseManager {
                     else if (cat.includes('tool') || cat.includes('comm') || cat.includes('display') || cat.includes('remote') || cat.includes('cable') || cat.includes('mechanical') || cat.includes('misc')) cat = 'tools';
 
                     const itemBorrows = liveBorrows
-                        .filter((b: any) => (b.inventory_id === item.id || b.item_id === item.id) && b.status === 'BORROWED')
+                        .filter((b: any) => (b.inventory_id === item.id || b.item_id === item.id) && (b.status === 'BORROWED' || b.status === 'RETURN_REQUESTED'))
                         .map((b: any) => ({
                             id: b.id,
+                            userId: b.user_id || b.users?.id,
+                            email: b.users?.email || b.borrower_email || b.email,
+                            borrowerEmail: b.users?.email || b.borrower_email || b.email,
                             name: b.users?.name || b.borrower_name || 'Student',
                             roll: b.users?.roll_number || b.roll_number || 'ID',
+                            rollNumber: b.users?.roll_number || b.roll_number,
                             qty: Number(b.quantity) || 1,
                             purpose: b.purpose || 'Robotics Project',
                             date: b.borrowed_at ? b.borrowed_at.split('T')[0] : new Date().toISOString().split('T')[0],
-                            dueDate: b.due_date ? b.due_date.split('T')[0] : ''
+                            dueDate: b.due_date ? b.due_date.split('T')[0] : '',
+                            status: b.status || 'BORROWED'
                         }));
 
                     const borrowedSum = itemBorrows.reduce((sum: number, rec: any) => sum + rec.qty, 0);
@@ -1569,6 +1574,20 @@ class DashboardManager {
             </button>
         ` : '';
 
+        const myLoans = (item.borrowedBy || []).filter((r: any) => !r.returned && ModalManager.isUserLoanMatch(r));
+        const myLoanTotal = myLoans.reduce((sum: number, r: any) => sum + (Number(r.qty) || 0), 0);
+        const myPendingReturn = myLoans.some((r: any) => (r as any).status === 'RETURN_REQUESTED');
+        const myLoanBadgeHtml = myLoanTotal > 0 ? `
+            <div class="card-loan-action-pill" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; background: ${myPendingReturn ? 'rgba(255, 183, 3, 0.12)' : 'rgba(0, 240, 255, 0.08)'}; border: 1px solid ${myPendingReturn ? 'rgba(255, 183, 3, 0.35)' : 'rgba(0, 240, 255, 0.28)'}; border-radius: 6px; padding: 5px 10px; font-size: 11px; color: ${myPendingReturn ? '#ffb703' : 'var(--neon-cyan)'}; cursor: pointer; transition: all 0.2s ease;">
+                <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;">
+                    <i data-lucide="${myPendingReturn ? 'clock' : 'package-check'}" style="width: 12px; height: 12px;"></i> ${myPendingReturn ? `Return Pending (${myLoanTotal} issued)` : `You have ${myLoanTotal} issued`}
+                </span>
+                <span style="font-weight: 700; text-decoration: underline; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 3px;">
+                    ${myPendingReturn ? 'View Status' : 'Return'} <i data-lucide="${myPendingReturn ? 'arrow-right' : 'corner-up-left'}" style="width: 11px; height: 11px;"></i>
+                </span>
+            </div>
+        ` : '';
+
         card.innerHTML = `
             <div class="card-glow-bar bar-${statusClass}"></div>
             <div class="card-header">
@@ -1584,6 +1603,7 @@ class DashboardManager {
             <h3 class="card-title ${titleSizeClass}" title="${AdminManager.escapeHtml(itemName)}">${AdminManager.escapeHtml(itemName)}</h3>
             <p class="card-desc" title="${AdminManager.escapeHtml(item.specs)}">${AdminManager.escapeHtml(shortDesc)}</p>
             ${miniTagsHtml}
+            ${myLoanBadgeHtml}
             <div class="card-footer">
                 <div class="footer-info" title="${AdminManager.escapeHtml(item.location)}">
                     <span class="info-title">Location</span>
@@ -1606,6 +1626,24 @@ class DashboardManager {
                     e.stopPropagation();
                     e.preventDefault();
                     AdminManager.promptDeleteItem(item.id, item.name);
+                });
+            }
+        }
+
+        if (myLoanTotal > 0) {
+            const loanPill = card.querySelector('.card-loan-action-pill');
+            if (loanPill) {
+                loanPill.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (myPendingReturn) {
+                        ModalManager.openDetailModal(item);
+                    } else {
+                        const activeLoan = myLoans.find((r: any) => (r as any).status !== 'RETURN_REQUESTED') || myLoans[0];
+                        if (activeLoan) {
+                            ModalManager.openReturnModal(activeLoan, item, item.borrowedBy.indexOf(activeLoan));
+                        }
+                    }
                 });
             }
         }
@@ -1703,6 +1741,62 @@ class ModalManager {
                 const qtyVal = Number((document.getElementById('return-qty-input') as HTMLInputElement)?.value) || 1;
                 await ModalManager.handleReturnSubmission(borrowId, qtyVal, idx);
             });
+
+            const qtyInput = document.getElementById('return-qty-input') as HTMLInputElement | null;
+            const btnMinus = document.getElementById('btn-return-qty-minus');
+            const btnPlus = document.getElementById('btn-return-qty-plus');
+            const btnAll = document.getElementById('btn-return-all-qty');
+
+            btnMinus?.addEventListener('click', () => {
+                if (qtyInput) {
+                    const cur = parseInt(qtyInput.value, 10) || 1;
+                    qtyInput.value = String(Math.max(1, cur - 1));
+                    ModalManager.updateReturnQtyPreview();
+                }
+            });
+
+            btnPlus?.addEventListener('click', () => {
+                if (qtyInput) {
+                    const max = parseInt(qtyInput.max, 10) || 1;
+                    const cur = parseInt(qtyInput.value, 10) || 1;
+                    qtyInput.value = String(Math.min(max, cur + 1));
+                    ModalManager.updateReturnQtyPreview();
+                }
+            });
+
+            btnAll?.addEventListener('click', () => {
+                if (qtyInput) {
+                    qtyInput.value = qtyInput.max || '1';
+                    ModalManager.updateReturnQtyPreview();
+                }
+            });
+
+            qtyInput?.addEventListener('input', () => {
+                ModalManager.updateReturnQtyPreview();
+            });
+            qtyInput?.addEventListener('change', () => {
+                ModalManager.updateReturnQtyPreview();
+            });
+        }
+    }
+
+    public static updateReturnQtyPreview() {
+        const qtyInput = document.getElementById('return-qty-input') as HTMLInputElement | null;
+        const previewEl = document.getElementById('return-qty-preview');
+        if (!qtyInput) return;
+        const maxVal = Math.max(1, parseInt(qtyInput.max, 10) || 1);
+        let currentVal = parseInt(qtyInput.value, 10);
+        if (isNaN(currentVal) || currentVal < 1) currentVal = 1;
+        if (currentVal > maxVal) currentVal = maxVal;
+        qtyInput.value = String(currentVal);
+
+        if (previewEl) {
+            if (currentVal >= maxVal) {
+                previewEl.innerHTML = `<span style="color:var(--neon-cyan); font-weight:700;">Full Return (${maxVal} units)</span>`;
+            } else {
+                const remaining = maxVal - currentVal;
+                previewEl.innerHTML = `<span style="color:#ffb703; font-weight:700;">Partial Return (${remaining} unit${remaining > 1 ? 's' : ''} stay issued)</span>`;
+            }
         }
     }
 
@@ -2053,15 +2147,30 @@ class ModalManager {
             borrowBtn.style.opacity = '0.5';
         }
 
-        const myLoan = (item.borrowedBy || []).find(rec => !rec.returned && ModalManager.isUserLoanMatch(rec));
+        const myLoans = (item.borrowedBy || []).filter(rec => !rec.returned && ModalManager.isUserLoanMatch(rec));
+        const myActiveLoan = myLoans.find(r => (r as any).status !== 'RETURN_REQUESTED') || myLoans[0];
+        const anyActiveLoan = (item.borrowedBy || []).find(rec => !rec.returned);
+        const targetLoan = myActiveLoan || (role === 'ADMIN' ? anyActiveLoan : null);
 
-        // Only the user who actually borrowed this item sees the Return button
-        if (myLoan) {
+        // Display Return Issued Component button
+        if (targetLoan) {
+            const isPendingReturn = (targetLoan as any).status === 'RETURN_REQUESTED';
             returnBtn.style.display = 'inline-flex';
-            returnBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Return Item';
-            returnBtn.onclick = () => {
-                this.openReturnModal(myLoan, item, item.borrowedBy.indexOf(myLoan));
-            };
+            if (isPendingReturn) {
+                returnBtn.disabled = true;
+                returnBtn.style.opacity = '0.75';
+                returnBtn.style.cursor = 'not-allowed';
+                returnBtn.innerHTML = '<i data-lucide="clock"></i> Return Pending Admin Verification';
+                returnBtn.onclick = null;
+            } else {
+                returnBtn.disabled = false;
+                returnBtn.style.opacity = '1';
+                returnBtn.style.cursor = 'pointer';
+                returnBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Return Issued Component';
+                returnBtn.onclick = () => {
+                    this.openReturnModal(targetLoan, item, item.borrowedBy.indexOf(targetLoan));
+                };
+            }
         } else {
             returnBtn.style.display = 'none';
         }
@@ -2107,6 +2216,11 @@ class ModalManager {
                 const dueBadge = due ? `<span class="borrower-due-badge ${isOverdue ? 'overdue' : ''}">${isOverdue ? 'OVERDUE: ' : 'Due: '}${due}</span>` : '';
 
                 const isMyRecord = ModalManager.isUserLoanMatch(rec);
+                const canReturn = isMyRecord || role === 'ADMIN';
+                const isRecPendingReturn = (rec as any).status === 'RETURN_REQUESTED';
+                const statusBadge = isRecPendingReturn
+                    ? `<span class="borrower-due-badge" style="background:rgba(255,183,3,0.15);color:#ffb703;border:1px solid rgba(255,183,3,0.3);"><i data-lucide="clock" style="width:11px;height:11px;vertical-align:middle;"></i> Awaiting Verification</span>`
+                    : dueBadge;
 
                 const recEl = document.createElement('div');
                 recEl.className = 'borrower-record';
@@ -2116,17 +2230,17 @@ class ModalManager {
                         <span class="borrower-roll">${rec.roll} &bull; ${rec.purpose}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        ${dueBadge}
+                        ${statusBadge}
                         <span class="borrower-qty-badge">${rec.qty} units</span>
-                        ${isMyRecord ? `
-                            <button class="btn btn-secondary btn-inline-return" style="padding: 6px 10px; font-size: 11px;">
-                                <i data-lucide="corner-up-left" style="width:12px;height:12px;"></i> Return
-                            </button>
-                        ` : ''}
+                        ${canReturn ? (
+                            isRecPendingReturn
+                                ? `<button class="btn btn-secondary" disabled style="padding: 6px 10px; font-size: 11px; opacity: 0.6; cursor: not-allowed;"><i data-lucide="clock" style="width:12px;height:12px;"></i> Verification Pending</button>`
+                                : `<button class="btn btn-secondary btn-inline-return" style="padding: 6px 10px; font-size: 11px;"><i data-lucide="corner-up-left" style="width:12px;height:12px;"></i> Return</button>`
+                        ) : ''}
                     </div>
                 `;
                 
-                if (isMyRecord) {
+                if (canReturn && !isRecPendingReturn) {
                     recEl.querySelector('.btn-inline-return')?.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.openReturnModal(rec, item, origIdx);
@@ -3022,6 +3136,11 @@ class ModalManager {
         const nameEl = document.getElementById('return-modal-item-name');
         if (nameEl) nameEl.innerText = item.name;
 
+        const holderInfo = document.getElementById('return-modal-holder-info');
+        if (holderInfo) {
+            holderInfo.innerText = `Borrower: ${rec.name || 'Member'} (${rec.roll || 'Enrolled'}) · Issued: ${borrowedQty} unit(s) on ${rec.date || 'Active'}`;
+        }
+
         (document.getElementById('return-borrow-id') as HTMLInputElement).value = rec.id;
         (document.getElementById('return-borrow-idx') as HTMLInputElement).value = String(origIdx);
 
@@ -3039,9 +3158,13 @@ class ModalManager {
         const noteText = document.getElementById('return-modal-note-text');
         if (noteText) noteText.innerText = 'Return requests are sent to the Admin Portal for verification. Stock is checked back into inventory once approved by an administrator.';
 
-        const submitBtn = document.getElementById('btn-confirm-return-submit');
-        if (submitBtn) submitBtn.innerHTML = '<i data-lucide="check-circle-2"></i> Submit Return Request';
+        const submitBtn = document.getElementById('btn-confirm-return-submit') as HTMLButtonElement | null;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Submit Return to Admin';
+        }
 
+        ModalManager.updateReturnQtyPreview();
         this.open('return-qty-modal');
         lucide.createIcons();
     }
@@ -5468,21 +5591,6 @@ class TeamShowcaseManager {
 
     private static readonly MENTORS: TeamMember[] = [
         {
-            id: 'aryan',
-            name: 'Aryan Varshney',
-            role: 'Coordinator',
-            greeting: 'Hi, my name is',
-            avatar: '/devs/aryan.png',
-            avatarPos: 'center 20%',
-            accentColor: '#00f0ff',
-            firstNameColor: '#ff3366',
-            lastNameColor: '#00f0ff',
-            socials: [
-                { platform: 'linkedin', label: 'Aryan Varshney', url: 'https://www.linkedin.com/in/aryan-varshney-392446310/' },
-                { platform: 'github', label: 'AryanV-Coder', url: 'https://github.com/AryanV-Coder' }
-            ]
-        },
-        {
             id: 'gunjan',
             name: 'Gunjan Pal',
             role: 'Core Team',
@@ -5495,21 +5603,6 @@ class TeamShowcaseManager {
             socials: [
                 { platform: 'linkedin', label: 'Gunjan Pal', url: 'https://www.linkedin.com/in/gunjan-pal-796093284/' },
                 { platform: 'github', label: 'Gunjan00001', url: 'https://github.com/Gunjan00001' }
-            ]
-        },
-        {
-            id: 'dhruvi',
-            name: 'Dhruvi Gupta',
-            role: 'Management Head',
-            greeting: 'Hi, my name is',
-            avatar: '/devs/dhruvi.png',
-            avatarPos: 'center 16%',
-            accentColor: '#ff007a',
-            firstNameColor: '#ff007a',
-            lastNameColor: '#00f0ff',
-            socials: [
-                { platform: 'linkedin', label: 'Dhruvi Gupta', url: 'https://www.linkedin.com/in/dhruvi-guptadg/' },
-                { platform: 'github', label: 'dhruvigup', url: 'https://github.com/dhruvigup' }
             ]
         }
     ];
@@ -5615,6 +5708,11 @@ class TeamShowcaseManager {
         const tabTeam = document.getElementById('team-tab-team');
         if (tabMentors) tabMentors.classList.toggle('active', category === 'mentors');
         if (tabTeam) tabTeam.classList.toggle('active', category === 'team');
+
+        const tabMentorsCount = document.querySelector('#team-tab-mentors .category-count');
+        if (tabMentorsCount) tabMentorsCount.textContent = String(this.MENTORS.length);
+        const tabTeamCount = document.querySelector('#team-tab-team .category-count');
+        if (tabTeamCount) tabTeamCount.textContent = String(this.TEAM.length);
 
         const list = this.getCurrentList();
         if (this.activeIndex >= list.length) this.activeIndex = 0;

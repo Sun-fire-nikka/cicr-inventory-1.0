@@ -194,6 +194,7 @@ export const createReturnRequest = async (payload: {
   userName?: string;
   userEmail?: string;
   userRoll?: string;
+  userRole?: string;
 }): Promise<{ success: boolean; request?: HardwareIssueRequest; message?: string }> => {
   const { borrowId, returnQuantity } = payload;
   if (!borrowId) {
@@ -215,8 +216,11 @@ export const createReturnRequest = async (payload: {
     return { success: false, message: 'This item has already been marked as returned.' };
   }
 
-  // Enforce strict ownership: only the user who issued/borrowed this item can return it!
+  // Enforce strict ownership: only the user who issued/borrowed this item can return it, UNLESS the requester is an ADMIN
   const isOwner = (() => {
+    if (payload.userRole === 'ADMIN') {
+      return true;
+    }
     // 1. Match by user_id
     if (payload.userId && record.user_id && payload.userId === record.user_id) {
       return true;
@@ -237,12 +241,14 @@ export const createReturnRequest = async (payload: {
     if (normUserEmail && recEmail && normUserEmail === recEmail) {
       return true;
     }
-    // 5. Match by exact full name (guarding against generic placeholders)
+    // 5. Match by exact full name or substring name
     const normUserName = (payload.userName || '').trim().toLowerCase();
     const normRecName = (record.borrower_name || '').trim().toLowerCase();
     const isGeneric = (n: string) => !n || ['member', 'student', 'user', 'admin', 'borrower', 'guest'].includes(n) || n.length < 3;
-    if (!isGeneric(normUserName) && !isGeneric(normRecName) && normUserName === normRecName) {
-      return true;
+    if (!isGeneric(normUserName) && !isGeneric(normRecName)) {
+      if (normUserName === normRecName || normUserName.includes(normRecName) || normRecName.includes(normUserName)) {
+        return true;
+      }
     }
     return false;
   })();
@@ -257,9 +263,9 @@ export const createReturnRequest = async (payload: {
   const numToReturn = Math.max(1, Math.min(Number(returnQuantity) || 1, record.quantity));
   const itemName = record.inventory?.name || 'Hardware Component';
   const category = record.inventory?.category || 'Robotics';
-  const borrowerName = payload.userName || record.borrower_name || 'Member';
-  const borrowerEmail = payload.userEmail || (record.roll_number ? `${record.roll_number}@mail.jiit.ac.in` : 'student@mail.jiit.ac.in');
-  const rollNumber = payload.userRoll || record.roll_number || null;
+  const borrowerName = record.borrower_name || payload.userName || 'Member';
+  const borrowerEmail = (record.roll_number ? `${record.roll_number}@mail.jiit.ac.in` : '') || record.borrower_email || payload.userEmail || 'student@mail.jiit.ac.in';
+  const rollNumber = record.roll_number || payload.userRoll || null;
   const requestedAt = new Date().toISOString();
   const id = `req-ret-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
 
@@ -623,7 +629,7 @@ export const approveHardwareRequest = async (
         .update({ available_quantity: newAvail, updated_at: new Date().toISOString() })
         .eq('id', bRecord.inventory_id);
 
-      // 2. If all units returned, mark record RETURNED; if partial, decrement remaining borrowed quantity
+      // 2. If all units returned, mark record RETURNED; if partial, decrement remaining borrowed quantity and restore BORROWED status
       if (returnQty >= bRecord.quantity) {
         await supabase
           .from('borrow_records')
@@ -632,7 +638,7 @@ export const approveHardwareRequest = async (
       } else {
         await supabase
           .from('borrow_records')
-          .update({ quantity: bRecord.quantity - returnQty })
+          .update({ quantity: bRecord.quantity - returnQty, status: 'BORROWED' })
           .eq('id', borrowId);
       }
 

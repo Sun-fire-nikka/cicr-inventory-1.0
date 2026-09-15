@@ -7047,19 +7047,33 @@ body.theme-sakura .log-item {
    MEET THE DEVELOPERS & MENTORS (GDG JIIT INTERACTIVE SHOWCASE)
    ========================================================= */
 
-/* =========================================================
-   MEET THE DEVELOPERS & MENTORS (GDG JIIT INTERACTIVE SHOWCASE)
-   ========================================================= */
+/* Hide sidebar and slidebar completely on Developers Showcase */
+body.view-developers-view .app-sidebar {
+    display: none !important;
+}
+
+body.view-developers-view #app-main-content,
+body.view-developers-view .app-main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 18px 24px 60px 24px !important;
+}
+
+body.view-developers-view {
+    overflow-x: hidden !important;
+}
 
 .developers-section {
     width: 100%;
-    max-width: 1140px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 10px 20px 40px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     box-sizing: border-box;
+    overflow-x: hidden !important;
 }
 
 .team-showcase-container {

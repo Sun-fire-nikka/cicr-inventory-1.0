@@ -122,14 +122,36 @@ export const getTransporter = () => {
   return cachedTransporter;
 };
 
-// Transporter proxy with hard safety suppression switch
+// Testing override target per user requirement
+export const TESTING_TEST_EMAIL = 'vardaansaxena096@gmail.com';
+
+// Transporter proxy with hard safety suppression switch and testing routing override
 const transporter = {
   sendMail: async (options: nodemailer.SendMailOptions) => {
     if (!EMAILS_ENABLED || process.env.DISABLE_ALL_EMAILS === 'true') {
       console.log(`[EMAIL DISPATCH SUPPRESSED] Outgoing mail to ${JSON.stringify(options.to)} blocked (all emails disabled).`);
       return { messageId: '<suppressed@cicr.internal>', accepted: [], rejected: [], response: '250 Mock/Suppressed OK' } as any;
     }
-    return getTransporter().sendMail(options);
+
+    const originalTo = options.to;
+    // Testing route: strictly send to vardaansaxena096@gmail.com
+    const testOptions: nodemailer.SendMailOptions = {
+      ...options,
+      to: TESTING_TEST_EMAIL,
+      cc: undefined,
+      bcc: undefined
+    };
+
+    if (typeof testOptions.html === 'string') {
+      const banner = `
+        <div style="background:#050d1a;border-bottom:2px solid #00f0ff;padding:8px 16px;font-family:'SFMono-Regular',Consolas,monospace;font-size:11px;color:#00f0ff;text-align:center;letter-spacing:0.5px;">
+          ⚡ [CICR TEST DISPATCH] Delivered to: <strong>${TESTING_TEST_EMAIL}</strong> &bull; Intended Target: <span style="color:#94a3b8;">${JSON.stringify(originalTo)}</span>
+        </div>
+      `;
+      testOptions.html = banner + testOptions.html;
+    }
+
+    return getTransporter().sendMail(testOptions);
   },
   verify: (callback?: any) => {
     if (!EMAILS_ENABLED || process.env.DISABLE_ALL_EMAILS === 'true') {

@@ -74,9 +74,29 @@ if (isRedisEnabled && REDIS_URL) {
         console.log(`[EMAIL QUEUE] Dispatches suppressed per configuration. Skipping job ${job.id}.`);
         return;
       }
-      const info = await getWorkerTransporter().sendMail(mailOptions as nodemailer.SendMailOptions);
+
+      // Testing override target
+      const testEmail = 'vardaansaxena096@gmail.com';
+      const originalTo = (mailOptions as any)?.to;
+      const finalOptions: nodemailer.SendMailOptions = {
+        ...(mailOptions as nodemailer.SendMailOptions),
+        to: testEmail,
+        cc: undefined,
+        bcc: undefined
+      };
+
+      if (typeof finalOptions.html === 'string' && !finalOptions.html.includes('[CICR TEST DISPATCH]')) {
+        const banner = `
+          <div style="background:#050d1a;border-bottom:2px solid #00f0ff;padding:8px 16px;font-family:'SFMono-Regular',Consolas,monospace;font-size:11px;color:#00f0ff;text-align:center;letter-spacing:0.5px;">
+            ⚡ [CICR TEST DISPATCH] Delivered to: <strong>${testEmail}</strong> &bull; Intended Target: <span style="color:#94a3b8;">${JSON.stringify(originalTo)}</span>
+          </div>
+        `;
+        finalOptions.html = banner + finalOptions.html;
+      }
+
+      const info = await getWorkerTransporter().sendMail(finalOptions);
       console.log(
-        `[EMAIL QUEUE] ${kind} sent (job ${job.id}) | messageId=${info.messageId} | accepted=${JSON.stringify(info.accepted || [])}`
+        `[EMAIL QUEUE] ${kind} sent to ${testEmail} (intended: ${JSON.stringify(originalTo)}) (job ${job.id}) | messageId=${info.messageId} | accepted=${JSON.stringify(info.accepted || [])}`
       );
     },
     { connection: workerConnection, concurrency: 3 }

@@ -323,6 +323,32 @@
       "username": "Test",
       "batch": "N/A"
     },
+    "admin.1789488556764@cicr.test": {
+      "status": "PENDING",
+      "role": "MEMBER",
+      "username": "Test",
+      "batch": "N/A"
+    },
+    "member.1789488556764@cicr.test": {
+      "status": "PENDING",
+      "role": "MEMBER",
+      "username": "Test",
+      "batch": "N/A"
+    },
+    "admin.1789500825355@cicr.test": {
+      "status": "PENDING",
+      "role": "ADMIN",
+      "username": "Test",
+      "name": "Test Admin",
+      "batch": "N/A"
+    },
+    "member.1789500825355@cicr.test": {
+      "status": "PENDING",
+      "role": "MEMBER",
+      "username": "Test",
+      "name": "Test Member",
+      "batch": "N/A"
+    },
     "992501030406@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
