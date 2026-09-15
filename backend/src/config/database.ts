@@ -33,10 +33,36 @@ import {
   QueryFilter,
   QueryOperation,
 } from './databaseTypes';
-import { isPrimaryAvailable } from './dbHealth';
+import { isPrimaryAvailable, setSupabaseHealthy } from './dbHealth';
 import { enqueuePendingChange } from './replication';
 
 dotenv.config();
+
+function isNetworkOrServiceOutage(err: { message?: string; code?: string } | null): boolean {
+  if (!err || !err.message) return false;
+  const msg = err.message.toLowerCase();
+  const code = (err.code || '').toLowerCase();
+  return (
+    msg.includes('fetch failed') ||
+    msg.includes('network') ||
+    msg.includes('econnrefused') ||
+    msg.includes('etimedout') ||
+    msg.includes('enotfound') ||
+    msg.includes('connection') ||
+    msg.includes('timeout') ||
+    msg.includes('bad gateway') ||
+    msg.includes('service unavailable') ||
+    msg.includes('gateway timeout') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('socket hang up') ||
+    msg.includes('502') ||
+    msg.includes('503') ||
+    msg.includes('504') ||
+    code === 'econnrefused' ||
+    code === 'etimedout' ||
+    code === 'config'
+  );
+}
 
 // ------------------------------------------------------------------ helpers
 function escapeIdent(name: string): string {
@@ -211,7 +237,16 @@ class QueryBuilder {
 
       // Route simple CRUD operations to Supabase PostgREST
       if (canUseSupabaseDirect(table, operation, filters)) {
-        return this.executeViaSupabaseDirect();
+        const directResult = await this.executeViaSupabaseDirect();
+        if (!directResult.error || !isNetworkOrServiceOutage(directResult.error)) {
+          return directResult;
+        }
+
+        console.warn(
+          `[DB FAILOVER] Supabase primary error (${directResult.error.message}). Failing over immediately to Neon secondary for table "${table}".`
+        );
+        setSupabaseHealthy(false);
+        // Fall through to Neon execution below
       }
 
       // Failover path: while the PRIMARY is unavailable, replicated tables are
@@ -238,6 +273,20 @@ class QueryBuilder {
 
       return result;
     } catch (err: any) {
+      if (isNetworkOrServiceOutage(err) && isPrimaryAvailable()) {
+        console.warn(`[DB FAILOVER] Caught Supabase exception (${err.message}). Failing over to Neon secondary.`);
+        setSupabaseHealthy(false);
+        try {
+          switch (this.state.operation) {
+            case 'select': return await this.executeSelect();
+            case 'insert': return await this.executeInsert();
+            case 'update': return await this.executeUpdate();
+            case 'delete': return await this.executeDelete();
+          }
+        } catch (neonErr: any) {
+          return { data: null, error: { message: neonErr.message, code: neonErr.code || '' } };
+        }
+      }
       return { data: null, error: { message: err.message, code: err.code || '' } };
     }
   }
@@ -445,21 +494,31 @@ class QueryBuilder {
 
   // ------------------------------------------------------------- INSERT (Neon path)
   private async executeInsert(): Promise<SupabaseResult> {
-    const { table, data, returnColumns } = this.state;
+    const { table, data, returnColumns, singleResult } = this.state;
     if (!data || data.length === 0) {
       return { data: null, error: { message: 'No data provided', code: '' } };
     }
 
-    const row = data[0];
-    const cols = Object.keys(row);
-    const placeholders = cols.map((_, i) => `$${i + 1}`);
-    const values = cols.map((c) => row[c]);
-
     const returningCols = returnColumns ? parseColumns(returnColumns) : '*';
-    const sql = `INSERT INTO ${escapeIdent(table)} (${cols.map(escapeIdent).join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING ${returningCols}`;
+    const allCols = Array.from(new Set(data.flatMap((r) => Object.keys(r))));
+    const values: unknown[] = [];
+    const tuples: string[] = [];
+
+    for (const row of data) {
+      const placeholders = allCols.map((c) => {
+        values.push(row[c] === undefined ? null : row[c]);
+        return `$${values.length}`;
+      });
+      tuples.push(`(${placeholders.join(', ')})`);
+    }
+
+    const sql = `INSERT INTO ${escapeIdent(table)} (${allCols.map(escapeIdent).join(', ')}) VALUES ${tuples.join(', ')} RETURNING ${returningCols}`;
 
     const result = await poolQuery(sql, values);
-    return { data: result.rows[0] || null, error: null };
+    if (singleResult || data.length === 1) {
+      return { data: result.rows[0] || null, error: null };
+    }
+    return { data: result.rows, error: null };
   }
 
   // ------------------------------------------------------------- UPDATE (Neon path)
@@ -693,7 +752,7 @@ class QueryBuilder {
   }
 }
 
-// ---------------------------------------------------------------- pool routing (Neon only for complex ops on NEON_ATOMIC_TABLES)
+// ---------------------------------------------------------------- pool routing (Neon for complex operations & failover)
 async function poolQuery(sql: string, values?: unknown[]): Promise<QueryResult> {
   const upperSql = sql.trim().toUpperCase();
   const isWrite = upperSql.startsWith('INSERT') ||
@@ -705,11 +764,7 @@ async function poolQuery(sql: string, values?: unknown[]): Promise<QueryResult> 
 
   if (isWrite) {
     if (isNeonConfigured()) {
-      try {
-        return await neonQueryWrite(sql, values);
-      } catch (err: any) {
-        console.error('[DB] Neon write failed:', err.message);
-      }
+      return await neonQueryWrite(sql, values);
     }
     return { rows: [], rowCount: 0, command: 'INSERT', oid: 0, fields: [] };
   }
@@ -719,8 +774,7 @@ async function poolQuery(sql: string, values?: unknown[]): Promise<QueryResult> 
     return neonQueryRead(sql, values);
   }
 
-  // Should not reach here if Neon is configured for NEON_ATOMIC_TABLES
-  throw new Error('Neon not configured for atomic operations');
+  throw new Error('Neon not configured for database operations');
 }
 
 // ----------------------------------------------------- export instances

@@ -21,6 +21,7 @@ export const SUPABASE_PRIMARY_TABLES = new Set([
   'inventory',
   'audit_logs',
   'hardware_requests',
+  'borrow_records',
 ]);
 
 // Tables replicated Supabase → Neon and eligible for failover routing.
@@ -28,14 +29,13 @@ export const SUPABASE_REPLICATED_TABLES = new Set([
   'users',
   'inventory',
   'audit_logs',
+  'borrow_records',
 ]);
 
 // Tables that require Neon for atomic multi-table operations.
-// borrow_records is intentionally EXCLUDED from replication/failover because its
-// borrow/return flow performs multi-statement stock mutations that the current
-// Supabase (PostgREST) abstraction does not wrap in a single transaction.
-export const NEON_ATOMIC_TABLES = new Set([
-  'borrow_records',
+// When Supabase is healthy, all tables use Supabase primary; if Supabase fails,
+// they automatically fail over to Neon secondary.
+export const NEON_ATOMIC_TABLES = new Set<string>([
 ]);
 
 // Filter operations that the Supabase PostgREST helper (supabaseQuery) can apply
