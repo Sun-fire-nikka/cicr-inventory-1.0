@@ -106,7 +106,7 @@ async function getNeonColumns(table: string): Promise<Set<string>> {
     `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1`,
     [table],
   );
-  const set = new Set(result.rows.map((r: any) => String(r.column_name)));
+  const set: Set<string> = new Set<string>((result.rows || []).map((r: any) => String(r.column_name)));
   neonColumnCache[table] = set;
   return set;
 }

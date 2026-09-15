@@ -477,7 +477,7 @@ class QueryBuilder {
     const result = await poolQuery(sql, values);
 
     // Unflatten join columns
-    const rows = result.rows.map((row) => this.unflattenRow(row, columns || '*'));
+    const rows = (result.rows || []).map((row: any) => this.unflattenRow(row, columns || '*'));
 
     if (singleResult) {
       if (rows.length === 0) {
@@ -500,12 +500,12 @@ class QueryBuilder {
     }
 
     const returningCols = returnColumns ? parseColumns(returnColumns) : '*';
-    const allCols = Array.from(new Set(data.flatMap((r) => Object.keys(r))));
+    const allCols: string[] = Array.from(new Set(data.flatMap((r: any) => Object.keys(r))));
     const values: unknown[] = [];
     const tuples: string[] = [];
 
-    for (const row of data) {
-      const placeholders = allCols.map((c) => {
+    for (const row of (data as Record<string, any>[])) {
+      const placeholders = allCols.map((c: string) => {
         values.push(row[c] === undefined ? null : row[c]);
         return `$${values.length}`;
       });

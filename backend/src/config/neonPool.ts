@@ -76,11 +76,11 @@ export const replicaPool: Pool = new Pool({
 
 // Prevent unhandled idle-connection errors (e.g. ECONNRESET) from crashing
 // the process.  The pool will evict the broken connection and continue.
-primaryPool.on('error', (err) => {
-  console.error('[NEON] Primary pool idle client error:', err.message);
+primaryPool.on('error', (err: any) => {
+  console.error('[NEON] Primary pool idle client error:', err?.message || err);
 });
-replicaPool.on('error', (err) => {
-  console.error('[NEON] Replica pool idle client error:', err.message);
+replicaPool.on('error', (err: any) => {
+  console.error('[NEON] Replica pool idle client error:', err?.message || err);
 });
 
 // ----------------------------------------------------------- health tracking

@@ -72,11 +72,16 @@ test('2. Controlled outage → replicated table routes to Neon', () => {
   health.setSimulatedOutage(false);
 });
 
-test('borrow_records is always Neon (excluded from failover)', () => {
+test('borrow_records routes to Supabase when healthy and Neon on outage', () => {
   health.setSupabaseHealthy(true);
   health.setSimulatedOutage(false);
+  assert.equal(router.routeToSupabase('borrow_records'), true);
+  assert.equal(router.routeToNeon('borrow_records'), false);
+
+  health.setSimulatedOutage(true);
   assert.equal(router.routeToSupabase('borrow_records'), false);
   assert.equal(router.routeToNeon('borrow_records'), true);
+  health.setSimulatedOutage(false);
 });
 
 test('Phase 7: conditional inventory stock update stays on ONE path (Supabase)', () => {
