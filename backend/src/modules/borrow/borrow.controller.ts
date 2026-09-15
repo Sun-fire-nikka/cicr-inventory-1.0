@@ -374,10 +374,10 @@ export const returnItem = async (req: AuthRequest, res: Response) => {
     // 3. Restore available_quantity
     const { data: currentItem } = await dbRead
       .from('inventory')
-      .select('available_quantity')
+      .select('quantity, available_quantity')
       .eq('id', record.inventory_id)
-      .single();
-    const restoredQty = (currentItem?.available_quantity || 0) + qtyToReturn;
+    const totalStock = Number(currentItem?.quantity) || 1;
+    const restoredQty = Math.min(totalStock, (currentItem?.available_quantity || 0) + qtyToReturn);
 
     const { error: restoreErr } = await dbWrite
       .from('inventory')

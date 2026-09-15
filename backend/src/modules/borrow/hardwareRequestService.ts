@@ -619,11 +619,12 @@ export const approveHardwareRequest = async (
       // 1. Restock available quantity in inventory
       const { data: currItem } = await dbRead
         .from('inventory')
-        .select('available_quantity, name')
+        .select('quantity, available_quantity, name')
         .eq('id', bRecord.inventory_id)
         .maybeSingle();
 
-      const newAvail = (currItem?.available_quantity || 0) + returnQty;
+      const totalStock = Number(currItem?.quantity) || 1;
+      const newAvail = Math.min(totalStock, (currItem?.available_quantity || 0) + returnQty);
       await supabase
         .from('inventory')
         .update({ available_quantity: newAvail, updated_at: new Date().toISOString() })

@@ -533,15 +533,16 @@ class DatabaseManager {
                         }));
 
                     const borrowedSum = itemBorrows.reduce((sum: number, rec: any) => sum + rec.qty, 0);
+                    const totalQty = Number(item.quantity) || 0;
                     const availableQty = (item.available_quantity !== undefined && item.available_quantity !== null)
-                        ? Number(item.available_quantity)
-                        : Math.max(0, Number(item.quantity) - borrowedSum);
+                        ? Math.min(totalQty, Math.max(0, Number(item.available_quantity)))
+                        : Math.max(0, totalQty - borrowedSum);
 
                     return {
                         id: String(item.id),
                         name: item.name,
                         category: cat || 'microcontrollers',
-                        quantity: Number(item.quantity) || 0,
+                        quantity: totalQty,
                         availableQuantity: availableQty,
                         location: item.location || 'Lab Shelf',
                         specs: item.description || 'No specifications provided.',
@@ -1509,11 +1510,11 @@ class DashboardManager {
             (sum: number, rec: any) => sum + rec.qty,
             0
         );
-        const available = typeof item.availableQuantity === 'number'
-            ? item.availableQuantity
-            : Math.max(0, item.quantity - borrowedSum);
-
         const totalQty = Number(item.quantity) || 0;
+        const available = typeof item.availableQuantity === 'number'
+            ? Math.min(totalQty, Math.max(0, item.availableQuantity))
+            : Math.max(0, totalQty - borrowedSum);
+
         const status = getItemStockStatus(totalQty, available);
         const statusText = status.text;
         const statusClass = status.class;
@@ -1564,8 +1565,8 @@ class DashboardManager {
             </div>
         ` : '';
 
-        // Availability progress percentage
-        const fillPercent = item.quantity > 0 ? Math.min(100, Math.round((available / item.quantity) * 100)) : 0;
+        // Availability progress percentage (relative to true total quantity)
+        const fillPercent = totalQty > 0 ? Math.min(100, Math.round((available / totalQty) * 100)) : 0;
 
         const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
         const deleteBtnHtml = isAdmin ? `
@@ -1611,7 +1612,7 @@ class DashboardManager {
                 </div>
                 <div class="footer-info" style="align-items: flex-end;">
                     <span class="info-title">Availability</span>
-                    <span class="info-content"><strong class="stock-curr ${statusClass}">${available}</strong> <span class="stock-divider">/</span> ${item.quantity}</span>
+                    <span class="info-content"><strong class="stock-curr ${statusClass}">${available}</strong> <span class="stock-divider">/</span> ${totalQty}</span>
                     <div class="availability-bar-track">
                         <div class="availability-bar-fill fill-${statusClass}" style="width: ${fillPercent}%"></div>
                     </div>
@@ -2109,14 +2110,15 @@ class ModalManager {
         selectedItem = item;
 
         const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+        const totalQty = Number(item.quantity) || 0;
         const available = typeof item.availableQuantity === 'number'
-            ? item.availableQuantity
-            : Math.max(0, item.quantity - borrowedSum);
+            ? Math.min(totalQty, Math.max(0, item.availableQuantity))
+            : Math.max(0, totalQty - borrowedSum);
 
         document.getElementById('detail-name')!.innerText = item.name;
         document.getElementById('detail-location')!.innerText = item.location;
         document.getElementById('detail-specs')!.innerText = item.specs;
-        document.getElementById('detail-quantity')!.innerHTML = `<strong>${available}</strong> / ${item.quantity} available`;
+        document.getElementById('detail-quantity')!.innerHTML = `<strong>${available}</strong> / ${totalQty} available`;
 
         const catMap: Record<string, string> = {
             microcontrollers: "Microcontroller / Development Board",
@@ -2134,7 +2136,6 @@ class ModalManager {
         const returnBtn = document.getElementById('btn-return') as HTMLButtonElement;
         const role = this.getCurrentRole();
 
-        const totalQty = Number(item.quantity) || 0;
         const status = getItemStockStatus(totalQty, available);
         badge.innerText = status.text;
         badge.className = `modal-status-badge ${status.class}`;
@@ -2679,7 +2680,11 @@ class ModalManager {
             lowStockList.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'notif-card card-stock';
-                const avail = typeof item.availableQuantity === 'number' ? item.availableQuantity : item.quantity;
+                const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+                const totalQty = Number(item.quantity) || 0;
+                const avail = typeof item.availableQuantity === 'number'
+                    ? Math.min(totalQty, Math.max(0, item.availableQuantity))
+                    : Math.max(0, totalQty - borrowedSum);
                 el.innerHTML = `
                     <div class="notif-card-header">
                         <div class="notif-card-tag tag-yellow">
@@ -2693,7 +2698,7 @@ class ModalManager {
                             Component <strong>${item.name}</strong> is critically low.
                         </p>
                         <p class="notif-card-sub-text">
-                            Available: <strong class="text-yellow">${avail}</strong> / ${item.quantity} total &bull; Category: ${item.category}
+                            Available: <strong class="text-yellow">${avail}</strong> / ${totalQty} total &bull; Category: ${item.category}
                         </p>
                     </div>
                 `;
