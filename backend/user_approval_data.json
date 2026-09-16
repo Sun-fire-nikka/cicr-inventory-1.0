@@ -349,6 +349,22 @@
       "name": "Test Member",
       "batch": "N/A"
     },
+    "992501210016@mail.jiit.ac.in": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "approvedAt": "2026-09-16T08:10:04.995+00:00",
+      "approvedBy": "ADMIN",
+      "username": "arohan",
+      "batch": "E1"
+    },
+    "992501040097@mail.jiit.ac.in": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "approvedAt": "2026-09-16T08:10:03.698+00:00",
+      "approvedBy": "ADMIN",
+      "username": "kshaurya74",
+      "batch": "H4"
+    },
     "992501030406@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",

@@ -91,6 +91,11 @@ A large frontend pass (~2,500 line diff across `index.html`, `src/main.ts`, `src
 - **Roster & Navigation Polish**: Maintained Gunjan Pal as Management Head / Mentor in the showcase; preserved the integrated navigation sidebar across all views including developers view with responsive hero layout.
 - **Transactional Test Email Proxy**: Redirected all transactional emails (login alerts, borrow requests, returns, approvals) strictly to `vardaansaxena096@gmail.com` for safe testing, complete with branded test dispatch headers and mobile-responsive cyber templates.
 
+## 10. Version 2.9.1 — Production Clean Transactional Email Headers
+
+- **Clean Email Dispatch Headers**: Removed the debug `[CICR TEST DISPATCH]` banner header across all direct (`emailService.ts`) and BullMQ background-queued (`emailQueue.ts`) transactional email dispatches.
+- **Polished Presentation**: Emails now render cleanly with authentic cyber templates, glowing badges, and crisp telemetry formatting without internal routing debug headers.
+
 ---
 
 ## Net effect

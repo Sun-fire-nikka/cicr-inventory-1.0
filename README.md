@@ -72,8 +72,9 @@ Track, reserve, and deploy microcontrollers, sensors, and actuators from JIIT's 
 | **v2.8.0** | ✅ Released | **Zero-Latency 1-Click Approvals, Request De-duplication Engine, Tamper-Proof Autofilled Borrower Lock, Complete 54-Item Catalog & Cold-Start Session Recovery.** Instant optimistic UI card removal for hardware and member authorizations; atomic submit lock with composite content-based request de-duplication; automated read-only prefill for student borrower credentials; comprehensive 54-component robotics inventory with 500-unit limit; updated developer roster with crisp SVG links; and backend memory caching (15s TTL) with cold-start resilient auth recovery. |
 | **v2.8.1** | ✅ Released | **Mobile & Desktop Responsive Overhaul, Touch Interaction Optimization & Notification Telemetry Fix.** Comprehensive responsive overhaul across mobile and desktop; single-column catalog grid on mobile ($\le 640\text{px}$) with natural multi-line titles, smooth horizontal swipeable category pills, balanced 2x2 stats grid, responsive dashboard greeting & digital clock cockpit, 300ms tap latency removal via `touch-action: manipulation`, tactile active tap feedback, and real-time notification telemetry counter sync. |
 | **v2.9.0** | ✅ Released | **Hardware Return Dispatch with Dynamic Partial/Full Stepper, Admin Verification Portal, Roster Polish & Testing Email Routing.** Re-added Return Issued Component flow allowing borrowers to return issued hardware with customizable return quantities (`[-]` / `[+]` steppers and `Return All` shortcut); return requests dispatch to the Admin Portal for physical verification before inventory stock is restored; active loan badges with 1-click return triggers on inventory cards; updated developer showcase layout with integrated navigation sidebar; updated mentor guidance credits; and test email routing proxy redirecting all transactional activity emails to `vardaansaxena096@gmail.com` with branded test dispatch headers. |
+| **v2.9.1** | ✅ Released | **Production Clean Transactional Email Headers.** Removed the debug `[CICR TEST DISPATCH]` banner header across direct and queue-dispatched transactional emails, providing clean, authentic, and modern cyber templates across all user notifications. |
 
-> The current active release is **v2.9.0 — Hardware Return Dispatch with Dynamic Partial/Full Stepper, Admin Verification Portal, Roster Polish & Testing Email Routing**. Both the Vercel frontend and Render backend run in production with live database sync, multi-tier hardware queues, real-time activity auditing, and automated transactional telemetry.
+> The current active release is **v2.9.1 — Production Clean Transactional Email Headers**. Both the Vercel frontend and Render backend run in production with live database sync, multi-tier hardware queues, real-time activity auditing, and automated transactional telemetry.
 
 ### 🏷️ Version Registry (Git Tags)
 
@@ -93,6 +94,7 @@ Track, reserve, and deploy microcontrollers, sensors, and actuators from JIIT's 
 | **v2.8.0** | `v2.8.0`, `v2.8` | ✅ Released | 1-Click Approvals, Request De-duplication, Locked Borrower Details & 54-Item Catalog |
 | **v2.8.1** | `v2.8.1`, `v2.8` | ✅ Released | Mobile & Desktop Responsive Overhaul, Touch Interaction & Telemetry Sync |
 | **v2.9.0** | `v2.9.0`, `v2.9` | ✅ Released | Hardware Return Dispatch, Partial Stepper, Admin Verification & Test Mail Routing |
+| **v2.9.1** | `v2.9.1` | ✅ Released | Production Clean Transactional Email Headers |
 
 ---
 

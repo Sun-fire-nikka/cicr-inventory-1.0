@@ -1,6 +1,6 @@
 {
   "name": "cicr-inventory-backend",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Express + TypeScript backend for CICR Robotics Inventory Hub",
   "main": "dist/server.js",
   "scripts": {

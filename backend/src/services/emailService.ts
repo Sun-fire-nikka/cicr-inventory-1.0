@@ -133,7 +133,6 @@ const transporter = {
       return { messageId: '<suppressed@cicr.internal>', accepted: [], rejected: [], response: '250 Mock/Suppressed OK' } as any;
     }
 
-    const originalTo = options.to;
     // Testing route: strictly send to vardaansaxena096@gmail.com
     const testOptions: nodemailer.SendMailOptions = {
       ...options,
@@ -141,15 +140,6 @@ const transporter = {
       cc: undefined,
       bcc: undefined
     };
-
-    if (typeof testOptions.html === 'string') {
-      const banner = `
-        <div style="background:#050d1a;border-bottom:2px solid #00f0ff;padding:8px 16px;font-family:'SFMono-Regular',Consolas,monospace;font-size:11px;color:#00f0ff;text-align:center;letter-spacing:0.5px;">
-          ⚡ [CICR TEST DISPATCH] Delivered to: <strong>${TESTING_TEST_EMAIL}</strong> &bull; Intended Target: <span style="color:#94a3b8;">${JSON.stringify(originalTo)}</span>
-        </div>
-      `;
-      testOptions.html = banner + testOptions.html;
-    }
 
     return getTransporter().sendMail(testOptions);
   },

@@ -1,7 +1,7 @@
 {
   "name": "cicr-inventory",
   "private": true,
-  "version": "2.9.0",
+  "version": "2.9.1",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n \"frontend,backend\" -c \"cyan,magenta\" \"vite\" \"npm start --prefix backend\"",
