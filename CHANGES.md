@@ -96,6 +96,18 @@ A large frontend pass (~2,500 line diff across `index.html`, `src/main.ts`, `src
 - **Clean Email Dispatch Headers**: Removed the debug `[CICR TEST DISPATCH]` banner header across all direct (`emailService.ts`) and BullMQ background-queued (`emailQueue.ts`) transactional email dispatches.
 - **Polished Presentation**: Emails now render cleanly with authentic cyber templates, glowing badges, and crisp telemetry formatting without internal routing debug headers.
 
+## 11. Version 2.10.0 — 7-Day Centralized Audit & Telemetry Log System
+
+- **Centralized 7-Day Backend Retention & Purge Scheduler**: Added automated background retention service (`auditCleanupService.ts`) that runs on server startup and executes every 6 hours to safely prune audit logs older than 7 days (`NOW() - INTERVAL '7 days'`), with graceful shutdown integration in `server.ts`.
+- **Database Composite Indexing & Purge Function**: Created migration `007_audit_logs_retention_index.sql` adding composite index `idx_audit_logs_timestamp_action` and stored function `purge_expired_audit_logs(days_to_keep)`.
+- **Enforced 7-Day Querying & Activity Spectrum API**: Extended `GET /api/audit` (`dashboard.controller.ts`) to strictly enforce a 7-day ceiling (`timestamp >= NOW() - 7 days`), supporting day-level filtering (`day=YYYY-MM-DD`), category filtering, dynamic pagination (limit up to 1000), real-time 7-day day-by-day activity spectrum calculations (`dailyCounts`), and category distribution metrics (`categoryCounts`).
+- **Client Audit Ingestion Endpoint**: Added `POST /api/audit` (`dashboard.routes.ts`) allowing frontend events (logins, item actions, exports, drawer interactions) to be persisted directly into PostgreSQL `audit_logs` via `DatabaseManager.addLog`, eliminating isolated local-only logs.
+- **Manual Admin Retention Trigger**: Added `POST /api/audit/cleanup` with dedicated admin HUD button (`#admin-audit-cleanup-btn`) to trigger immediate server retention passes with live feedback.
+- **Interactive 7-Day Activity Spectrum HUD**: Built a visual day-by-day spectrum bar card grid (`#admin-audit-spectrum`) displaying activity bars, relative density percentages, event counts, and 1-click day filtering (e.g. "Today", "Yesterday", "3d ago").
+- **Aesthetic Cyberpunk Log Cards & Raw Telemetry Modal**: Log records display category-accented borders, action pills, borrower/item tags, relative timestamps, and a 1-click inspection modal (`#audit-detail-modal`) with syntax-styled JSON formatting and copy-to-clipboard.
+- **CSV Audit Ledger Export**: Built client-side CSV export (`cicr_audit_ledger_7days_*.csv`) directly from the filtered 7-day audit logs in the Admin Portal.
+- **System Telemetry Drawer Integration**: Updated the notification drawer's System section to stream backend 7-day audit records with live event counts.
+
 ---
 
 ## Net effect

@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import { getDashboardStats, getAuditLogs } from './dashboard.controller';
-import { authenticateToken } from '../../middleware/auth.middleware';
+import { getDashboardStats, getAuditLogs, createAuditEvent, triggerAuditCleanup } from './dashboard.controller';
+import { authenticateToken, requireAdmin } from '../../middleware/auth.middleware';
 
 const router = Router();
 
 router.get('/stats', getDashboardStats);
 router.get('/audit', authenticateToken, getAuditLogs);
+router.post('/audit', authenticateToken, createAuditEvent);
+router.post('/audit/cleanup', authenticateToken, requireAdmin, triggerAuditCleanup);
 
 export default router;

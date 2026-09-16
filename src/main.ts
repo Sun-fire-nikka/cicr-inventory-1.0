@@ -795,11 +795,38 @@ class DatabaseManager {
         }, intervalMs);
     }
 
-    static addLog(type: ActivityLog['type'], text: string) {
+    static addLog(type: ActivityLog['type'], text: string, itemId?: string) {
         const date = new Date();
         const timestamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         logs.unshift({ type, timestamp, text });
         this.save();
+
+        // Asynchronously persist to backend 7-day audit ledger
+        const token = localStorage.getItem('cicr_token');
+        if (token) {
+            let action = 'System Event';
+            if (type === 'borrow') action = 'Borrowed';
+            else if (type === 'return') action = 'Returned';
+            else if (type === 'add') action = 'Item Added';
+            else if (type === 'approve') action = 'Hardware Approved';
+            else if (type === 'reject') action = 'Hardware Rejected';
+            else if (type === 'request') action = 'Hardware Requested';
+            else if (type === 'low_stock') action = 'Stock Alert';
+
+            const plainText = text.replace(/<[^>]*>?/gm, '');
+            fetch(`${API_BASE}/audit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    action,
+                    description: plainText,
+                    itemId: itemId || null
+                })
+            }).catch(() => {});
+        }
     }
 }
 
@@ -2813,8 +2840,11 @@ class ModalManager {
         };
 
         const renderSystemSection = (container: HTMLElement) => {
-            if (visibleLogs.length === 0) {
-                container.appendChild(ModalManager.createEmptyNotifCard('terminal', 'No Activity Recorded', 'System and transaction audit trail will populate as actions occur.'));
+            const hasBackendLogs = typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.auditLogs) && AdminManager.auditLogs.length > 0;
+            const logSource = hasBackendLogs ? AdminManager.auditLogs : visibleLogs;
+
+            if (logSource.length === 0) {
+                container.appendChild(ModalManager.createEmptyNotifCard('terminal', 'No 7-Day Activity Recorded', 'Centralized 7-day audit records will stream here as events occur.'));
                 return;
             }
 
@@ -2823,44 +2853,94 @@ class ModalManager {
             secHeader.innerHTML = `
                 <div class="sec-header-left">
                     <i data-lucide="terminal"></i>
-                    <span>SYSTEM AUDIT & LOGS</span>
+                    <span>7-DAY SYSTEM TELEMETRY & AUDIT LEDGER</span>
                 </div>
-                <span class="sec-header-badge badge-purple">${visibleLogs.length} LOGS</span>
+                <span class="sec-header-badge badge-purple">${logSource.length} EVENTS</span>
             `;
             container.appendChild(secHeader);
 
-            // Show latest logs first
-            const sortedLogs = [...visibleLogs].reverse().slice(0, currentCategory === 'system' ? 50 : 15);
-            sortedLogs.forEach(log => {
-                const el = document.createElement('div');
-                el.className = `log-item log-action-${log.type}`;
+            if (hasBackendLogs) {
+                const sortedLogs = AdminManager.auditLogs.slice(0, 40);
+                sortedLogs.forEach(log => {
+                    const el = document.createElement('div');
+                    const act = log.action || 'Event';
+                    let badgeClass = 'action-cyan';
+                    let iconName = 'activity';
 
-                let icon = 'info';
-                let label = log.type.toUpperCase();
+                    if (['Item Added', 'Hardware Approved', 'User Approved', 'Returned', 'Item Returned'].includes(act)) {
+                        badgeClass = 'action-green';
+                        iconName = 'check-circle';
+                    } else if (['Item Deleted', 'Hardware Rejected', 'User Rejected', 'User Deleted'].includes(act)) {
+                        badgeClass = 'action-red';
+                        iconName = 'alert-octagon';
+                    } else if (['Sign In', 'Sign Up', 'Role Changed', 'Password Reset'].includes(act)) {
+                        badgeClass = 'action-purple';
+                        iconName = act === 'Sign In' ? 'log-in' : 'user-plus';
+                    } else if (['Borrowed', 'Item Borrowed', 'Hardware Requested'].includes(act)) {
+                        badgeClass = 'action-yellow';
+                        iconName = 'package';
+                    }
 
-                if (log.type === 'borrow') { icon = 'shopping-cart'; label = 'BORROW'; }
-                else if (log.type === 'return') { icon = 'corner-up-left'; label = 'RETURNED'; }
-                else if (log.type === 'overdue') { icon = 'clock-alert'; label = 'OVERDUE'; }
-                else if (log.type === 'low_stock') { icon = 'alert-circle'; label = 'LOW STOCK'; }
-                else if (log.type === 'add') { icon = 'plus'; label = 'NEW COMPONENT'; }
-                else if (log.type === 'system') { icon = 'terminal'; label = 'SYSTEM'; }
-                else if (log.type === 'request') { icon = 'send'; label = 'REQUEST'; }
-                else if (log.type === 'approve') { icon = 'check'; label = 'APPROVED'; }
-                else if (log.type === 'reject') { icon = 'x'; label = 'REJECTED'; }
+                    const rawTime = log.timestamp || log.created_at || new Date().toISOString();
+                    const dt = DashboardManager.formatLogDateTime(rawTime);
+                    const timeAgo = AdminManager.formatTimeAgo(rawTime);
+                    const actorName = log.users?.name || (log.user_id ? 'Member' : 'System');
 
-                const dt = DashboardManager.formatLogDateTime(log.timestamp);
-                el.innerHTML = `
-                    <div class="log-meta">
-                        <span class="log-type-tag"><i data-lucide="${icon}"></i> ${label}</span>
-                        <div class="log-timestamp-stack">
-                            <span class="log-date-line">${dt.dateStr}</span>
-                            ${dt.timeStr ? `<span class="log-time-line">${dt.timeStr}</span>` : ''}
+                    el.className = 'notif-card card-loan';
+                    el.style.cursor = 'pointer';
+                    el.onclick = () => {
+                        if (typeof AdminManager.openAuditDetail === 'function') {
+                            AdminManager.openAuditDetail(log.id);
+                        }
+                    };
+                    el.innerHTML = `
+                        <div class="notif-card-header">
+                            <div class="notif-card-tag ${badgeClass === 'action-green' ? 'tag-green' : badgeClass === 'action-red' ? 'tag-red' : badgeClass === 'action-purple' ? 'tag-purple' : 'tag-cyan'}">
+                                <i data-lucide="${iconName}"></i>
+                                <span>${act.toUpperCase()}</span>
+                            </div>
+                            <span class="notif-card-due text-cyan">${timeAgo}</span>
                         </div>
-                    </div>
-                    <div class="log-text-content">${log.text}</div>
-                `;
-                container.appendChild(el);
-            });
+                        <div class="notif-card-body">
+                            <p class="notif-card-main-text">${AdminManager.escapeHtml(log.description || act)}</p>
+                            <p class="notif-card-sub-text">Actor: <strong>${actorName}</strong> &bull; ${dt.dateStr} ${dt.timeStr}</p>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+            } else {
+                // Fallback to local logs
+                const sortedLogs = [...visibleLogs].reverse().slice(0, 30);
+                sortedLogs.forEach(log => {
+                    const el = document.createElement('div');
+                    el.className = `log-item log-action-${log.type}`;
+                    let icon = 'info';
+                    let label = log.type.toUpperCase();
+
+                    if (log.type === 'borrow') { icon = 'shopping-cart'; label = 'BORROW'; }
+                    else if (log.type === 'return') { icon = 'corner-up-left'; label = 'RETURNED'; }
+                    else if (log.type === 'overdue') { icon = 'clock-alert'; label = 'OVERDUE'; }
+                    else if (log.type === 'low_stock') { icon = 'alert-circle'; label = 'LOW STOCK'; }
+                    else if (log.type === 'add') { icon = 'plus'; label = 'NEW COMPONENT'; }
+                    else if (log.type === 'system') { icon = 'terminal'; label = 'SYSTEM'; }
+                    else if (log.type === 'request') { icon = 'send'; label = 'REQUEST'; }
+                    else if (log.type === 'approve') { icon = 'check'; label = 'APPROVED'; }
+                    else if (log.type === 'reject') { icon = 'x'; label = 'REJECTED'; }
+
+                    const dt = DashboardManager.formatLogDateTime(log.timestamp);
+                    el.innerHTML = `
+                        <div class="log-meta">
+                            <span class="log-type-tag"><i data-lucide="${icon}"></i> ${label}</span>
+                            <div class="log-timestamp-stack">
+                                <span class="log-date-line">${dt.dateStr}</span>
+                                ${dt.timeStr ? `<span class="log-time-line">${dt.timeStr}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="log-text-content">${log.text}</div>
+                    `;
+                    container.appendChild(el);
+                });
+            }
         };
 
         if (currentCategory === 'return') {
@@ -4118,7 +4198,7 @@ interface AdminHardwareRequest {
 class AdminManager {
     public static users: AdminUserRecord[] = [];
     public static hardwareRequests: AdminHardwareRequest[] = [];
-    private static auditLogs: any[] = [];
+    public static auditLogs: any[] = [];
     private static activeAuditCategory = 'all';
     private static auditSearchTerm = '';
     private static activeUserRoleFilter = 'all';
@@ -4188,7 +4268,7 @@ class AdminManager {
                 auditRefreshBtn.setAttribute('disabled', 'true');
                 try {
                     await this.loadAuditLogs();
-                    ToastManager.show('Audit Refreshed', 'System audit logs updated.', 'info');
+                    ToastManager.show('Audit Refreshed', '7-Day system audit logs updated.', 'info');
                 } finally {
                     if (icon) icon.classList.remove('animate-spin');
                     auditRefreshBtn.removeAttribute('disabled');
@@ -4196,10 +4276,36 @@ class AdminManager {
             });
         }
 
+        const auditExportBtn = document.getElementById('admin-audit-export-btn');
+        if (auditExportBtn) {
+            auditExportBtn.addEventListener('click', () => {
+                this.exportAuditLogsCSV();
+            });
+        }
+
+        const auditCleanupBtn = document.getElementById('admin-audit-cleanup-btn');
+        if (auditCleanupBtn) {
+            auditCleanupBtn.addEventListener('click', async () => {
+                await this.triggerAuditRetentionCleanup();
+            });
+        }
+
         const auditSearch = document.getElementById('admin-audit-search') as HTMLInputElement;
+        const auditSearchClear = document.getElementById('admin-audit-search-clear');
         if (auditSearch) {
             auditSearch.addEventListener('input', () => {
                 this.auditSearchTerm = auditSearch.value.trim().toLowerCase();
+                if (auditSearchClear) {
+                    auditSearchClear.style.display = this.auditSearchTerm ? 'inline-flex' : 'none';
+                }
+                this.renderAuditLogs();
+            });
+        }
+        if (auditSearchClear && auditSearch) {
+            auditSearchClear.addEventListener('click', () => {
+                auditSearch.value = '';
+                this.auditSearchTerm = '';
+                auditSearchClear.style.display = 'none';
                 this.renderAuditLogs();
             });
         }
@@ -4214,7 +4320,31 @@ class AdminManager {
             });
         });
 
+        // Wire Audit Detail modal close & copy JSON
+        const closeAuditModal = document.getElementById('close-audit-detail');
+        const auditModal = document.getElementById('audit-detail-modal');
+        if (closeAuditModal && auditModal) {
+            closeAuditModal.addEventListener('click', () => {
+                auditModal.classList.remove('active');
+            });
+            auditModal.addEventListener('click', (e) => {
+                if (e.target === auditModal) auditModal.classList.remove('active');
+            });
+        }
+        const copyJsonBtn = document.getElementById('audit-copy-json-btn');
+        if (copyJsonBtn) {
+            copyJsonBtn.addEventListener('click', () => {
+                const pre = document.getElementById('audit-modal-json');
+                if (pre && pre.innerText) {
+                    navigator.clipboard.writeText(pre.innerText).then(() => {
+                        ToastManager.show('Copied', 'Raw telemetry event JSON copied to clipboard.', 'success');
+                    }).catch(() => {});
+                }
+            });
+        }
+
         // Attach window methods for onclick handlers
+        window.openAuditDetail = (id: string) => this.openAuditDetail(id);
         window.adminApprove = (id: string) => this.approveUser(id);
         window.adminReject = (id: string) => this.rejectUser(id);
         window.adminSetRole = (id: string, role: 'ADMIN' | 'MEMBER') => this.setRole(id, role);
@@ -5194,23 +5324,98 @@ class AdminManager {
         lucide.createIcons();
     }
 
+    static activeAuditDay: string = 'all';
+    static auditTelemetry: any = null;
+
     static async loadAuditLogs() {
         const token = localStorage.getItem('cicr_token');
         if (!token) return;
 
         try {
-            const url = `${API_BASE}/audit?limit=100&category=${this.activeAuditCategory}`;
+            let url = `${API_BASE}/audit?days=7&limit=500&category=${this.activeAuditCategory}`;
+            if (this.activeAuditDay && this.activeAuditDay !== 'all') {
+                url += `&day=${this.activeAuditDay}`;
+            }
+
             const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const json = await res.json();
                 this.auditLogs = json.data || [];
+                this.auditTelemetry = json;
+
+                this.updateAuditCategoryPills(json.categoryCounts);
+                this.renderAuditSpectrum(json.dailyCounts);
                 this.renderAuditLogs();
+
+                // Synchronize notifications drawer system tab if currently active
+                if (ModalManager.activeNotifTab === 'system') {
+                    ModalManager.renderLogsDrawer();
+                }
             }
         } catch (err) {
-            console.warn('[ADMIN] Failed to load audit logs:', err);
+            console.warn('[ADMIN] Failed to load 7-day audit logs:', err);
         }
+    }
+
+    static updateAuditCategoryPills(counts?: any) {
+        if (!counts) return;
+        const setCnt = (id: string, val: number) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = String(val || 0);
+        };
+        setCnt('cat-cnt-all', counts.all || 0);
+        setCnt('cat-cnt-auth', counts.auth || 0);
+        setCnt('cat-cnt-inventory', counts.inventory || 0);
+        setCnt('cat-cnt-hardware', counts.hardware || 0);
+        setCnt('cat-cnt-loans', counts.loans || 0);
+        setCnt('cat-cnt-system', counts.system || 0);
+    }
+
+    static renderAuditSpectrum(dailyCounts?: Array<{ date: string; dayName: string; count: number; percentage: number }>) {
+        const container = document.getElementById('admin-audit-spectrum');
+        const specTotal = document.getElementById('spec-total-count');
+        if (!container) return;
+
+        const totalCount = this.auditTelemetry?.count || this.auditLogs.length || 0;
+        if (specTotal) specTotal.innerText = `${totalCount} events`;
+
+        const days = dailyCounts && dailyCounts.length > 0 ? dailyCounts : [];
+
+        let html = `
+            <div class="spectrum-day-card ${this.activeAuditDay === 'all' ? 'active' : ''}" data-day="all">
+                <div class="spec-day-name">ALL 7 DAYS</div>
+                <div class="spec-day-sub">Full Window</div>
+                <div class="spec-bar-track"><div class="spec-bar-fill" style="width: 100%;"></div></div>
+                <div class="spec-count">${totalCount} events</div>
+            </div>
+        `;
+
+        days.forEach(d => {
+            const isActive = this.activeAuditDay === d.date;
+            const shortDate = new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            html += `
+                <div class="spectrum-day-card ${isActive ? 'active' : ''}" data-day="${d.date}">
+                    <div class="spec-day-name">${d.dayName.toUpperCase()}</div>
+                    <div class="spec-day-sub">${shortDate}</div>
+                    <div class="spec-bar-track"><div class="spec-bar-fill" style="width: ${Math.max(d.percentage, 6)}%;"></div></div>
+                    <div class="spec-count">${d.count} evt</div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        container.querySelectorAll<HTMLElement>('.spectrum-day-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const day = card.getAttribute('data-day') || 'all';
+                this.activeAuditDay = day;
+                container.querySelectorAll('.spectrum-day-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                this.loadAuditLogs();
+            });
+        });
     }
 
     static renderAuditLogs() {
@@ -5225,7 +5430,8 @@ class AdminManager {
                 (l.action && l.action.toLowerCase().includes(this.auditSearchTerm)) ||
                 (l.description && l.description.toLowerCase().includes(this.auditSearchTerm)) ||
                 (l.users?.name && l.users.name.toLowerCase().includes(this.auditSearchTerm)) ||
-                (l.users?.email && l.users.email.toLowerCase().includes(this.auditSearchTerm))
+                (l.users?.email && l.users.email.toLowerCase().includes(this.auditSearchTerm)) ||
+                (l.inventory?.name && l.inventory.name.toLowerCase().includes(this.auditSearchTerm))
             );
         }
 
@@ -5236,7 +5442,7 @@ class AdminManager {
             container.innerHTML = `
                 <div class="admin-empty-state">
                     <i data-lucide="check-circle-2"></i>
-                    <p>No audit log events found matching the criteria.</p>
+                    <p>No audit log events found matching the criteria in the 7-day retention window.</p>
                 </div>
             `;
             lucide.createIcons();
@@ -5247,22 +5453,28 @@ class AdminManager {
             const action = log.action || 'System Event';
             let badgeClass = 'action-cyan';
             let iconName = 'activity';
+            let cardCat = 'cat-system';
 
-            if (['Item Added', 'Hardware Approved', 'User Approved', 'Returned', 'Item Returned'].includes(action)) {
+            if (['Item Added', 'Hardware Approved', 'User Approved', 'Returned', 'Item Returned', 'Approved Return'].includes(action)) {
                 badgeClass = 'action-green';
                 iconName = 'check-circle';
+                cardCat = 'cat-inventory';
             } else if (['Item Deleted', 'Hardware Rejected', 'User Rejected', 'User Deleted'].includes(action)) {
                 badgeClass = 'action-red';
                 iconName = 'alert-octagon';
-            } else if (['Sign In', 'Sign Up', 'Role Changed'].includes(action)) {
+                cardCat = 'cat-danger';
+            } else if (['Sign In', 'Sign Up', 'Role Changed', 'Password Reset'].includes(action)) {
                 badgeClass = 'action-purple';
-                iconName = action === 'Sign In' ? 'log-in' : 'user-plus';
+                iconName = action === 'Sign In' ? 'log-in' : action === 'Password Reset' ? 'key' : 'user-plus';
+                cardCat = 'cat-auth';
             } else if (['Borrowed', 'Item Borrowed', 'Hardware Requested'].includes(action)) {
                 badgeClass = 'action-yellow';
                 iconName = 'package';
-            } else if (['Hardware Approved', 'Item Edited'].includes(action)) {
+                cardCat = 'cat-loans';
+            } else if (['Item Edited', 'Stock Alert'].includes(action)) {
                 badgeClass = 'action-cyan';
                 iconName = 'cpu';
+                cardCat = 'cat-inventory';
             }
 
             const rawTime = log.timestamp || log.created_at || new Date().toISOString();
@@ -5273,7 +5485,7 @@ class AdminManager {
             const actorEmail = log.users?.email || '';
 
             return `
-                <div class="audit-log-card">
+                <div class="audit-log-card ${cardCat}" onclick="window.openAuditDetail('${log.id}')" title="Click to view raw event telemetry metadata">
                     <div class="audit-left-col">
                         <span class="audit-action-badge ${badgeClass}">
                             <i data-lucide="${iconName}" style="width: 11px; height: 11px;"></i>
@@ -5296,6 +5508,87 @@ class AdminManager {
         }).join('');
 
         lucide.createIcons();
+    }
+
+    static openAuditDetail(logId: string) {
+        const log = this.auditLogs.find(l => l.id === logId);
+        if (!log) return;
+
+        const modal = document.getElementById('audit-detail-modal');
+        if (!modal) return;
+
+        const badgeEl = document.getElementById('audit-modal-badge');
+        const timeEl = document.getElementById('audit-modal-time');
+        const actorEl = document.getElementById('audit-modal-actor');
+        const emailEl = document.getElementById('audit-modal-email');
+        const itemEl = document.getElementById('audit-modal-item');
+        const isoEl = document.getElementById('audit-modal-iso');
+        const descEl = document.getElementById('audit-modal-desc');
+        const jsonEl = document.getElementById('audit-modal-json');
+
+        const rawTime = log.timestamp || log.created_at || new Date().toISOString();
+        const dt = DashboardManager.formatLogDateTime(rawTime);
+        const timeAgo = this.formatTimeAgo(rawTime);
+
+        if (badgeEl) badgeEl.innerText = log.action || 'SYSTEM EVENT';
+        if (timeEl) timeEl.innerText = `${dt.dateStr} ${dt.timeStr} (${timeAgo})`;
+        if (actorEl) actorEl.innerText = log.users?.name || (log.user_id ? 'Authenticated Member' : 'System Engine');
+        if (emailEl) emailEl.innerText = log.users?.email || '—';
+        if (itemEl) itemEl.innerText = log.inventory?.name || (log.item_id || '—');
+        if (isoEl) isoEl.innerText = rawTime;
+        if (descEl) descEl.innerText = log.description || 'No detailed description available.';
+        if (jsonEl) jsonEl.innerText = JSON.stringify(log, null, 2);
+
+        modal.classList.add('active');
+        lucide.createIcons();
+    }
+
+    static exportAuditLogsCSV() {
+        if (!this.auditLogs || this.auditLogs.length === 0) {
+            ToastManager.show('Export Empty', 'No audit logs available to export.', 'warning');
+            return;
+        }
+
+        const headers = ['Timestamp', 'Action', 'Actor Name', 'Actor Email', 'Target Item', 'Description'];
+        const rows = this.auditLogs.map(l => [
+            `"${l.timestamp || ''}"`,
+            `"${(l.action || '').replace(/"/g, '""')}"`,
+            `"${(l.users?.name || '').replace(/"/g, '""')}"`,
+            `"${(l.users?.email || '').replace(/"/g, '""')}"`,
+            `"${(l.inventory?.name || '').replace(/"/g, '""')}"`,
+            `"${(l.description || '').replace(/"/g, '""')}"`
+        ]);
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `cicr_audit_ledger_7days_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        ToastManager.show('Report Exported', `Downloaded 7-day audit ledger (${this.auditLogs.length} events).`, 'success');
+    }
+
+    static async triggerAuditRetentionCleanup() {
+        const token = localStorage.getItem('cicr_token');
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/audit/cleanup`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            if (res.ok) {
+                ToastManager.show('Retention Enforced', '7-Day backend retention sync complete. Expired records pruned.', 'success');
+                await this.loadAuditLogs();
+            } else {
+                ToastManager.show('Cleanup Failed', json.message || 'Could not enforce retention.', 'error');
+            }
+        } catch (err: any) {
+            ToastManager.show('Network Error', 'Failed to reach retention cleanup endpoint.', 'error');
+        }
     }
 
     static formatTimeAgo(dateStr: string): string {
@@ -5565,6 +5858,7 @@ declare global {
         adminDeleteItem?: (id: string, name: string) => void;
         adminApproveHardware?: (id: string) => void;
         adminRejectHardware?: (id: string) => void;
+        openAuditDetail?: (id: string) => void;
         openPasswordResetModal?: () => void;
     }
 }

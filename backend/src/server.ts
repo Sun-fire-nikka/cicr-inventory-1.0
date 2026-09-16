@@ -12,6 +12,7 @@ import { isNeonConfigured, neonConfig } from './config/neonPool';
 import { isSupabaseConfigured } from './config/supabasePool';
 import { startKeepAlive, stopKeepAlive } from './services/keepAliveService';
 import { startReplicationScheduler, stopReplicationScheduler } from './config/replication';
+import { startAuditRetentionScheduler, stopAuditRetentionScheduler } from './services/auditCleanupService';
 import systemRoutes from './routes/system.routes';
 
 const PORT = process.env.PORT || 5000;
@@ -67,6 +68,7 @@ startHealthMonitor();
 startKeepAlive();
 startReplicationScheduler();
 startDbHealthSync();
+startAuditRetentionScheduler();
 
 import { syncApprovalsFromDatabase } from './modules/auth/userApprovalService';
 
@@ -94,6 +96,7 @@ function gracefulShutdown(signal: string) {
   stopKeepAlive();
   stopReplicationScheduler();
   stopDbHealthSync();
+  stopAuditRetentionScheduler();
   server.close(async () => {
     await closeNeonPools();
     console.log('🛑 Server stopped.');

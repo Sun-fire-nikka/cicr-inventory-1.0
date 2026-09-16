@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { dbRead } from '../../config/database';
 import { cacheGetJSON, cacheSetJSON } from '../../config/redis';
+import { AuthRequest } from '../../middleware/auth.middleware';
+import { logAuditEvent } from '../../services/auditService';
+import { cleanupExpiredAuditLogs, RETENTION_DAYS } from '../../services/auditCleanupService';
 
 const STATS_CACHE_KEY = 'cicr:cache:stats';
 const STATS_CACHE_TTL = 15; // seconds
@@ -50,28 +53,43 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/audit (Audit Logs List)
-export const getAuditLogs = async (req: Request, res: Response) => {
+// GET /api/audit (Audit Logs List & 7-Day Telemetry Hub)
+export const getAuditLogs = async (req: AuthRequest, res: Response) => {
   try {
-    const { category, search, limit } = req.query;
-    const maxLimit = Math.min(Math.max(Number(limit) || 100, 1), 250);
+    const { category, search, limit, days, day } = req.query;
+    const requestedDays = Math.min(Math.max(Number(days) || RETENTION_DAYS, 1), 7);
+    const maxLimit = Math.min(Math.max(Number(limit) || 500, 1), 1000);
 
+    const cutoffTime = Date.now() - requestedDays * 24 * 60 * 60 * 1000;
+    const cutoffDate = new Date(cutoffTime).toISOString();
+
+    // 1. Base query: always bounded by 7-day retention window
     let query = dbRead
       .from('audit_logs')
       .select('*, users(name, email, role), inventory(name, category)')
+      .gte('timestamp', cutoffDate)
       .order('timestamp', { ascending: false })
       .limit(maxLimit);
+
+    // Filter by specific day if requested (YYYY-MM-DD)
+    if (day && typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day.trim())) {
+      const targetDay = day.trim();
+      const nextDay = new Date(new Date(targetDay).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      query = query.gte('timestamp', `${targetDay}T00:00:00.000Z`).lt('timestamp', `${nextDay}T00:00:00.000Z`);
+    }
 
     if (category && typeof category === 'string' && category !== 'all') {
       const cat = category.toLowerCase();
       if (cat === 'auth') {
-        query = query.in('action', ['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted']);
+        query = query.in('action', ['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted', 'Password Reset']);
       } else if (cat === 'inventory') {
-        query = query.in('action', ['Item Added', 'Item Edited', 'Item Deleted']);
+        query = query.in('action', ['Item Added', 'Item Edited', 'Item Deleted', 'Stock Alert', 'Low Stock']);
       } else if (cat === 'hardware') {
-        query = query.in('action', ['Hardware Requested', 'Hardware Approved', 'Hardware Rejected']);
+        query = query.in('action', ['Hardware Requested', 'Hardware Approved', 'Hardware Rejected', 'Hardware Cancelled']);
       } else if (cat === 'loans') {
-        query = query.in('action', ['Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned']);
+        query = query.in('action', ['Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned', 'Approved Return', 'Return Requested']);
+      } else if (cat === 'system') {
+        query = query.in('action', ['System Event', 'System Alert', 'Auto-Sync', 'Database Purge', 'Retention Prune', 'Maintenance']);
       }
     }
 
@@ -84,7 +102,122 @@ export const getAuditLogs = async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    return res.status(200).json({ status: 'success', count: logs?.length || 0, data: logs || [] });
+    const allLogs = logs || [];
+
+    // 2. Compute 7-day daily activity spectrum (Today back 6 days)
+    const dailyMap: Record<string, number> = {};
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dailyCounts: Array<{ date: string; dayName: string; count: number; percentage: number }> = [];
+
+    for (let i = requestedDays - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const ymd = d.toISOString().split('T')[0];
+      dailyMap[ymd] = 0;
+      const isToday = i === 0;
+      const isYesterday = i === 1;
+      const label = isToday ? 'Today' : isYesterday ? 'Yesterday' : dayNames[d.getDay()];
+      dailyCounts.push({ date: ymd, dayName: label, count: 0, percentage: 0 });
+    }
+
+    // 3. Compute Category Distribution
+    const categoryCounts = {
+      all: allLogs.length,
+      auth: 0,
+      inventory: 0,
+      hardware: 0,
+      loans: 0,
+      system: 0
+    };
+
+    allLogs.forEach((l: any) => {
+      // Daily count
+      const logDate = (l.timestamp ? new Date(l.timestamp).toISOString() : '').split('T')[0];
+      if (dailyMap[logDate] !== undefined) {
+        dailyMap[logDate]++;
+      }
+
+      // Category count
+      const act = l.action || '';
+      if (['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted', 'Password Reset'].includes(act)) {
+        categoryCounts.auth++;
+      } else if (['Item Added', 'Item Edited', 'Item Deleted', 'Stock Alert', 'Low Stock'].includes(act)) {
+        categoryCounts.inventory++;
+      } else if (['Hardware Requested', 'Hardware Approved', 'Hardware Rejected', 'Hardware Cancelled'].includes(act)) {
+        categoryCounts.hardware++;
+      } else if (['Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned', 'Approved Return', 'Return Requested'].includes(act)) {
+        categoryCounts.loans++;
+      } else {
+        categoryCounts.system++;
+      }
+    });
+
+    // Populate daily counts with percentages
+    let maxDayCount = 1;
+    dailyCounts.forEach(dc => {
+      dc.count = dailyMap[dc.date] || 0;
+      if (dc.count > maxDayCount) maxDayCount = dc.count;
+    });
+    dailyCounts.forEach(dc => {
+      dc.percentage = Math.round((dc.count / maxDayCount) * 100);
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      count: allLogs.length,
+      retentionDays: requestedDays,
+      windowStart: cutoffDate,
+      dailyCounts,
+      categoryCounts,
+      data: allLogs
+    });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// POST /api/audit (Client & System Audit Event Ingestion)
+export const createAuditEvent = async (req: AuthRequest, res: Response) => {
+  try {
+    const { action, description, itemId, metadata, severity } = req.body;
+
+    if (!action || typeof action !== 'string') {
+      return res.status(400).json({ status: 'error', message: 'Action name is required.' });
+    }
+
+    const userId = req.user?.id || null;
+    const cleanDesc = (description && typeof description === 'string')
+      ? description.trim()
+      : `Action: ${action} recorded by ${req.user?.name || 'System'}`;
+
+    await logAuditEvent({
+      action: action.trim(),
+      userId,
+      itemId: itemId || null,
+      description: cleanDesc,
+      metadata: metadata || null,
+      severity: severity || 'info'
+    });
+
+    return res.status(201).json({ status: 'success', message: 'Audit event persisted to 7-day backend ledger.' });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// POST /api/audit/cleanup (Admin-Triggered 7-Day Retention Purge)
+export const triggerAuditCleanup = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await cleanupExpiredAuditLogs();
+    if (!result.success) {
+      return res.status(500).json({ status: 'error', message: result.error || 'Failed to prune expired audit records.' });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: '7-Day audit log retention policy successfully enforced.',
+      cutoffDate: result.cutoffDate
+    });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
   }

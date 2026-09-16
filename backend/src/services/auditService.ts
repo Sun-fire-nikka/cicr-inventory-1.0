@@ -5,6 +5,8 @@ export interface AuditEventPayload {
   userId?: string | null;
   itemId?: string | null;
   description: string;
+  metadata?: Record<string, unknown> | null;
+  severity?: 'info' | 'success' | 'warning' | 'danger';
 }
 
 /**
@@ -23,7 +25,7 @@ export const logAuditEvent = async ({
         action,
         user_id: userId || null,
         item_id: itemId || null,
-        description,
+        description: description || 'System Event',
         timestamp: new Date().toISOString()
       }
     ]);

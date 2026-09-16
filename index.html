@@ -805,38 +805,80 @@
                             </div>
                         </div>
 
-                        <!-- System Audit & Activity Logs Section -->
-                        <div class="admin-block-card glass" id="admin-audit-section">
-                            <div class="admin-block-header admin-audit-header-wrap">
-                                <div class="admin-block-title-wrap">
-                                    <i data-lucide="activity" class="text-cyan"></i>
-                                    <h3>System Audit & Activity Logs</h3>
-                                    <span class="admin-badge-count count-cyan" id="admin-audit-count-tag">0
-                                        EVENTS</span>
+                        <!-- 7-Day System Audit & Activity Logs Section -->
+                        <div class="admin-block-card glass admin-audit-block-card" id="admin-audit-section">
+                            <div class="admin-audit-top-hud">
+                                <div class="admin-audit-hud-left">
+                                    <div class="audit-hud-icon-box">
+                                        <i data-lucide="terminal" class="text-cyan"></i>
+                                        <span class="audit-radar-beacon"></span>
+                                    </div>
+                                    <div class="audit-hud-title-col">
+                                        <div class="audit-hud-title-row">
+                                            <h3>7-Day System Audit & Telemetry Ledger</h3>
+                                            <span class="audit-live-beacon-tag">
+                                                <span class="pulse-beacon-dot"></span>
+                                                LIVE 7D LEDGER
+                                            </span>
+                                        </div>
+                                        <p class="audit-hud-subtitle">Comprehensive operational audit stream stored in backend for 7 days with automated retention & live sync.</p>
+                                    </div>
                                 </div>
-                                <div class="admin-audit-controls">
-                                    <div class="admin-audit-filter-pills" id="admin-audit-pills">
-                                        <button class="audit-pill active" data-audit-cat="all">ALL</button>
-                                        <button class="audit-pill" data-audit-cat="auth">AUTH</button>
-                                        <button class="audit-pill" data-audit-cat="inventory">INVENTORY</button>
-                                        <button class="audit-pill" data-audit-cat="hardware">HARDWARE</button>
-                                        <button class="audit-pill" data-audit-cat="loans">LOANS</button>
+                                <div class="admin-audit-hud-right">
+                                    <div class="audit-stat-pill">
+                                        <span class="audit-stat-pill-num" id="admin-audit-count-tag">0</span>
+                                        <span class="audit-stat-pill-lbl">7D EVENTS</span>
                                     </div>
-                                    <div class="admin-search-wrapper admin-audit-search-wrap">
-                                        <i data-lucide="search"></i>
-                                        <input type="text" id="admin-audit-search" placeholder="Search audit logs...">
-                                    </div>
-                                    <button class="btn btn-secondary btn-sm admin-btn-action"
-                                        id="admin-audit-refresh-btn" title="Refresh Audit Logs">
+                                    <button class="btn btn-secondary btn-sm admin-btn-action" id="admin-audit-export-btn" title="Export 7-Day Audit Log to CSV">
+                                        <i data-lucide="download"></i> Export CSV
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm admin-btn-action" id="admin-audit-cleanup-btn" title="Enforce 7-Day Backend Retention Purge">
+                                        <i data-lucide="shield-alert"></i> Retention Sync
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm admin-btn-action" id="admin-audit-refresh-btn" title="Refresh 7-Day Audit Logs">
                                         <i data-lucide="refresh-cw"></i> Refresh
                                     </button>
                                 </div>
                             </div>
 
+                            <!-- Interactive 7-Day Activity Spectrum Bar -->
+                            <div class="admin-audit-spectrum-wrap">
+                                <div class="spectrum-header-row">
+                                    <span class="spectrum-title"><i data-lucide="bar-chart-2"></i> 7-DAY ACTIVITY SPECTRUM</span>
+                                    <span class="spectrum-hint">Click any day to isolate logs</span>
+                                </div>
+                                <div class="admin-audit-spectrum-bar" id="admin-audit-spectrum">
+                                    <!-- Dynamic 7 day cards injected by AdminManager -->
+                                    <div class="spectrum-day-card active" data-day="all">
+                                        <div class="spec-day-name">ALL 7 DAYS</div>
+                                        <div class="spec-bar-track"><div class="spec-bar-fill" style="width: 100%;"></div></div>
+                                        <div class="spec-count" id="spec-total-count">0 events</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filter & Search Toolbar -->
+                            <div class="admin-audit-toolbar">
+                                <div class="admin-audit-filter-pills" id="admin-audit-pills">
+                                    <button class="audit-pill active" data-audit-cat="all">ALL <span class="pill-cnt" id="cat-cnt-all">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="auth">AUTH & SECURITY <span class="pill-cnt" id="cat-cnt-auth">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="inventory">INVENTORY <span class="pill-cnt" id="cat-cnt-inventory">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="hardware">HARDWARE <span class="pill-cnt" id="cat-cnt-hardware">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="loans">LOANS & RETURNS <span class="pill-cnt" id="cat-cnt-loans">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="system">SYSTEM <span class="pill-cnt" id="cat-cnt-system">0</span></button>
+                                </div>
+                                <div class="admin-search-wrapper admin-audit-search-wrap">
+                                    <i data-lucide="search"></i>
+                                    <input type="text" id="admin-audit-search" placeholder="Search by action, description, actor, or item...">
+                                    <button class="audit-search-clear" id="admin-audit-search-clear" style="display:none;" title="Clear search"><i data-lucide="x"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- 7-Day Audit Log Stream -->
                             <div class="admin-audit-stream-container" id="admin-audit-stream">
                                 <div class="admin-empty-state">
                                     <i data-lucide="shield"></i>
-                                    <p>Loading real-time audit ledger...</p>
+                                    <p>Loading real-time 7-day audit ledger from backend...</p>
                                 </div>
                             </div>
                         </div>
@@ -852,6 +894,56 @@
 
 
 
+
+    <!-- Audit Log Telemetry Detail Modal -->
+    <div class="modal-overlay" id="audit-detail-modal">
+        <div class="modal-content glass audit-detail-content">
+            <button class="close-modal" id="close-audit-detail"><i data-lucide="x"></i></button>
+            <div class="modal-header audit-detail-header">
+                <div class="audit-detail-icon-wrap" id="audit-modal-icon-box">
+                    <i data-lucide="activity"></i>
+                </div>
+                <div>
+                    <div class="audit-modal-badge-row">
+                        <span class="audit-action-badge action-cyan" id="audit-modal-badge">EVENT</span>
+                        <span class="audit-modal-time" id="audit-modal-time">TIME</span>
+                    </div>
+                    <h2 id="audit-modal-title">Event Telemetry</h2>
+                </div>
+            </div>
+            <div class="modal-body audit-modal-body">
+                <div class="audit-meta-grid">
+                    <div class="audit-meta-item">
+                        <span class="audit-meta-lbl">Actor</span>
+                        <span class="audit-meta-val" id="audit-modal-actor">System</span>
+                    </div>
+                    <div class="audit-meta-item">
+                        <span class="audit-meta-lbl">Actor Email</span>
+                        <span class="audit-meta-val" id="audit-modal-email">—</span>
+                    </div>
+                    <div class="audit-meta-item">
+                        <span class="audit-meta-lbl">Target Component</span>
+                        <span class="audit-meta-val" id="audit-modal-item">—</span>
+                    </div>
+                    <div class="audit-meta-item">
+                        <span class="audit-meta-lbl">Timestamp (ISO)</span>
+                        <span class="audit-meta-val" id="audit-modal-iso">—</span>
+                    </div>
+                </div>
+                <div class="audit-desc-box">
+                    <span class="audit-meta-lbl">Action Summary</span>
+                    <p id="audit-modal-desc">—</p>
+                </div>
+                <div class="audit-json-box">
+                    <div class="audit-json-header">
+                        <span><i data-lucide="code"></i> RAW TELEMETRY PAYLOAD</span>
+                        <button class="btn btn-secondary btn-xs" id="audit-copy-json-btn"><i data-lucide="copy"></i> Copy JSON</button>
+                    </div>
+                    <pre class="audit-json-pre" id="audit-modal-json">{}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Item Detail Modal -->
     <div class="modal-overlay" id="detail-modal">
