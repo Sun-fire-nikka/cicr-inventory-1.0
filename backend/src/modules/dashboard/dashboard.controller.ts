@@ -58,12 +58,82 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
   try {
     const { category, search, limit, days, day } = req.query;
     const requestedDays = Math.min(Math.max(Number(days) || RETENTION_DAYS, 1), 7);
-    const maxLimit = Math.min(Math.max(Number(limit) || 500, 1), 1000);
+    const maxLimit = Math.min(Math.max(Number(limit) || 2500, 1), 5000);
 
     const cutoffTime = Date.now() - requestedDays * 24 * 60 * 60 * 1000;
     const cutoffDate = new Date(cutoffTime).toISOString();
 
-    // 1. Base query: always bounded by 7-day retention window
+    // 1. Fetch raw 7-day logs to calculate true activity spectrum & category counts
+    const { data: raw7DayLogs, error: rawError } = await dbRead
+      .from('audit_logs')
+      .select('id, action, timestamp')
+      .gte('timestamp', cutoffDate)
+      .order('timestamp', { ascending: false })
+      .limit(5000);
+
+    if (rawError) throw rawError;
+
+    const base7DayLogs = raw7DayLogs || [];
+
+    // 2. Compute 7-day daily activity spectrum (Today back 6 days)
+    const dailyMap: Record<string, number> = {};
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dailyCounts: Array<{ date: string; dayName: string; count: number; percentage: number }> = [];
+
+    for (let i = requestedDays - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const ymd = d.toISOString().split('T')[0];
+      dailyMap[ymd] = 0;
+      const isToday = i === 0;
+      const isYesterday = i === 1;
+      const label = isToday ? 'Today' : isYesterday ? 'Yesterday' : dayNames[d.getDay()];
+      dailyCounts.push({ date: ymd, dayName: label, count: 0, percentage: 0 });
+    }
+
+    // 3. Compute Category Distribution across all 7-day logs
+    const categoryCounts = {
+      all: base7DayLogs.length,
+      auth: 0,
+      inventory: 0,
+      hardware: 0,
+      loans: 0,
+      system: 0
+    };
+
+    base7DayLogs.forEach((l: any) => {
+      // Daily count
+      const logDate = (l.timestamp ? new Date(l.timestamp).toISOString() : '').split('T')[0];
+      if (dailyMap[logDate] !== undefined) {
+        dailyMap[logDate]++;
+      }
+
+      // Category count
+      const act = l.action || '';
+      if (['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted', 'Password Reset'].includes(act)) {
+        categoryCounts.auth++;
+      } else if (['Item Added', 'Item Edited', 'Item Deleted', 'Stock Alert', 'Low Stock'].includes(act)) {
+        categoryCounts.inventory++;
+      } else if (['Hardware Requested', 'Hardware Approved', 'Hardware Rejected', 'Hardware Cancelled'].includes(act)) {
+        categoryCounts.hardware++;
+      } else if (['Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned', 'Approved Return', 'Return Requested'].includes(act)) {
+        categoryCounts.loans++;
+      } else {
+        categoryCounts.system++;
+      }
+    });
+
+    // Populate daily counts with percentages
+    let maxDayCount = 1;
+    dailyCounts.forEach(dc => {
+      dc.count = dailyMap[dc.date] || 0;
+      if (dc.count > maxDayCount) maxDayCount = dc.count;
+    });
+    dailyCounts.forEach(dc => {
+      dc.percentage = Math.round((dc.count / maxDayCount) * 100);
+    });
+
+    // 4. Query filtered logs list
     let query = dbRead
       .from('audit_logs')
       .select('*, users(name, email, role), inventory(name, category)')
@@ -103,64 +173,6 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
     if (error) throw error;
 
     const allLogs = logs || [];
-
-    // 2. Compute 7-day daily activity spectrum (Today back 6 days)
-    const dailyMap: Record<string, number> = {};
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const dailyCounts: Array<{ date: string; dayName: string; count: number; percentage: number }> = [];
-
-    for (let i = requestedDays - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const ymd = d.toISOString().split('T')[0];
-      dailyMap[ymd] = 0;
-      const isToday = i === 0;
-      const isYesterday = i === 1;
-      const label = isToday ? 'Today' : isYesterday ? 'Yesterday' : dayNames[d.getDay()];
-      dailyCounts.push({ date: ymd, dayName: label, count: 0, percentage: 0 });
-    }
-
-    // 3. Compute Category Distribution
-    const categoryCounts = {
-      all: allLogs.length,
-      auth: 0,
-      inventory: 0,
-      hardware: 0,
-      loans: 0,
-      system: 0
-    };
-
-    allLogs.forEach((l: any) => {
-      // Daily count
-      const logDate = (l.timestamp ? new Date(l.timestamp).toISOString() : '').split('T')[0];
-      if (dailyMap[logDate] !== undefined) {
-        dailyMap[logDate]++;
-      }
-
-      // Category count
-      const act = l.action || '';
-      if (['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted', 'Password Reset'].includes(act)) {
-        categoryCounts.auth++;
-      } else if (['Item Added', 'Item Edited', 'Item Deleted', 'Stock Alert', 'Low Stock'].includes(act)) {
-        categoryCounts.inventory++;
-      } else if (['Hardware Requested', 'Hardware Approved', 'Hardware Rejected', 'Hardware Cancelled'].includes(act)) {
-        categoryCounts.hardware++;
-      } else if (['Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned', 'Approved Return', 'Return Requested'].includes(act)) {
-        categoryCounts.loans++;
-      } else {
-        categoryCounts.system++;
-      }
-    });
-
-    // Populate daily counts with percentages
-    let maxDayCount = 1;
-    dailyCounts.forEach(dc => {
-      dc.count = dailyMap[dc.date] || 0;
-      if (dc.count > maxDayCount) maxDayCount = dc.count;
-    });
-    dailyCounts.forEach(dc => {
-      dc.percentage = Math.round((dc.count / maxDayCount) * 100);
-    });
 
     return res.status(200).json({
       status: 'success',

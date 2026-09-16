@@ -4276,6 +4276,41 @@ class AdminManager {
             });
         }
 
+        const show7DaysBtn = document.getElementById('admin-audit-show-7days-btn');
+        if (show7DaysBtn) {
+            show7DaysBtn.addEventListener('click', async () => {
+                const icon = show7DaysBtn.querySelector('i');
+                if (icon) icon.classList.add('animate-spin');
+                show7DaysBtn.setAttribute('disabled', 'true');
+                try {
+                    await this.loadAuditLogs(true);
+                    ToastManager.show('7-Day History Loaded', `Displaying complete 7-day activity ledger (${this.auditLogs.length} events).`, 'success');
+                } finally {
+                    if (icon) icon.classList.remove('animate-spin');
+                    show7DaysBtn.removeAttribute('disabled');
+                }
+            });
+        }
+
+        const footerAllBtn = document.getElementById('admin-audit-footer-all-btn');
+        if (footerAllBtn) {
+            footerAllBtn.addEventListener('click', async () => {
+                await this.loadAuditLogs(true);
+                ToastManager.show('7-Day History Loaded', `Displaying all ${this.auditLogs.length} records across 7 days.`, 'success');
+            });
+        }
+
+        const rangePills = document.querySelectorAll('#admin-audit-range-pills .audit-range-pill');
+        rangePills.forEach(pill => {
+            pill.addEventListener('click', async () => {
+                rangePills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                this.activeAuditDaysRange = Number(pill.getAttribute('data-range-days') || '7');
+                this.activeAuditDay = 'all';
+                await this.loadAuditLogs();
+            });
+        });
+
         const auditExportBtn = document.getElementById('admin-audit-export-btn');
         if (auditExportBtn) {
             auditExportBtn.addEventListener('click', () => {
@@ -5325,14 +5360,29 @@ class AdminManager {
     }
 
     static activeAuditDay: string = 'all';
+    static activeAuditDaysRange: number = 7;
     static auditTelemetry: any = null;
 
-    static async loadAuditLogs() {
+    static async loadAuditLogs(resetToFull7Days = false) {
         const token = localStorage.getItem('cicr_token');
         if (!token) return;
 
+        if (resetToFull7Days) {
+            this.activeAuditDay = 'all';
+            this.activeAuditDaysRange = 7;
+            this.activeAuditCategory = 'all';
+
+            // Reset category and range pills in UI
+            document.querySelectorAll('#admin-audit-pills .audit-pill').forEach(p => {
+                p.classList.toggle('active', (p as HTMLElement).dataset.auditCat === 'all');
+            });
+            document.querySelectorAll('#admin-audit-range-pills .audit-range-pill').forEach(p => {
+                p.classList.toggle('active', p.getAttribute('data-range-days') === '7');
+            });
+        }
+
         try {
-            let url = `${API_BASE}/audit?days=7&limit=500&category=${this.activeAuditCategory}`;
+            let url = `${API_BASE}/audit?days=${this.activeAuditDaysRange}&limit=2500&category=${this.activeAuditCategory}`;
             if (this.activeAuditDay && this.activeAuditDay !== 'all') {
                 url += `&day=${this.activeAuditDay}`;
             }

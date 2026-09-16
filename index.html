@@ -829,6 +829,9 @@
                                         <span class="audit-stat-pill-num" id="admin-audit-count-tag">0</span>
                                         <span class="audit-stat-pill-lbl">7D EVENTS</span>
                                     </div>
+                                    <button class="btn btn-primary btn-sm admin-btn-action btn-show-7days" id="admin-audit-show-7days-btn" title="Show complete logs of all 7 days">
+                                        <i data-lucide="calendar-range"></i> Show Last 7 Days Logs
+                                    </button>
                                     <button class="btn btn-secondary btn-sm admin-btn-action" id="admin-audit-export-btn" title="Export 7-Day Audit Log to CSV">
                                         <i data-lucide="download"></i> Export CSV
                                     </button>
@@ -867,6 +870,17 @@
                                     <button class="audit-pill" data-audit-cat="loans">LOANS & RETURNS <span class="pill-cnt" id="cat-cnt-loans">0</span></button>
                                     <button class="audit-pill" data-audit-cat="system">SYSTEM <span class="pill-cnt" id="cat-cnt-system">0</span></button>
                                 </div>
+                                <div class="admin-audit-range-pills" id="admin-audit-range-pills">
+                                    <button class="audit-range-pill active" data-range-days="7" id="range-pill-7d" title="Show complete 7-day activity">
+                                        <i data-lucide="calendar"></i> 7 Days (All)
+                                    </button>
+                                    <button class="audit-range-pill" data-range-days="3" id="range-pill-3d" title="Show last 3 days activity">
+                                        <i data-lucide="clock"></i> Last 3 Days
+                                    </button>
+                                    <button class="audit-range-pill" data-range-days="1" id="range-pill-1d" title="Show today's 24h activity">
+                                        <i data-lucide="zap"></i> Today (24h)
+                                    </button>
+                                </div>
                                 <div class="admin-search-wrapper admin-audit-search-wrap">
                                     <i data-lucide="search"></i>
                                     <input type="text" id="admin-audit-search" placeholder="Search by action, description, actor, or item...">
@@ -880,6 +894,11 @@
                                     <i data-lucide="shield"></i>
                                     <p>Loading real-time 7-day audit ledger from backend...</p>
                                 </div>
+                            </div>
+                            <div class="admin-audit-footer-actions" id="admin-audit-footer-actions">
+                                <button class="btn btn-secondary btn-sm" id="admin-audit-footer-all-btn">
+                                    <i data-lucide="history"></i> Load Full 7-Day History (All Records)
+                                </button>
                             </div>
                         </div>
                     </div>
