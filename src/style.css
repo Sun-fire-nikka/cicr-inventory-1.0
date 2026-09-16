@@ -14281,3 +14281,461 @@ body.theme-light #detail-modal .btn-borrow,
         justify-content: space-between;
     }
 }
+
+/* ==========================================================================
+   Comprehensive Theme Polish & Multi-Modal Visibility Engine
+   ========================================================================== */
+
+/* 1. Header Add Component Button Contrast & Polish */
+body.theme-sakura .btn-add-inventory-cyber,
+[data-theme="sakura"] .btn-add-inventory-cyber {
+    background: linear-gradient(135deg, #ec4899, #be185d) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 800 !important;
+    box-shadow: 0 4px 18px rgba(236, 72, 153, 0.35) !important;
+}
+
+body.theme-sakura .btn-add-inventory-cyber:hover,
+[data-theme="sakura"] .btn-add-inventory-cyber:hover {
+    background: linear-gradient(135deg, #f43f5e, #db2777) !important;
+    box-shadow: 0 6px 24px rgba(236, 72, 153, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+body.theme-light .btn-add-inventory-cyber,
+[data-theme="light"] .btn-add-inventory-cyber {
+    background: linear-gradient(135deg, #2563eb, #0284c7) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 800 !important;
+    box-shadow: 0 4px 18px rgba(37, 99, 235, 0.25) !important;
+}
+
+body.theme-light .btn-add-inventory-cyber:hover,
+[data-theme="light"] .btn-add-inventory-cyber:hover {
+    background: linear-gradient(135deg, #1d4ed8, #0369a1) !important;
+    box-shadow: 0 6px 24px rgba(37, 99, 235, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* 2. Sidebar Notifications Drawer Button Contrast */
+body.theme-sakura .sidebar-action-btn,
+[data-theme="sakura"] .sidebar-action-btn {
+    background: linear-gradient(135deg, rgba(255, 246, 251, 0.95), rgba(254, 230, 242, 0.98)) !important;
+    border: 1px solid rgba(244, 114, 182, 0.4) !important;
+    box-shadow: 0 4px 14px rgba(236, 72, 153, 0.1) !important;
+}
+
+body.theme-sakura .sidebar-action-btn .btn-text,
+body.theme-sakura .sidebar-action-btn .btn-text-main,
+[data-theme="sakura"] .sidebar-action-btn .btn-text,
+[data-theme="sakura"] .sidebar-action-btn .btn-text-main {
+    color: #4c0519 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-sakura .sidebar-action-btn .btn-icon,
+[data-theme="sakura"] .sidebar-action-btn .btn-icon {
+    color: #be185d !important;
+}
+
+body.theme-sakura .sidebar-action-btn .badge,
+[data-theme="sakura"] .sidebar-action-btn .badge {
+    background: rgba(236, 72, 153, 0.18) !important;
+    color: #be185d !important;
+    border-color: rgba(236, 72, 153, 0.4) !important;
+}
+
+body.theme-light .sidebar-action-btn,
+[data-theme="light"] .sidebar-action-btn {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.theme-light .sidebar-action-btn .btn-text,
+body.theme-light .sidebar-action-btn .btn-text-main,
+[data-theme="light"] .sidebar-action-btn .btn-text,
+[data-theme="light"] .sidebar-action-btn .btn-text-main {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+body.theme-light .sidebar-action-btn .btn-icon,
+[data-theme="light"] .sidebar-action-btn .btn-icon {
+    color: #0284c7 !important;
+}
+
+body.theme-light .sidebar-action-btn .badge,
+[data-theme="light"] .sidebar-action-btn .badge {
+    background: #e0f2fe !important;
+    color: #0284c7 !important;
+    border-color: #bae6fd !important;
+}
+
+/* 3. High-Contrast Stock Availability Colors */
+body.theme-sakura .stock-curr.status-available,
+[data-theme="sakura"] .stock-curr.status-available {
+    color: #047857 !important;
+}
+
+body.theme-sakura .stock-curr.status-low,
+[data-theme="sakura"] .stock-curr.status-low {
+    color: #c2410c !important;
+}
+
+body.theme-sakura .stock-curr.status-out,
+[data-theme="sakura"] .stock-curr.status-out {
+    color: #be123c !important;
+}
+
+body.theme-light .stock-curr.status-available,
+[data-theme="light"] .stock-curr.status-available {
+    color: #059669 !important;
+}
+
+body.theme-light .stock-curr.status-low,
+[data-theme="light"] .stock-curr.status-low {
+    color: #d97706 !important;
+}
+
+body.theme-light .stock-curr.status-out,
+[data-theme="light"] .stock-curr.status-out {
+    color: #dc2626 !important;
+}
+
+/* 4. Return Quantity Modal HUD */
+.return-qty-summary-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+#return-modal-item-name {
+    font-weight: 700;
+    color: var(--white);
+    font-size: 15px;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.return-stepper-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--white);
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.return-stepper-btn:hover {
+    background: rgba(0, 240, 255, 0.15);
+    color: #00f0ff;
+    border-color: rgba(0, 240, 255, 0.4);
+}
+
+#return-qty-input {
+    flex: 1;
+    height: 38px;
+    font-weight: 700;
+    font-size: 16px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 8px;
+    color: var(--white);
+    font-family: 'Orbitron', monospace;
+}
+
+.btn-return-shortcut {
+    background: rgba(0, 240, 255, 0.12);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: var(--neon-cyan);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-return-shortcut:hover {
+    background: rgba(0, 240, 255, 0.22);
+}
+
+body.theme-sakura #return-qty-modal .modal-content,
+[data-theme="sakura"] #return-qty-modal .modal-content {
+    background: linear-gradient(145deg, rgba(255, 246, 252, 0.98) 0%, rgba(254, 230, 242, 0.99) 100%) !important;
+    border: 1px solid rgba(244, 114, 182, 0.5) !important;
+}
+
+body.theme-sakura #return-modal-item-name,
+[data-theme="sakura"] #return-modal-item-name {
+    color: #4c0519 !important;
+}
+
+body.theme-sakura .return-qty-summary-card,
+[data-theme="sakura"] .return-qty-summary-card {
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 1px solid rgba(244, 114, 182, 0.35) !important;
+}
+
+body.theme-sakura .return-stepper-btn,
+[data-theme="sakura"] .return-stepper-btn {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(244, 114, 182, 0.4) !important;
+    color: #be185d !important;
+}
+
+body.theme-sakura #return-qty-input,
+[data-theme="sakura"] #return-qty-input {
+    background: #ffffff !important;
+    border: 1px solid rgba(236, 72, 153, 0.4) !important;
+    color: #4c0519 !important;
+}
+
+body.theme-sakura .btn-return-shortcut,
+[data-theme="sakura"] .btn-return-shortcut {
+    background: rgba(236, 72, 153, 0.15) !important;
+    border-color: rgba(236, 72, 153, 0.4) !important;
+    color: #be185d !important;
+}
+
+body.theme-light #return-qty-modal .modal-content,
+[data-theme="light"] #return-qty-modal .modal-content {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.theme-light #return-modal-item-name,
+[data-theme="light"] #return-modal-item-name {
+    color: #0f172a !important;
+}
+
+body.theme-light .return-qty-summary-card,
+[data-theme="light"] .return-qty-summary-card {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.theme-light .return-stepper-btn,
+[data-theme="light"] .return-stepper-btn {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0284c7 !important;
+}
+
+body.theme-light #return-qty-input,
+[data-theme="light"] #return-qty-input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+body.theme-light .btn-return-shortcut,
+[data-theme="light"] .btn-return-shortcut {
+    background: #e0f2fe !important;
+    border-color: #bae6fd !important;
+    color: #0284c7 !important;
+}
+
+/* 5. Delete Confirm Modal Dynamic Theming */
+#delete-confirm-title {
+    color: var(--white);
+}
+
+#delete-item-target-name {
+    color: var(--white);
+}
+
+.delete-warning-box {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.delete-warning-text span {
+    color: var(--text-muted);
+}
+
+body.theme-sakura #delete-confirm-modal .modal-content,
+[data-theme="sakura"] #delete-confirm-modal .modal-content {
+    background: linear-gradient(145deg, rgba(255, 246, 252, 0.98) 0%, rgba(254, 230, 242, 0.99) 100%) !important;
+    border: 1px solid rgba(244, 114, 182, 0.5) !important;
+}
+
+body.theme-sakura #delete-confirm-title,
+[data-theme="sakura"] #delete-confirm-title,
+body.theme-sakura #delete-item-target-name,
+[data-theme="sakura"] #delete-item-target-name {
+    color: #4c0519 !important;
+}
+
+body.theme-sakura .delete-warning-text span,
+[data-theme="sakura"] .delete-warning-text span {
+    color: #881337 !important;
+}
+
+body.theme-light #delete-confirm-modal .modal-content,
+[data-theme="light"] #delete-confirm-modal .modal-content {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.theme-light #delete-confirm-title,
+[data-theme="light"] #delete-confirm-title,
+body.theme-light #delete-item-target-name,
+[data-theme="light"] #delete-item-target-name {
+    color: #0f172a !important;
+}
+
+body.theme-light .delete-warning-text span,
+[data-theme="light"] .delete-warning-text span {
+    color: #475569 !important;
+}
+
+/* 6. Password Reset Modal Dynamic Theming */
+body.theme-sakura #reset-password-modal .modal-content,
+[data-theme="sakura"] #reset-password-modal .modal-content {
+    background: linear-gradient(145deg, rgba(255, 246, 252, 0.98) 0%, rgba(254, 230, 242, 0.99) 100%) !important;
+    border: 1px solid rgba(244, 114, 182, 0.5) !important;
+    box-shadow: 0 25px 70px rgba(236, 72, 153, 0.22) !important;
+}
+
+body.theme-sakura #reset-password-modal .modal-header h2,
+[data-theme="sakura"] #reset-password-modal .modal-header h2 {
+    color: #4c0519 !important;
+}
+
+body.theme-sakura #reset-password-modal .input-icon-wrapper input,
+[data-theme="sakura"] #reset-password-modal .input-icon-wrapper input {
+    background: #ffffff !important;
+    border: 1px solid rgba(244, 114, 182, 0.4) !important;
+    color: #4c0519 !important;
+}
+
+body.theme-sakura #reset-password-modal .input-icon-wrapper input:focus,
+[data-theme="sakura"] #reset-password-modal .input-icon-wrapper input:focus {
+    border-color: #ec4899 !important;
+    box-shadow: 0 0 14px rgba(236, 72, 153, 0.25) !important;
+}
+
+body.theme-sakura #reset-password-modal label,
+[data-theme="sakura"] #reset-password-modal label {
+    color: #881337 !important;
+}
+
+body.theme-light #reset-password-modal .modal-content,
+[data-theme="light"] #reset-password-modal .modal-content {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 25px 70px rgba(15, 23, 42, 0.12) !important;
+}
+
+body.theme-light #reset-password-modal .modal-header h2,
+[data-theme="light"] #reset-password-modal .modal-header h2 {
+    color: #0f172a !important;
+}
+
+body.theme-light #reset-password-modal .input-icon-wrapper input,
+[data-theme="light"] #reset-password-modal .input-icon-wrapper input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+body.theme-light #reset-password-modal .input-icon-wrapper input:focus,
+[data-theme="light"] #reset-password-modal .input-icon-wrapper input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 14px rgba(37, 99, 235, 0.2) !important;
+}
+
+body.theme-light #reset-password-modal label,
+[data-theme="light"] #reset-password-modal label {
+    color: #334155 !important;
+}
+
+/* 7. Audit Detail Modal Dynamic Theming */
+body.theme-sakura #audit-detail-modal .modal-content,
+[data-theme="sakura"] #audit-detail-modal .modal-content {
+    background: linear-gradient(145deg, rgba(255, 246, 252, 0.98) 0%, rgba(254, 230, 242, 0.99) 100%) !important;
+    border: 1px solid rgba(244, 114, 182, 0.5) !important;
+}
+
+body.theme-sakura .audit-meta-grid,
+[data-theme="sakura"] .audit-meta-grid {
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 1px solid rgba(244, 114, 182, 0.35) !important;
+}
+
+body.theme-sakura .audit-desc-box,
+[data-theme="sakura"] .audit-desc-box {
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 1px solid rgba(244, 114, 182, 0.35) !important;
+}
+
+body.theme-sakura .audit-meta-val,
+[data-theme="sakura"] .audit-meta-val,
+body.theme-sakura .audit-desc-box p,
+[data-theme="sakura"] .audit-desc-box p {
+    color: #4c0519 !important;
+}
+
+body.theme-sakura .audit-json-box,
+[data-theme="sakura"] .audit-json-box {
+    background: rgba(255, 245, 250, 0.95) !important;
+    border-color: rgba(236, 72, 153, 0.4) !important;
+}
+
+body.theme-sakura .audit-json-pre,
+[data-theme="sakura"] .audit-json-pre {
+    color: #831843 !important;
+}
+
+body.theme-light #audit-detail-modal .modal-content,
+[data-theme="light"] #audit-detail-modal .modal-content {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.theme-light .audit-meta-grid,
+[data-theme="light"] .audit-meta-grid {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.theme-light .audit-desc-box,
+[data-theme="light"] .audit-desc-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.theme-light .audit-meta-val,
+[data-theme="light"] .audit-meta-val,
+body.theme-light .audit-desc-box p,
+[data-theme="light"] .audit-desc-box p {
+    color: #0f172a !important;
+}
+
+body.theme-light .audit-json-box,
+[data-theme="light"] .audit-json-box {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.theme-light .audit-json-pre,
+[data-theme="light"] .audit-json-pre {
+    color: #0f172a !important;
+}
