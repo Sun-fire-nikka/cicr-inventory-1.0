@@ -4640,6 +4640,8 @@ class AdminManager {
                 pill.classList.add('active');
                 this.activeAuditDaysRange = Number(pill.getAttribute('data-range-days') || '7');
                 this.activeAuditDay = 'all';
+                // Immediate client-side re-render for instantaneous tactile responsiveness
+                this.renderAuditLogs();
                 await this.loadAuditLogs();
             });
         });
@@ -5730,7 +5732,6 @@ class AdminManager {
                 this.auditTelemetry = json;
 
                 this.updateAuditCategoryPills(json.categoryCounts);
-                this.renderAuditSpectrum(json.dailyCounts);
                 this.renderAuditLogs();
 
                 // Synchronize notifications drawer system tab if currently active
@@ -5757,49 +5758,8 @@ class AdminManager {
         setCnt('cat-cnt-system', counts.system || 0);
     }
 
-    static renderAuditSpectrum(dailyCounts?: Array<{ date: string; dayName: string; count: number; percentage: number }>) {
-        const container = document.getElementById('admin-audit-spectrum');
-        const specTotal = document.getElementById('spec-total-count');
-        if (!container) return;
-
-        const totalCount = this.auditTelemetry?.count || this.auditLogs.length || 0;
-        if (specTotal) specTotal.innerText = `${totalCount} events`;
-
-        const days = dailyCounts && dailyCounts.length > 0 ? dailyCounts : [];
-
-        let html = `
-            <div class="spectrum-day-card ${this.activeAuditDay === 'all' ? 'active' : ''}" data-day="all">
-                <div class="spec-day-name">ALL 7 DAYS</div>
-                <div class="spec-day-sub">Full Window</div>
-                <div class="spec-bar-track"><div class="spec-bar-fill" style="width: 100%;"></div></div>
-                <div class="spec-count">${totalCount} events</div>
-            </div>
-        `;
-
-        days.forEach(d => {
-            const isActive = this.activeAuditDay === d.date;
-            const shortDate = new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-            html += `
-                <div class="spectrum-day-card ${isActive ? 'active' : ''}" data-day="${d.date}">
-                    <div class="spec-day-name">${d.dayName.toUpperCase()}</div>
-                    <div class="spec-day-sub">${shortDate}</div>
-                    <div class="spec-bar-track"><div class="spec-bar-fill" style="width: ${Math.max(d.percentage, 6)}%;"></div></div>
-                    <div class="spec-count">${d.count} evt</div>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-
-        container.querySelectorAll<HTMLElement>('.spectrum-day-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const day = card.getAttribute('data-day') || 'all';
-                this.activeAuditDay = day;
-                container.querySelectorAll('.spectrum-day-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                this.loadAuditLogs();
-            });
-        });
+    static renderAuditSpectrum(_dailyCounts?: any) {
+        // Spectrum section removed per design update request (Photo 1)
     }
 
     static renderAuditLogs() {
@@ -5808,7 +5768,69 @@ class AdminManager {
         const totalStat = document.getElementById('admin-stat-total-logs');
         if (!container) return;
 
-        let filtered = this.auditLogs;
+        // 1. Time range filtering (1d = 24h, 3d = 72h, 7d = all 7 days)
+        const now = Date.now();
+        const maxAgeMs = (this.activeAuditDaysRange && this.activeAuditDaysRange < 7)
+            ? (this.activeAuditDaysRange * 24 * 60 * 60 * 1000)
+            : Infinity;
+
+        const rangeFilteredLogs = this.auditLogs.filter(l => {
+            if (!l.timestamp || maxAgeMs === Infinity) return true;
+            const logTime = new Date(l.timestamp).getTime();
+            return !isNaN(logTime) && (now - logTime) <= maxAgeMs;
+        });
+
+        // Compute and update category badge counts for the active time window
+        const catCounts = {
+            all: rangeFilteredLogs.length,
+            auth: 0,
+            inventory: 0,
+            hardware: 0,
+            loans: 0,
+            system: 0
+        };
+
+        rangeFilteredLogs.forEach(l => {
+            const act = l.action || '';
+            if (['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted', 'Password Reset'].includes(act)) {
+                catCounts.auth++;
+            } else if (['Item Added', 'Item Edited', 'Item Deleted', 'Stock Alert', 'Low Stock'].includes(act)) {
+                catCounts.inventory++;
+            } else if (['Hardware Requested', 'Hardware Approved', 'Hardware Rejected', 'Hardware Cancelled'].includes(act)) {
+                catCounts.hardware++;
+            } else if (['Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned', 'Approved Return', 'Return Requested'].includes(act)) {
+                catCounts.loans++;
+            } else {
+                catCounts.system++;
+            }
+        });
+        this.updateAuditCategoryPills(catCounts);
+
+        // 2. Category filtering
+        let filtered = rangeFilteredLogs;
+        if (this.activeAuditCategory && this.activeAuditCategory !== 'all') {
+            const cat = this.activeAuditCategory.toLowerCase();
+            filtered = filtered.filter(l => {
+                const act = l.action || '';
+                if (cat === 'auth') {
+                    return ['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted', 'Password Reset'].includes(act);
+                } else if (cat === 'inventory') {
+                    return ['Item Added', 'Item Edited', 'Item Deleted', 'Stock Alert', 'Low Stock'].includes(act);
+                } else if (cat === 'hardware') {
+                    return ['Hardware Requested', 'Hardware Approved', 'Hardware Rejected', 'Hardware Cancelled'].includes(act);
+                } else if (cat === 'loans') {
+                    return ['Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned', 'Approved Return', 'Return Requested'].includes(act);
+                } else if (cat === 'system') {
+                    return !['Sign In', 'Sign Up', 'User Approved', 'User Rejected', 'Role Changed', 'User Deleted', 'Password Reset',
+                             'Item Added', 'Item Edited', 'Item Deleted', 'Stock Alert', 'Low Stock',
+                             'Hardware Requested', 'Hardware Approved', 'Hardware Rejected', 'Hardware Cancelled',
+                             'Borrowed', 'Returned', 'OTP Requested', 'Item Borrowed', 'Item Returned', 'Approved Return', 'Return Requested'].includes(act);
+                }
+                return true;
+            });
+        }
+
+        // 3. Search Term filtering
         if (this.auditSearchTerm) {
             filtered = filtered.filter(l =>
                 (l.action && l.action.toLowerCase().includes(this.auditSearchTerm)) ||
@@ -5820,7 +5842,7 @@ class AdminManager {
         }
 
         if (countTag) countTag.innerText = `${filtered.length} EVENTS`;
-        if (totalStat) totalStat.innerText = String(this.auditLogs.length);
+        if (totalStat) totalStat.innerText = String(rangeFilteredLogs.length);
 
         if (filtered.length === 0) {
             container.innerHTML = `

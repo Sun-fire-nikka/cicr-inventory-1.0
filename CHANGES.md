@@ -116,6 +116,24 @@ A large frontend pass (~2,500 line diff across `index.html`, `src/main.ts`, `src
 - **Multi-Point Return Triggers**: Injected a highlighted "Return in 1 Go" action banner in the Notification/Checkouts Drawer (`#logs-drawer`), an action button in the Component Detail modal (`#item-detail-modal`), and global window accessibility.
 - **Instant Admin Portal Synchronization**: Submitted consolidated returns immediately populate the Admin Portal queue with itemized verification records, optimistic badge decrements, and comprehensive audit logs.
 
+## 13. Version 2.12.0 — Multi-Theme Contrast Engine & Responsive Audit Hub
+
+- **Streamlined Audit Hub (Photo 1 Update)**: Removed the 7-day activity spectrum HUD per design refinement request, simplifying the audit ledger view into a cleaner, focused layout with immediate ledger access.
+- **Complete Multi-Theme Contrast Overhaul (Photo 2 Update)**: Redesigned the Admin Header Card, shield icon, and stat counter badges (`Hardware Requests`, `Account Approvals`, `Approved Members`, `Admins`, `System Logs`) to deliver crystal-clear text readability and high contrast across all three themes:
+  - **Cyber Neon (Cyberpunk)**: Dark obsidian glass background, high-contrast white header title, crisp secondary description, and vivid neon numbers with glowing text shadows.
+  - **Clean Light**: Porcelain glass cards with subtle borders, bold `#0f172a` headers, `#334155` descriptions, and soft pastel stat boxes with dark, ultra-legible labels (`#581c87`, `#881337`, `#064e3b`, `#0c4a6e`, `#78350f`).
+  - **Cherry Blossom (Sakura)**: Rose-tinted translucent glass, deep plum `#4c0519` titles, `#881337` descriptions, and vibrant frosted pills with dark, high-contrast labels.
+- **Responsive Time-Window Range Engine (Photo 3 Update)**: Engineered the audit range pills (`7 Days (All)`, `Last 3 Days`, `Today (24h)`) with:
+  - **0ms Instant Client-Side Filtering**: Immediate in-memory re-rendering based on timestamp cutoffs when clicking any range pill, ensuring tactile, instantaneous UI feedback.
+  - **Dynamic Category Count Recalculation**: Live re-computation of counts across all category pills (`ALL`, `AUTH`, `INVENTORY`, `HARDWARE`, `LOANS`, `SYSTEM`) based on the active time window.
+  - **Seamless Backend Synchronization**: Parallel querying to `/api/audit?days=...` to ensure backend retention records and telemetry remain synchronized.
+- **Universal Cross-Theme Element Polish**: Overhauled button and text contrast across all 3 themes for:
+  - Hardware issue cards, member approval cards, and Approve/Reject buttons (`.btn-approve`, `.btn-reject`, `.btn-hw-approve`, `.btn-hw-reject`).
+  - User Directory Table (`.admin-table-responsive`, table headers, rows, user cell names, registration dates, emails, and action buttons).
+  - Bulk Return Manifest Modal (`#bulk-return-modal`, component item cards, stepper buttons, quantity inputs, summary box labels).
+  - Notifications Drawer banner and theme selector controls.
+- **Fluid Mobile & Desktop Responsiveness**: Implemented a responsive auto-fit grid for the Admin Control Center stats and touch-friendly full-width range pill segments on mobile devices (max-width: 640px and 440px).
+
 ---
 
 ## Net effect

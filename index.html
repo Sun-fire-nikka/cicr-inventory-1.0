@@ -844,24 +844,31 @@
                                 </div>
                             </div>
 
-                            <!-- Interactive 7-Day Activity Spectrum Bar -->
-                            <div class="admin-audit-spectrum-wrap">
-                                <div class="spectrum-header-row">
-                                    <span class="spectrum-title"><i data-lucide="bar-chart-2"></i> 7-DAY ACTIVITY SPECTRUM</span>
-                                    <span class="spectrum-hint">Click any day to isolate logs</span>
+                            <!-- Filter & Search Toolbar (Primary Time Window & Query) -->
+                            <div class="admin-audit-toolbar">
+                                <div class="admin-audit-range-pills" id="admin-audit-range-pills" role="tablist" aria-label="Audit Log Time Window">
+                                    <button class="audit-range-pill active" data-range-days="7" id="range-pill-7d" title="Show complete 7-day activity window" role="tab" aria-selected="true">
+                                        <i data-lucide="calendar"></i>
+                                        <span>7 Days (All)</span>
+                                    </button>
+                                    <button class="audit-range-pill" data-range-days="3" id="range-pill-3d" title="Show last 3 days activity" role="tab" aria-selected="false">
+                                        <i data-lucide="clock"></i>
+                                        <span>Last 3 Days</span>
+                                    </button>
+                                    <button class="audit-range-pill" data-range-days="1" id="range-pill-1d" title="Show today's 24h activity" role="tab" aria-selected="false">
+                                        <i data-lucide="zap"></i>
+                                        <span>Today (24h)</span>
+                                    </button>
                                 </div>
-                                <div class="admin-audit-spectrum-bar" id="admin-audit-spectrum">
-                                    <!-- Dynamic 7 day cards injected by AdminManager -->
-                                    <div class="spectrum-day-card active" data-day="all">
-                                        <div class="spec-day-name">ALL 7 DAYS</div>
-                                        <div class="spec-bar-track"><div class="spec-bar-fill" style="width: 100%;"></div></div>
-                                        <div class="spec-count" id="spec-total-count">0 events</div>
-                                    </div>
+                                <div class="admin-search-wrapper admin-audit-search-wrap">
+                                    <i data-lucide="search"></i>
+                                    <input type="text" id="admin-audit-search" placeholder="Search by action, description, actor, or item...">
+                                    <button class="audit-search-clear" id="admin-audit-search-clear" style="display:none;" title="Clear search"><i data-lucide="x"></i></button>
                                 </div>
                             </div>
 
-                            <!-- Filter & Search Toolbar -->
-                            <div class="admin-audit-toolbar">
+                            <!-- Audit Category Filter Row -->
+                            <div class="admin-audit-categories-row">
                                 <div class="admin-audit-filter-pills" id="admin-audit-pills">
                                     <button class="audit-pill active" data-audit-cat="all">ALL <span class="pill-cnt" id="cat-cnt-all">0</span></button>
                                     <button class="audit-pill" data-audit-cat="auth">AUTH & SECURITY <span class="pill-cnt" id="cat-cnt-auth">0</span></button>
@@ -869,22 +876,6 @@
                                     <button class="audit-pill" data-audit-cat="hardware">HARDWARE <span class="pill-cnt" id="cat-cnt-hardware">0</span></button>
                                     <button class="audit-pill" data-audit-cat="loans">LOANS & RETURNS <span class="pill-cnt" id="cat-cnt-loans">0</span></button>
                                     <button class="audit-pill" data-audit-cat="system">SYSTEM <span class="pill-cnt" id="cat-cnt-system">0</span></button>
-                                </div>
-                                <div class="admin-audit-range-pills" id="admin-audit-range-pills">
-                                    <button class="audit-range-pill active" data-range-days="7" id="range-pill-7d" title="Show complete 7-day activity">
-                                        <i data-lucide="calendar"></i> 7 Days (All)
-                                    </button>
-                                    <button class="audit-range-pill" data-range-days="3" id="range-pill-3d" title="Show last 3 days activity">
-                                        <i data-lucide="clock"></i> Last 3 Days
-                                    </button>
-                                    <button class="audit-range-pill" data-range-days="1" id="range-pill-1d" title="Show today's 24h activity">
-                                        <i data-lucide="zap"></i> Today (24h)
-                                    </button>
-                                </div>
-                                <div class="admin-search-wrapper admin-audit-search-wrap">
-                                    <i data-lucide="search"></i>
-                                    <input type="text" id="admin-audit-search" placeholder="Search by action, description, actor, or item...">
-                                    <button class="audit-search-clear" id="admin-audit-search-clear" style="display:none;" title="Clear search"><i data-lucide="x"></i></button>
                                 </div>
                             </div>
 
