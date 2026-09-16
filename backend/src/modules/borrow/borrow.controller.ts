@@ -280,6 +280,40 @@ export const submitReturnRequestHandler = async (req: AuthRequest, res: Response
   }
 };
 
+// POST /api/borrow/bulk-return-request (Return multiple components in 1 go)
+export const submitBulkReturnRequestHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const rawItems = req.body.items || req.body.returns;
+    if (!rawItems || !Array.isArray(rawItems) || rawItems.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'An array of items to return is required.' });
+    }
+
+    const { createBulkReturnRequest } = await import('./hardwareRequestService');
+    const result = await createBulkReturnRequest({
+      userId: req.user?.id,
+      userName: req.user?.name,
+      userEmail: req.user?.email,
+      userRoll: req.user?.roll_number || undefined,
+      userRole: req.user?.role || undefined,
+      items: rawItems
+    });
+
+    if (!result.success) {
+      return res.status(400).json({ status: 'error', message: result.message || 'Failed to submit consolidated return.' });
+    }
+
+    return res.status(201).json({
+      status: 'success',
+      message: result.message || 'Consolidated return requests submitted for administrator approval.',
+      count: result.count,
+      data: result.requests
+    });
+  } catch (err: any) {
+    console.error('Error in bulk return request:', err);
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 // POST /api/borrow/return (Return Item - Admin direct return or automatic routing)
 export const returnItem = async (req: AuthRequest, res: Response) => {
   try {

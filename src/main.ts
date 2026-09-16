@@ -2203,6 +2203,26 @@ class ModalManager {
             returnBtn.style.display = 'none';
         }
 
+        const bulkReturnBtn = document.getElementById('btn-modal-bulk-return') as HTMLButtonElement | null;
+        if (bulkReturnBtn) {
+            let hasActiveLoans = false;
+            for (const it of inventory) {
+                if ((it.borrowedBy || []).some(r => !r.returned && (r as any).status !== 'RETURN_REQUESTED' && ModalManager.isUserLoanMatch(r))) {
+                    hasActiveLoans = true;
+                    break;
+                }
+            }
+            if (hasActiveLoans) {
+                bulkReturnBtn.style.display = 'inline-flex';
+                bulkReturnBtn.onclick = () => {
+                    this.closeAll();
+                    this.openBulkReturnModal();
+                };
+            } else {
+                bulkReturnBtn.style.display = 'none';
+            }
+        }
+
         const deleteItemBtn = document.getElementById('btn-modal-delete-item') as HTMLButtonElement;
         if (deleteItemBtn) {
             deleteItemBtn.style.display = role === 'ADMIN' ? 'inline-flex' : 'none';
@@ -2631,6 +2651,27 @@ class ModalManager {
 
             // Active loans section
             if (activeLoans.length > 0) {
+                const myActiveLoans = activeLoans.filter(l => ModalManager.isUserLoanMatch(l.rec) && (l.rec as any).status !== 'RETURN_REQUESTED');
+                if (myActiveLoans.length > 0) {
+                    const bannerEl = document.createElement('div');
+                    bannerEl.className = 'drawer-bulk-return-banner';
+                    bannerEl.innerHTML = `
+                        <div class="banner-text-col">
+                            <div class="banner-title"><i data-lucide="layers"></i> CONSOLIDATED RETURN</div>
+                            <div class="banner-desc">You hold ${myActiveLoans.length} active checkout schedule(s). Return all or select quantities in 1 go.</div>
+                        </div>
+                        <button class="btn btn-primary btn-sm btn-drawer-bulk-return" id="btn-drawer-bulk-return">
+                            <i data-lucide="corner-up-left"></i> Return in 1 Go
+                        </button>
+                    `;
+                    bannerEl.querySelector('#btn-drawer-bulk-return')?.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        ModalManager.close('logs-drawer');
+                        ModalManager.openBulkReturnModal();
+                    });
+                    container.appendChild(bannerEl);
+                }
+
                 const secHeader = document.createElement('div');
                 secHeader.className = 'notif-section-header header-loans';
                 secHeader.innerHTML = `
@@ -3335,6 +3376,298 @@ class ModalManager {
             console.error('Return API error:', e);
             ToastManager.show('Network Error', 'Failed to reach server.', 'error');
             if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    // Opens the Consolidated Bulk Return Modal ("Return Everything in 1 Go")
+    public static openBulkReturnModal() {
+        const userLoansMap = new Map<string, { item: InventoryItem; records: BorrowRecord[]; totalQty: number }>();
+        let totalIssuedUnits = 0;
+
+        inventory.forEach(item => {
+            (item.borrowedBy || []).forEach(rec => {
+                if (!rec.returned && (rec as any).status !== 'RETURN_REQUESTED' && ModalManager.isUserLoanMatch(rec)) {
+                    const existing = userLoansMap.get(item.id);
+                    const qty = Math.max(1, Number(rec.qty) || 1);
+                    totalIssuedUnits += qty;
+                    if (existing) {
+                        existing.records.push(rec);
+                        existing.totalQty += qty;
+                    } else {
+                        userLoansMap.set(item.id, { item, records: [rec], totalQty: qty });
+                    }
+                }
+            });
+        });
+
+        if (userLoansMap.size === 0) {
+            ToastManager.show('No Active Loans', 'You do not have any active hardware loans available to return.', 'info');
+            return;
+        }
+
+        const storedUser = (() => {
+            try { return JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch { return {}; }
+        })();
+        const borrowerName = storedUser.name || localStorage.getItem('cicr_auth') || 'Member';
+        const borrowerEmail = storedUser.email || (localStorage.getItem('cicr_auth')?.includes('@') ? localStorage.getItem('cicr_auth') : 'student@mail.jiit.ac.in');
+        const rollNum = storedUser.roll_number || storedUser.roll || (borrowerEmail.includes('@') ? borrowerEmail.split('@')[0] : '');
+
+        const nameEl = document.getElementById('bulk-return-borrower-name');
+        if (nameEl) nameEl.innerText = borrowerName;
+
+        const metaEl = document.getElementById('bulk-return-borrower-meta');
+        if (metaEl) metaEl.innerText = `Roll: ${rollNum || 'Enrolled'} · ${borrowerEmail}`;
+
+        const avatarEl = document.getElementById('bulk-return-avatar');
+        if (avatarEl) avatarEl.innerText = borrowerName.charAt(0).toUpperCase();
+
+        const totalIssuedEl = document.getElementById('bulk-total-issued-count');
+        if (totalIssuedEl) totalIssuedEl.innerText = String(totalIssuedUnits);
+
+        const listContainer = document.getElementById('bulk-return-items-list');
+        if (!listContainer) return;
+        listContainer.innerHTML = '';
+
+        const updateSummary = () => {
+            let totalSelectedUnits = 0;
+            let totalSelectedItems = 0;
+            const rows = listContainer.querySelectorAll<HTMLElement>('.bulk-return-item-card');
+            rows.forEach(row => {
+                const input = row.querySelector<HTMLInputElement>('.bulk-stepper-input');
+                const max = Number(row.dataset.maxQty || 0);
+                const val = Math.max(0, Math.min(max, Number(input?.value || 0)));
+                if (val > 0) {
+                    totalSelectedUnits += val;
+                    totalSelectedItems++;
+                }
+
+                const badge = row.querySelector<HTMLElement>('.bulk-status-badge');
+                if (badge) {
+                    if (val === 0) {
+                        badge.className = 'bulk-status-badge bulk-status-zero';
+                        badge.innerText = `Keep Issued (0/${max})`;
+                    } else if (val === max) {
+                        badge.className = 'bulk-status-badge bulk-status-full';
+                        badge.innerText = `Full Return (${val}/${max})`;
+                    } else {
+                        badge.className = 'bulk-status-badge bulk-status-partial';
+                        badge.innerText = `Partial (${val}/${max})`;
+                    }
+                }
+            });
+
+            const summaryCount = document.getElementById('bulk-summary-count');
+            if (summaryCount) {
+                summaryCount.innerText = `${totalSelectedItems} item${totalSelectedItems === 1 ? '' : 's'} (${totalSelectedUnits} unit${totalSelectedUnits === 1 ? '' : 's'})`;
+            }
+
+            const submitBtn = document.getElementById('btn-submit-bulk-return') as HTMLButtonElement | null;
+            if (submitBtn) {
+                submitBtn.disabled = totalSelectedUnits === 0;
+                submitBtn.innerHTML = `<i data-lucide="corner-up-left"></i> Submit Return (${totalSelectedUnits} Units)`;
+                lucide.createIcons();
+            }
+        };
+
+        userLoansMap.forEach(({ item, totalQty }) => {
+            const card = document.createElement('div');
+            card.className = 'bulk-return-item-card';
+            card.dataset.itemId = item.id;
+            card.dataset.maxQty = String(totalQty);
+
+            card.innerHTML = `
+                <div class="bulk-item-left">
+                    <div class="bulk-item-icon">
+                        <i data-lucide="cpu"></i>
+                    </div>
+                    <div class="bulk-item-info">
+                        <div class="bulk-item-name" title="${AdminManager.escapeHtml(item.name)}">${AdminManager.escapeHtml(item.name)}</div>
+                        <div class="bulk-item-meta">${totalQty} unit${totalQty === 1 ? '' : 's'} currently issued</div>
+                    </div>
+                </div>
+                <div class="bulk-item-right">
+                    <span class="bulk-status-badge bulk-status-full">Full Return (${totalQty}/${totalQty})</span>
+                    <div class="bulk-stepper-wrap">
+                        <button type="button" class="bulk-stepper-btn btn-minus">-</button>
+                        <input type="number" class="bulk-stepper-input" min="0" max="${totalQty}" value="${totalQty}">
+                        <button type="button" class="bulk-stepper-btn btn-plus">+</button>
+                    </div>
+                </div>
+            `;
+
+            const input = card.querySelector<HTMLInputElement>('.bulk-stepper-input')!;
+            const btnMinus = card.querySelector<HTMLButtonElement>('.btn-minus')!;
+            const btnPlus = card.querySelector<HTMLButtonElement>('.btn-plus')!;
+
+            btnMinus.addEventListener('click', () => {
+                const cur = Number(input.value) || 0;
+                if (cur > 0) {
+                    input.value = String(cur - 1);
+                    updateSummary();
+                }
+            });
+
+            btnPlus.addEventListener('click', () => {
+                const cur = Number(input.value) || 0;
+                if (cur < totalQty) {
+                    input.value = String(cur + 1);
+                    updateSummary();
+                }
+            });
+
+            input.addEventListener('input', () => {
+                let v = Number(input.value);
+                if (isNaN(v) || v < 0) v = 0;
+                if (v > totalQty) v = totalQty;
+                input.value = String(v);
+                updateSummary();
+            });
+
+            listContainer.appendChild(card);
+        });
+
+        // Wire shortcut buttons
+        const btnAll100 = document.getElementById('btn-bulk-return-all-100');
+        if (btnAll100) {
+            btnAll100.onclick = () => {
+                listContainer.querySelectorAll<HTMLElement>('.bulk-return-item-card').forEach(row => {
+                    const input = row.querySelector<HTMLInputElement>('.bulk-stepper-input');
+                    const max = row.dataset.maxQty || '0';
+                    if (input) input.value = max;
+                });
+                updateSummary();
+            };
+        }
+
+        const btnResetZero = document.getElementById('btn-bulk-reset-zero');
+        if (btnResetZero) {
+            btnResetZero.onclick = () => {
+                listContainer.querySelectorAll<HTMLElement>('.bulk-return-item-card').forEach(row => {
+                    const input = row.querySelector<HTMLInputElement>('.bulk-stepper-input');
+                    if (input) input.value = '0';
+                });
+                updateSummary();
+            };
+        }
+
+        const cancelBtn = document.getElementById('btn-cancel-bulk-return');
+        if (cancelBtn) {
+            cancelBtn.onclick = () => this.close('bulk-return-modal');
+        }
+
+        const closeBtn = document.getElementById('close-bulk-return-modal');
+        if (closeBtn) {
+            closeBtn.onclick = () => this.close('bulk-return-modal');
+        }
+
+        const submitBtn = document.getElementById('btn-submit-bulk-return') as HTMLButtonElement | null;
+        if (submitBtn) {
+            submitBtn.onclick = async () => {
+                await this.submitBulkReturn(listContainer);
+            };
+        }
+
+        updateSummary();
+        this.open('bulk-return-modal');
+        lucide.createIcons();
+    }
+
+    public static async submitBulkReturn(listContainer: HTMLElement) {
+        const itemsToReturn: Array<{ itemId: string; quantity: number }> = [];
+        const rows = listContainer.querySelectorAll<HTMLElement>('.bulk-return-item-card');
+        rows.forEach(row => {
+            const itemId = row.dataset.itemId;
+            const input = row.querySelector<HTMLInputElement>('.bulk-stepper-input');
+            const qty = Math.max(0, Number(input?.value || 0));
+            if (itemId && qty > 0) {
+                itemsToReturn.push({ itemId, quantity: qty });
+            }
+        });
+
+        if (itemsToReturn.length === 0) {
+            ToastManager.show('No Items Selected', 'Please select at least 1 unit to return.', 'warning');
+            return;
+        }
+
+        const submitBtn = document.getElementById('btn-submit-bulk-return') as HTMLButtonElement | null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i> Submitting Dispatch...';
+        }
+
+        const token = localStorage.getItem('cicr_token');
+        const isAdmin = this.getCurrentRole() === 'ADMIN';
+
+        try {
+            const res = await fetch(`${API_BASE}/borrow/bulk-return-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ items: itemsToReturn })
+            });
+
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                ToastManager.show('Return Error', json.message || 'Failed to submit consolidated return.', 'error');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Submit Return to Admin';
+                }
+                return;
+            }
+
+            this.close('bulk-return-modal');
+
+            const totalQty = itemsToReturn.reduce((sum, it) => sum + it.quantity, 0);
+            ToastManager.show(
+                'Consolidated Return Submitted',
+                `Return requests for ${itemsToReturn.length} component(s) (${totalQty} units) dispatched to Admin Portal for verification.`,
+                'success'
+            );
+            DatabaseManager.addLog('return', `Consolidated return request submitted for ${itemsToReturn.length} item(s) (${totalQty} units) — pending admin approval.`);
+
+            // Add local request records so UI immediately reflects pending return status
+            const storedUser = (() => {
+                try { return JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch { return {}; }
+            })();
+            const borrowerName = storedUser.name || localStorage.getItem('cicr_auth') || 'Member';
+            const rollNum = storedUser.roll_number || storedUser.roll || '';
+
+            itemsToReturn.forEach(({ itemId, quantity }) => {
+                const targetItem = inventory.find(it => it.id === itemId);
+                const localReq: RequestRecord = {
+                    id: `req-ret-bulk-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                    type: 'RETURN',
+                    itemId,
+                    itemName: targetItem?.name || 'Component',
+                    name: borrowerName,
+                    roll: rollNum,
+                    qty: quantity,
+                    purpose: `Return ${quantity} unit(s) (Consolidated)`,
+                    status: 'PENDING',
+                    requestedAt: new Date().toISOString()
+                };
+                requests.unshift(localReq);
+            });
+            DatabaseManager.save();
+
+            await DatabaseManager.syncFromBackend();
+            DatabaseManager.updateNotificationBadges();
+
+            if (isAdmin) {
+                AdminManager.loadHardwareRequests(true);
+            }
+        } catch (err: any) {
+            console.error('Bulk return submission error:', err);
+            ToastManager.show('Network Error', 'Failed to connect to backend server.', 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Submit Return to Admin';
+                lucide.createIcons();
+            }
         }
     }
 }
@@ -4380,6 +4713,7 @@ class AdminManager {
 
         // Attach window methods for onclick handlers
         window.openAuditDetail = (id: string) => this.openAuditDetail(id);
+        window.openBulkReturnModal = () => ModalManager.openBulkReturnModal();
         window.adminApprove = (id: string) => this.approveUser(id);
         window.adminReject = (id: string) => this.rejectUser(id);
         window.adminSetRole = (id: string, role: 'ADMIN' | 'MEMBER') => this.setRole(id, role);
@@ -5909,6 +6243,7 @@ declare global {
         adminApproveHardware?: (id: string) => void;
         adminRejectHardware?: (id: string) => void;
         openAuditDetail?: (id: string) => void;
+        openBulkReturnModal?: () => void;
         openPasswordResetModal?: () => void;
     }
 }

@@ -1012,6 +1012,9 @@
                 <button class="btn btn-secondary btn-return" id="btn-return" style="display: none;">
                     <i data-lucide="corner-up-left"></i> Return Item
                 </button>
+                <button class="btn btn-secondary btn-bulk-return-trigger" id="btn-modal-bulk-return" style="display: none;" title="Return all components issued to you in 1 go">
+                    <i data-lucide="layers"></i> Return in 1 Go
+                </button>
                 <button class="btn btn-primary btn-borrow" id="btn-borrow">
                     <i data-lucide="shopping-cart"></i> Checkout / Borrow
                 </button>
@@ -1408,6 +1411,77 @@
                     <i data-lucide="corner-up-left"></i> Submit Return to Admin
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Consolidated Bulk Return Modal ("Return Everything in 1 Go") -->
+    <div class="modal-overlay" id="bulk-return-modal">
+        <div class="modal-content glass bulk-return-modal-card" style="max-width: 620px; width: 95%;">
+            <button type="button" class="close-modal" id="close-bulk-return-modal"><i data-lucide="x"></i></button>
+            
+            <div class="modal-header">
+                <div class="bulk-return-badge">
+                    <span class="pulse-beacon-dot"></span>
+                    <i data-lucide="layers" style="width:13px; height:13px;"></i>
+                    <span>CONSOLIDATED HARDWARE RETURN MANIFEST</span>
+                </div>
+                <h2>Return Everything in 1 Go</h2>
+                <p>Review all components currently issued to you and select return quantities in a single unified dispatch.</p>
+            </div>
+
+            <!-- Borrower Summary Card -->
+            <div class="bulk-return-borrower-card">
+                <div class="borrower-card-avatar" id="bulk-return-avatar">U</div>
+                <div class="borrower-card-info">
+                    <div class="borrower-card-name" id="bulk-return-borrower-name">Member Name</div>
+                    <div class="borrower-card-meta" id="bulk-return-borrower-meta">Roll: -- · --@mail.jiit.ac.in</div>
+                </div>
+                <div class="bulk-return-total-issued-badge">
+                    <span class="total-issued-num" id="bulk-total-issued-count">0</span>
+                    <span class="total-issued-lbl">UNITS ISSUED</span>
+                </div>
+            </div>
+
+            <!-- Global Shortcuts Toolbar -->
+            <div class="bulk-return-toolbar">
+                <span class="bulk-toolbar-title"><i data-lucide="clipboard-list"></i> ACTIVE COMPONENT LOANS</span>
+                <div class="bulk-toolbar-actions">
+                    <button type="button" class="btn-bulk-shortcut" id="btn-bulk-return-all-100" title="Set all return quantities to 100%">
+                        <i data-lucide="check-check"></i> Return All (100%)
+                    </button>
+                    <button type="button" class="btn-bulk-shortcut" id="btn-bulk-reset-zero" title="Reset return quantities to 0">
+                        <i data-lucide="rotate-ccw"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Items List Container -->
+            <div class="bulk-return-items-container" id="bulk-return-items-list">
+                <!-- Dynamically populated rows for each borrowed component -->
+                <div class="admin-empty-state">
+                    <i data-lucide="package-open"></i>
+                    <p>No active component loans found under your account.</p>
+                </div>
+            </div>
+
+            <!-- Summary & Verification Footer -->
+            <div class="bulk-return-summary-box">
+                <div class="bulk-summary-row">
+                    <span class="bulk-summary-label">Components Selected for Return:</span>
+                    <span class="bulk-summary-val" id="bulk-summary-count">0 items (0 units)</span>
+                </div>
+                <div class="bulk-summary-notice">
+                    <i data-lucide="shield-alert"></i>
+                    <span><strong>Physical Verification Notice:</strong> Your return request will dispatch immediately to the Admin Portal. An administrator will physically inspect the hardware at the CICR Lab to check items back into stock.</span>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-bulk-return">Cancel</button>
+                <button type="button" class="btn btn-primary btn-cyber-pulse" id="btn-submit-bulk-return" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <i data-lucide="corner-up-left"></i> Submit Return to Admin
+                </button>
+            </div>
         </div>
     </div>
 

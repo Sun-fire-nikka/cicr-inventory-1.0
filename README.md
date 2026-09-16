@@ -74,8 +74,9 @@ Track, reserve, and deploy microcontrollers, sensors, and actuators from JIIT's 
 | **v2.9.0** | ✅ Released | **Hardware Return Dispatch with Dynamic Partial/Full Stepper, Admin Verification Portal, Roster Polish & Testing Email Routing.** Re-added Return Issued Component flow allowing borrowers to return issued hardware with customizable return quantities (`[-]` / `[+]` steppers and `Return All` shortcut); return requests dispatch to the Admin Portal for physical verification before inventory stock is restored; active loan badges with 1-click return triggers on inventory cards; updated developer showcase layout with integrated navigation sidebar; updated mentor guidance credits; and test email routing proxy redirecting all transactional activity emails to `vardaansaxena096@gmail.com` with branded test dispatch headers. |
 | **v2.9.1** | ✅ Released | **Production Clean Transactional Email Headers.** Removed the debug `[CICR TEST DISPATCH]` banner header across direct and queue-dispatched transactional emails, providing clean, authentic, and modern cyber templates across all user notifications. |
 | **v2.10.0** | ✅ Released | **7-Day Centralized Audit & Telemetry Log System.** Centralized backend log persistence with automated 7-day retention pruning scheduler (runs at boot + every 6 hours), real-time 7-day activity spectrum HUD with interactive day filtering, category counters (Auth, Inventory, Hardware, Loans, System), CSV export, manual retention sync trigger, live detail inspection modal, and client log dispatch pipeline. |
+| **v2.11.0** | ✅ Released | **Consolidated Multi-Component Return System ("Return Everything in 1 Go").** Unified bulk return manifest modal with interactive quantity steppers, FIFO loan allocation engine (`POST /api/borrow/bulk-return-request`) resolving multiple repeated checkouts, drawer & item detail entry points, and 1-click administrative verification workflow. |
 
-> The current active release is **v2.10.0 — 7-Day Centralized Audit & Telemetry Log System**. Both the Vercel frontend and Render backend run in production with live database sync, multi-tier hardware queues, 7-day centralized audit persistence, and automated transactional telemetry.
+> The current active release is **v2.11.0 — Consolidated Multi-Component Return System**. Both the Vercel frontend and Render backend run in production with live database sync, multi-tier hardware queues, 7-day centralized audit persistence, and automated transactional telemetry.
 
 ### 🏷️ Version Registry (Git Tags)
 
@@ -97,6 +98,7 @@ Track, reserve, and deploy microcontrollers, sensors, and actuators from JIIT's 
 | **v2.9.0** | `v2.9.0`, `v2.9` | ✅ Released | Hardware Return Dispatch, Partial Stepper, Admin Verification & Test Mail Routing |
 | **v2.9.1** | `v2.9.1` | ✅ Released | Production Clean Transactional Email Headers |
 | **v2.10.0** | `v2.10.0`, `v2.10` | ✅ Released | 7-Day Centralized Audit Ledger, Telemetry HUD & Backend Auto-Retention |
+| **v2.11.0** | `v2.11.0`, `v2.11` | ✅ Released | Consolidated Multi-Item Return ("Return in 1 Go") & Stepper Manifest |
 
 ---
 

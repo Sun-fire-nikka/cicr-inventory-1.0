@@ -10,7 +10,8 @@ import {
   getHardwareRequestsHandler,
   approveHardwareRequestHandler,
   rejectHardwareRequestHandler,
-  submitReturnRequestHandler
+  submitReturnRequestHandler,
+  submitBulkReturnRequestHandler
 } from './borrow.controller';
 import { authenticateToken, requireAdmin } from '../../middleware/auth.middleware';
 
@@ -26,6 +27,7 @@ router.post('/request-otp', authenticateToken, requestOtp);
 router.post('/verify-otp', authenticateToken, verifyOtp);
 router.post('/return', authenticateToken, returnItem);
 router.post('/return-request', authenticateToken, submitReturnRequestHandler);
+router.post('/bulk-return-request', authenticateToken, submitBulkReturnRequestHandler);
 router.get('/history', authenticateToken, getBorrowHistory);
 
 export default router;

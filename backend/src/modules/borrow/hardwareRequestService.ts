@@ -327,6 +327,121 @@ export const createReturnRequest = async (payload: {
   return { success: true, request: newReturnReq };
 };
 
+export interface BulkReturnItemPayload {
+  itemId?: string;
+  borrowId?: string;
+  quantity: number;
+}
+
+export interface BulkReturnPayload {
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  userRoll?: string;
+  userRole?: string;
+  items: BulkReturnItemPayload[];
+}
+
+export const createBulkReturnRequest = async (
+  payload: BulkReturnPayload
+): Promise<{ success: boolean; message?: string; count?: number; requests?: HardwareIssueRequest[] }> => {
+  if (!payload.items || !Array.isArray(payload.items) || payload.items.length === 0) {
+    return { success: false, message: 'No return items provided in bulk return manifest.' };
+  }
+
+  const validItems = payload.items.filter((it) => Number(it.quantity) > 0);
+  if (validItems.length === 0) {
+    return { success: false, message: 'All specified return quantities are zero.' };
+  }
+
+  // Query all active loans in Supabase
+  const { data: allActiveLoans, error: fetchErr } = await dbRead
+    .from('borrow_records')
+    .select('*, inventory(id, name, category)')
+    .eq('status', 'BORROWED')
+    .order('borrowed_at', { ascending: true });
+
+  if (fetchErr) {
+    console.error('[BULK RETURN] Error querying active loans:', fetchErr);
+    return { success: false, message: 'Failed to query active loans for bulk return.' };
+  }
+
+  const loans = allActiveLoans || [];
+
+  // Helper to match loan ownership
+  const isLoanMatch = (rec: any): boolean => {
+    if (payload.userId && rec.user_id && String(rec.user_id).toLowerCase() === String(payload.userId).toLowerCase()) return true;
+    const normUserRoll = (payload.userRoll || '').trim().toLowerCase();
+    const recRoll = (rec.roll_number || rec.roll || '').trim().toLowerCase();
+    if (normUserRoll && recRoll && normUserRoll === recRoll) return true;
+    const normUserEmail = (payload.userEmail || '').trim().toLowerCase();
+    const recEmail = (rec.borrower_email || rec.email || '').trim().toLowerCase();
+    if (normUserEmail && recEmail && normUserEmail === recEmail) return true;
+    const normUserName = (payload.userName || '').trim().toLowerCase();
+    const normRecName = (rec.borrower_name || '').trim().toLowerCase();
+    const isGeneric = (n: string) => !n || ['member', 'student', 'user', 'admin', 'borrower', 'guest'].includes(n) || n.length < 3;
+    if (!isGeneric(normUserName) && !isGeneric(normRecName)) {
+      if (normUserName === normRecName || normUserName.includes(normRecName) || normRecName.includes(normUserName)) return true;
+    }
+    return false;
+  };
+
+  const userLoans = loans.filter(isLoanMatch);
+  const createdRequests: HardwareIssueRequest[] = [];
+
+  for (const item of validItems) {
+    let remainingToReturn = Number(item.quantity) || 0;
+    if (remainingToReturn <= 0) continue;
+
+    if (item.borrowId) {
+      // Direct loan ID specified
+      const res = await createReturnRequest({
+        borrowId: item.borrowId,
+        returnQuantity: remainingToReturn,
+        userId: payload.userId,
+        userName: payload.userName,
+        userEmail: payload.userEmail,
+        userRoll: payload.userRoll,
+        userRole: payload.userRole
+      });
+      if (res.success && res.request) {
+        createdRequests.push(res.request);
+      }
+    } else if (item.itemId) {
+      // Item ID specified - allocate across user's loans of this item in FIFO order
+      const matchingLoans = userLoans.filter((l: any) => l.inventory_id === item.itemId || l.inventory?.id === item.itemId);
+      for (const loanRec of matchingLoans) {
+        if (remainingToReturn <= 0) break;
+        const take = Math.min(Number(loanRec.quantity) || 1, remainingToReturn);
+        const res = await createReturnRequest({
+          borrowId: loanRec.id,
+          returnQuantity: take,
+          userId: payload.userId,
+          userName: payload.userName,
+          userEmail: payload.userEmail,
+          userRoll: payload.userRoll,
+          userRole: payload.userRole
+        });
+        if (res.success && res.request) {
+          createdRequests.push(res.request);
+        }
+        remainingToReturn -= take;
+      }
+    }
+  }
+
+  if (createdRequests.length === 0) {
+    return { success: false, message: 'Could not match requested items with active loans under your account.' };
+  }
+
+  return {
+    success: true,
+    count: createdRequests.length,
+    requests: createdRequests,
+    message: `Submitted return requests for ${createdRequests.length} component loan(s) in 1 go.`
+  };
+};
+
 let cachedHardwareRequests: HardwareIssueRequest[] | null = null;
 let lastHardwareRequestsFetchTime = 0;
 // Zero TTL to guarantee instant, real-time consistency across cloud and local nodes

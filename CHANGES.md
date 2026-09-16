@@ -108,6 +108,14 @@ A large frontend pass (~2,500 line diff across `index.html`, `src/main.ts`, `src
 - **CSV Audit Ledger Export**: Built client-side CSV export (`cicr_audit_ledger_7days_*.csv`) directly from the filtered 7-day audit logs in the Admin Portal.
 - **System Telemetry Drawer Integration**: Updated the notification drawer's System section to stream backend 7-day audit records with live event counts.
 
+## 12. Version 2.11.0 — Consolidated Multi-Component Return System ("Return Everything in 1 Go")
+
+- **Consolidated Bulk Return Modal (`#bulk-return-modal`)**: Engineered a glassmorphic return manifest interface displaying all components currently issued to the authenticated student across multiple checkout dates, prefilled with maximum borrowed units.
+- **Component-Level Interactive Steppers**: Each borrowed component features `[-]` and `[+]` steppers with live status indicators (`Full Return`, `Partial Return`, `Keep Issued`), alongside global 1-click batch shortcuts (`Return All at 100%`, `Reset`).
+- **FIFO Backend Allocation Engine (`POST /api/borrow/bulk-return-request`)**: Added a bulk return dispatch endpoint in `borrow.routes.ts` and `hardwareRequestService.ts` that dynamically allocates return quantities across multiple active `borrow_records` using first-in-first-out scheduling (e.g. 2 units of X on Monday + 3 units of X on Wednesday; returning 4 units resolves Monday's loan completely and partials Wednesday's loan).
+- **Multi-Point Return Triggers**: Injected a highlighted "Return in 1 Go" action banner in the Notification/Checkouts Drawer (`#logs-drawer`), an action button in the Component Detail modal (`#item-detail-modal`), and global window accessibility.
+- **Instant Admin Portal Synchronization**: Submitted consolidated returns immediately populate the Admin Portal queue with itemized verification records, optimistic badge decrements, and comprehensive audit logs.
+
 ---
 
 ## Net effect

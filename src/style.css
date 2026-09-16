@@ -11898,3 +11898,405 @@ button[disabled] {
     cursor: not-allowed !important;
     pointer-events: none;
 }
+
+/* ==========================================
+   Consolidated Bulk Return Modal & Stepper HUD
+   ========================================== */
+.bulk-return-modal-card {
+    background: rgba(10, 15, 29, 0.97) !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 240, 255, 0.15) !important;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.bulk-return-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(0, 240, 255, 0.12);
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: #00f0ff;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+}
+
+.bulk-return-borrower-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+}
+
+.borrower-card-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #00f0ff, #bd00ff);
+    color: #000;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.borrower-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.borrower-card-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.borrower-card-meta {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.bulk-return-total-issued-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 8px;
+    padding: 4px 10px;
+}
+
+.total-issued-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 15px;
+    font-weight: 800;
+    color: #00f0ff;
+    line-height: 1.1;
+}
+
+.total-issued-lbl {
+    font-size: 8.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+}
+
+/* Bulk Toolbar */
+.bulk-return-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.bulk-toolbar-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #00f0ff;
+    letter-spacing: 0.6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.bulk-toolbar-title i,
+.bulk-toolbar-title svg {
+    width: 13px;
+    height: 13px;
+}
+
+.bulk-toolbar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-bulk-shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-bulk-shortcut:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(0, 240, 255, 0.4);
+}
+
+.btn-bulk-shortcut i,
+.btn-bulk-shortcut svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Items List */
+.bulk-return-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-bottom: 14px;
+}
+
+.bulk-return-item-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(14, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    transition: all 0.2s ease;
+}
+
+.bulk-return-item-card:hover {
+    background: rgba(14, 23, 42, 0.85);
+    border-color: rgba(0, 240, 255, 0.35);
+}
+
+.bulk-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.bulk-item-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    color: #00f0ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bulk-item-info {
+    min-width: 0;
+}
+
+.bulk-item-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bulk-item-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
+/* Stepper Group */
+.bulk-item-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.bulk-stepper-wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    height: 32px;
+}
+
+.bulk-stepper-btn {
+    width: 28px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: #00f0ff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.bulk-stepper-btn:hover {
+    background: rgba(0, 240, 255, 0.15);
+}
+
+.bulk-stepper-input {
+    width: 44px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+}
+
+.bulk-status-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.bulk-status-full {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.bulk-status-partial {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.bulk-status-zero {
+    background: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Summary Box */
+.bulk-return-summary-box {
+    background: rgba(0, 240, 255, 0.04);
+    border: 1px solid rgba(0, 240, 255, 0.18);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.bulk-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bulk-summary-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.bulk-summary-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 800;
+    color: #00f0ff;
+}
+
+.bulk-summary-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.bulk-summary-notice i,
+.bulk-summary-notice svg {
+    width: 14px;
+    height: 14px;
+    color: #f59e0b;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* Drawer Bulk Return Banner */
+.drawer-bulk-return-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(189, 0, 255, 0.12));
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(0, 240, 255, 0.1);
+}
+
+.drawer-bulk-return-banner .banner-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    color: #00f0ff;
+    letter-spacing: 0.6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.drawer-bulk-return-banner .banner-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.btn-drawer-bulk-return {
+    background: linear-gradient(135deg, #00f0ff, #bd00ff) !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
+    border: none !important;
+    white-space: nowrap;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+}
+
+.btn-drawer-bulk-return:hover {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.6) !important;
+    transform: translateY(-1px);
+}
