@@ -12,8 +12,9 @@
     "purpose": "Testing_",
     "durationDays": 7,
     "dueDate": "2026-09-22",
-    "status": "PENDING",
-    "requestedAt": "2026-09-15T20:39:25.737Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-15T20:39:25.737Z",
+    "returnedAt": "2026-09-16T15:32:43.911Z"
   },
   "req-1789504765710": {
     "id": "req-1789504765710",
@@ -27,10 +28,11 @@
     "purpose": "Testing_",
     "durationDays": 7,
     "dueDate": "2026-09-22",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-15",
     "reviewedAt": "2026-09-15T20:39:36.437Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.916Z"
   },
   "req-ret-1789504791039-5dd521": {
     "id": "req-ret-1789504791039-5dd521",
@@ -48,10 +50,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-15T20:39:51.039Z",
     "reviewedAt": "2026-09-15T20:39:58.044Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.916Z"
   },
   "0a666766-5d73-4a2a-bd8b-c3438ab5f147": {
     "id": "req-ret-1789504791039-5dd521",
@@ -69,10 +72,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-15T20:39:51.039Z",
     "reviewedAt": "2026-09-15T20:39:58.044Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.916Z"
   },
   "req-ret-1789505069805-7c5a7b": {
     "id": "req-ret-1789505069805-7c5a7b",
@@ -90,10 +94,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-15T20:44:29.805Z",
     "reviewedAt": "2026-09-15T20:44:34.479Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.917Z"
   },
   "b7de9fc1-1d6f-4e39-bcc0-e038565b7fbe": {
     "id": "req-ret-1789505069805-7c5a7b",
@@ -111,10 +116,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-15T20:44:29.805Z",
     "reviewedAt": "2026-09-15T20:44:34.479Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.917Z"
   },
   "req_1789506910531_86b1bf6c": {
     "id": "req_1789506910531_86b1bf6c",
@@ -129,8 +135,9 @@
     "purpose": "Testing_",
     "durationDays": 7,
     "dueDate": "2026-09-22",
-    "status": "PENDING",
-    "requestedAt": "2026-09-15T21:15:10.531Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-15T21:15:10.531Z",
+    "returnedAt": "2026-09-16T15:32:43.917Z"
   },
   "req-ret-1789506925622-50959d": {
     "id": "req-ret-1789506925622-50959d",
@@ -148,8 +155,9 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "PENDING",
-    "requestedAt": "2026-09-15T21:15:25.622Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-15T21:15:25.622Z",
+    "returnedAt": "2026-09-16T15:32:43.917Z"
   },
   "26fa6d2b-4849-4388-a5bb-e6a97aff6c0c": {
     "id": "req-ret-1789506932396-e13bda",
@@ -167,10 +175,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-15T21:15:32.396Z",
     "reviewedAt": "2026-09-15T21:15:40.997Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req-ret-1789506932396-e13bda": {
     "id": "req-ret-1789506932396-e13bda",
@@ -188,8 +197,9 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "PENDING",
-    "requestedAt": "2026-09-15T21:15:32.396Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-15T21:15:32.396Z",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req-ret-1789506950681-cff6fd": {
     "id": "req-ret-1789506950681-cff6fd",
@@ -207,8 +217,9 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "PENDING",
-    "requestedAt": "2026-09-15T21:15:50.681Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-15T21:15:50.681Z",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "1412ca86-2e8e-4de2-8071-dc5c09e90c6b": {
     "id": "req-ret-1789506950681-cff6fd",
@@ -226,10 +237,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-15T21:15:50.681Z",
     "reviewedAt": "2026-09-15T21:15:56.417Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req_1789564609391_5715168b": {
     "id": "req_1789564609391_5715168b",
@@ -244,8 +256,9 @@
     "purpose": "Testing_",
     "durationDays": 7,
     "dueDate": "2026-09-23",
-    "status": "PENDING",
-    "requestedAt": "2026-09-16T13:16:49.391Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-16T13:16:49.391Z",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req-ret-1789564648042-b3d23b": {
     "id": "req-ret-1789564648042-b3d23b",
@@ -263,8 +276,9 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "PENDING",
-    "requestedAt": "2026-09-16T13:17:28.042Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-16T13:17:28.042Z",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "b2b15fc4-64ee-4aae-b7db-e47b2284d302": {
     "id": "req-ret-1789564648042-b3d23b",
@@ -282,10 +296,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-16T13:17:28.042Z",
     "reviewedAt": "2026-09-16T13:17:39.034Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req-ret-1789564651744-9c862d": {
     "id": "req-ret-1789564651744-9c862d",
@@ -303,8 +318,9 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "PENDING",
-    "requestedAt": "2026-09-16T13:17:31.744Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-16T13:17:31.744Z",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "e54d62cc-54d4-47e8-aeb8-638fb5c78bb4": {
     "id": "req-ret-1789564651744-9c862d",
@@ -322,10 +338,11 @@
     "purpose": "Return 1 of 1 units",
     "durationDays": 0,
     "dueDate": "",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-16T13:17:31.744Z",
     "reviewedAt": "2026-09-16T13:17:37.729Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req_1789570232914_5f8befb8": {
     "id": "req_1789570232914_5f8befb8",
@@ -340,8 +357,9 @@
     "purpose": "Testing_",
     "durationDays": 7,
     "dueDate": "2026-09-23",
-    "status": "PENDING",
-    "requestedAt": "2026-09-16T14:50:32.914Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-16T14:50:32.914Z",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req-1789570232880": {
     "id": "req-1789570232880",
@@ -355,10 +373,11 @@
     "purpose": "Testing_",
     "durationDays": 7,
     "dueDate": "2026-09-23",
-    "status": "APPROVED",
+    "status": "RETURNED",
     "requestedAt": "2026-09-16",
     "reviewedAt": "2026-09-16T14:50:41.328Z",
-    "reviewedBy": "Vardaan"
+    "reviewedBy": "Vardaan",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   },
   "req_1789570254225_72d4fd31": {
     "id": "req_1789570254225_72d4fd31",
@@ -373,7 +392,8 @@
     "purpose": "Testing_",
     "durationDays": 7,
     "dueDate": "2026-09-23",
-    "status": "PENDING",
-    "requestedAt": "2026-09-16T14:50:54.225Z"
+    "status": "RETURNED",
+    "requestedAt": "2026-09-16T14:50:54.225Z",
+    "returnedAt": "2026-09-16T15:32:43.918Z"
   }
 }
