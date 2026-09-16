@@ -2194,7 +2194,7 @@ class ModalManager {
                 returnBtn.disabled = false;
                 returnBtn.style.opacity = '1';
                 returnBtn.style.cursor = 'pointer';
-                returnBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Return Issued Component';
+                returnBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Return Component';
                 returnBtn.onclick = () => {
                     this.openReturnModal(targetLoan, item, item.borrowedBy.indexOf(targetLoan));
                 };
@@ -3522,6 +3522,16 @@ class ModalManager {
                 input.value = String(v);
                 updateSummary();
             });
+
+            const statusBadge = card.querySelector<HTMLElement>('.bulk-status-badge');
+            if (statusBadge) {
+                statusBadge.setAttribute('title', 'Click to toggle return quantity');
+                statusBadge.addEventListener('click', () => {
+                    const cur = Number(input.value) || 0;
+                    input.value = cur > 0 ? '0' : String(totalQty);
+                    updateSummary();
+                });
+            }
 
             listContainer.appendChild(card);
         });
