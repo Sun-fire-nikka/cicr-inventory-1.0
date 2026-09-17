@@ -1740,12 +1740,7 @@ class DashboardManager {
                 </div>
                 <div class="footer-info" style="align-items: flex-end;">
                     <span class="info-title">Availability</span>
-                    <span class="info-content">
-                        ${isAdmin
-                            ? `<strong class="stock-curr ${statusClass}">${available}</strong> <span class="stock-divider">/</span> ${totalQty}`
-                            : `<strong class="stock-curr ${statusClass}">${statusText}</strong>`
-                        }
-                    </span>
+                    <span class="info-content"><strong class="stock-curr ${statusClass}">${available}</strong> <span class="stock-divider">/</span> ${totalQty}</span>
                     <div class="availability-bar-track">
                         <div class="availability-bar-fill fill-${statusClass}" style="width: ${fillPercent}%"></div>
                     </div>
@@ -2256,12 +2251,7 @@ class ModalManager {
         const role = this.getCurrentRole();
         const detailQtyEl = document.getElementById('detail-quantity');
         if (detailQtyEl) {
-            if (role === 'ADMIN') {
-                detailQtyEl.innerHTML = `<strong>${available}</strong> / ${totalQty} available`;
-            } else {
-                const itemSt = getItemStockStatus(totalQty, available);
-                detailQtyEl.innerHTML = `<strong class="stock-curr ${itemSt.class}">${itemSt.text}</strong> in Vault`;
-            }
+            detailQtyEl.innerHTML = `<strong>${available}</strong> / ${totalQty} available`;
         }
 
         const catMap: Record<string, string> = {
