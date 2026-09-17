@@ -57,49 +57,79 @@ export const finalizeBorrow = async (
 ) => {
   const { userId, userName, itemId, quantity, purpose, durationDays } = payload;
 
-  // 1. Fetch item details (name, category, etc.) for the response and audit log.
-  const { data: item, error: itemErr } = await dbRead
+  // 1. Fetch item details (name, category, etc.)
+  const { data: initialItem, error: itemErr } = await dbRead
     .from('inventory')
     .select('*')
     .eq('id', itemId)
     .single();
 
-  if (itemErr || !item) {
+  if (itemErr || !initialItem) {
     return { error: { status: 404, message: 'Item not found.' } };
   }
 
-  // 2. Atomic decrement: only succeed if sufficient stock exists.
-  //    This WHERE clause prevents concurrent borrows from over-allocating.
-  const { data: updatedRows, error: updateErr } = await dbWrite
-    .from('inventory')
-    .update({
-      available_quantity: item.available_quantity - quantity,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', itemId)
-    .gte('available_quantity', quantity)
-    .select('available_quantity');
+  let item = initialItem;
+  let newAvailableQty = 0;
 
-  if (updateErr) return { error: { status: 500, message: updateErr.message } };
+  // 2. Concurrency-safe atomic CAS loop: guarantees multiple parallel checkout/approvals don't overwrite each other
+  let attempts = 0;
+  const maxAttempts = 5;
+  let updateSuccess = false;
 
-  // If no rows were updated, the WHERE condition failed (insufficient stock).
-  if (!updatedRows || updatedRows.length === 0) {
-    // Re-read the current stock to give an accurate error message.
-    const { data: fresh } = await dbRead
+  while (attempts < maxAttempts) {
+    attempts++;
+    const { data: freshItem, error: freshErr } = await dbRead
       .from('inventory')
-      .select('available_quantity')
+      .select('*')
       .eq('id', itemId)
       .single();
-    const currentStock = fresh?.available_quantity ?? 0;
+
+    if (freshErr || !freshItem) {
+      return { error: { status: 404, message: 'Item not found.' } };
+    }
+    item = freshItem;
+
+    const currAvail = Number(freshItem.available_quantity) || 0;
+    if (currAvail < quantity) {
+      return {
+        error: {
+          status: 400,
+          message: `Requested quantity (${quantity}) exceeds available stock (${currAvail}).`
+        }
+      };
+    }
+
+    const calculatedRemaining = currAvail - quantity;
+    const { data: updatedRows, error: updateErr } = await dbWrite
+      .from('inventory')
+      .update({
+        available_quantity: calculatedRemaining,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', itemId)
+      .eq('available_quantity', currAvail)
+      .select('available_quantity');
+
+    if (updateErr) return { error: { status: 500, message: updateErr.message } };
+
+    if (updatedRows && updatedRows.length > 0) {
+      newAvailableQty = updatedRows[0].available_quantity;
+      updateSuccess = true;
+      break;
+    }
+
+    // Brief jitter backoff before retrying CAS
+    await new Promise(res => setTimeout(res, 15 + Math.random() * 25));
+  }
+
+  if (!updateSuccess) {
     return {
       error: {
-        status: 400,
-        message: `Requested quantity (${quantity}) exceeds available stock (${currentStock}).`
+        status: 409,
+        message: 'High inventory contention detected. Please retry request authorization.'
       }
     };
   }
-
-  const newAvailableQty = updatedRows[0].available_quantity;
 
   // 3. Create the borrow record.
   const borrowedAt = new Date();

@@ -4,8 +4,49 @@ import type { InventoryItem, ActivityLog, RequestRecord, BorrowRecord } from './
 
 // Global declarations for CDN libraries
 declare const lucide: {
-    createIcons: () => void;
+    createIcons: (options?: any) => void;
 };
+
+// Safe, idempotent Lucide icon renderer that NEVER destroys already-rendered SVGs
+function renderLucideIcons(root?: HTMLElement | Document | null) {
+    const rawCreateIcons = (window as any).__rawLucideCreateIcons || (typeof lucide !== 'undefined' ? lucide.createIcons : null);
+    if (!rawCreateIcons) return;
+    const target = root || document;
+
+    // Only select elements that need icon creation (not already rendered SVGs)
+    const placeholders = target.querySelectorAll('i[data-lucide], span[data-lucide], [data-lucide]:not(svg)');
+    if (placeholders.length === 0) return;
+
+    try {
+        rawCreateIcons({
+            root: target instanceof HTMLElement ? target : undefined
+        });
+    } catch {
+        try { rawCreateIcons(); } catch {}
+    }
+
+    // Strip data-lucide from rendered SVGs to prevent future calls from destroying/re-rendering them
+    const renderedSvgs = target.querySelectorAll('svg[data-lucide]');
+    renderedSvgs.forEach(svg => {
+        svg.removeAttribute('data-lucide');
+        svg.setAttribute('data-lucide-rendered', 'true');
+    });
+}
+
+// Intercept lucide.createIcons globally so ANY third-party or legacy call is automatically safe
+if (typeof window !== 'undefined') {
+    const installLucideGuard = () => {
+        if (typeof lucide !== 'undefined' && lucide.createIcons && !(window as any).__rawLucideCreateIcons) {
+            (window as any).__rawLucideCreateIcons = lucide.createIcons.bind(lucide);
+            lucide.createIcons = (options?: any) => {
+                const root = options && options.root ? options.root : undefined;
+                renderLucideIcons(root);
+            };
+        }
+    };
+    installLucideGuard();
+    window.addEventListener('DOMContentLoaded', installLucideGuard);
+}
 
 // Dynamic API URL for Local Development & Live Production
 const isLocalHost = typeof window !== 'undefined' && (
@@ -141,7 +182,7 @@ class ToastManager {
         });
 
         this.container.appendChild(toast);
-        lucide.createIcons();
+        renderLucideIcons(toast);
 
         requestAnimationFrame(() => {
             setTimeout(() => toast.classList.add('show'), 20);
@@ -201,7 +242,7 @@ class ToastManager {
         });
 
         this.container.appendChild(toast);
-        lucide.createIcons();
+        renderLucideIcons(toast);
 
         requestAnimationFrame(() => {
             setTimeout(() => toast.classList.add('show'), 20);
@@ -430,6 +471,12 @@ class DatabaseManager {
         if (storedInventory) {
             try {
                 inventory = JSON.parse(storedInventory);
+                inventory.forEach((item: any) => {
+                    const nm = (item.name || '').toLowerCase();
+                    if (nm.includes('model unclear') || nm === 'arduino board') {
+                        item.name = 'Arduino Uno R3';
+                    }
+                });
             } catch {
                 inventory = [];
             }
@@ -538,9 +585,14 @@ class DatabaseManager {
                         ? Math.min(totalQty, Math.max(0, Number(item.available_quantity)))
                         : Math.max(0, totalQty - borrowedSum);
 
+                    let cleanName = (item.name || '').trim();
+                    if (cleanName.toLowerCase().includes('model unclear') || cleanName.toLowerCase() === 'arduino board') {
+                        cleanName = 'Arduino Uno R3';
+                    }
+
                     return {
                         id: String(item.id),
-                        name: item.name,
+                        name: cleanName,
                         category: cat || 'microcontrollers',
                         quantity: totalQty,
                         availableQuantity: availableQty,
@@ -575,15 +627,13 @@ class DatabaseManager {
                 }
             }
 
-            // Sync the member's OWN request statuses so approvals/rejections show
-            // up as in-app notification cards (in addition to the email notice).
-            const currentRole = ModalManager.getCurrentRole();
-            if (currentRole !== 'ADMIN' && requestsOutcome.status === 'fulfilled' && requestsOutcome.value.ok) {
+            // Sync canonical request statuses from server
+            if (requestsOutcome.status === 'fulfilled' && requestsOutcome.value.ok) {
                 try {
                     const rJson = await requestsOutcome.value.json();
                     const serverRequests = Array.isArray(rJson.data) ? rJson.data : [];
                     if (serverRequests.length > 0) {
-                        requests = serverRequests.map((r: any) => ({
+                        const mappedServerReqs: RequestRecord[] = serverRequests.map((r: any) => ({
                             id: r.id,
                             type: r.type || 'ISSUE',
                             borrowId: r.borrowId,
@@ -601,6 +651,21 @@ class DatabaseManager {
                             reviewedBy: r.reviewedBy,
                             reviewNote: r.reviewNote
                         }));
+
+                        // Deduplicate with any local unsynced pending requests
+                        const seenSyncIds = new Set<string>();
+                        const mergedSync: RequestRecord[] = [];
+                        for (const sr of mappedServerReqs) {
+                            seenSyncIds.add(sr.id);
+                            if (sr.borrowId) seenSyncIds.add(sr.borrowId);
+                            mergedSync.push(sr);
+                        }
+                        for (const lr of (requests || [])) {
+                            if (!seenSyncIds.has(lr.id) && !(lr.borrowId && seenSyncIds.has(lr.borrowId))) {
+                                mergedSync.push(lr);
+                            }
+                        }
+                        requests = mergedSync;
                         localStorage.setItem('cicr_requests', JSON.stringify(requests));
                     }
                 } catch (re) {
@@ -746,33 +811,34 @@ class DatabaseManager {
         const sidebarBeacon = document.getElementById('sidebar-notif-beacon') || (document.querySelector('.notif-radar-beacon') as HTMLElement | null);
         const navBadge = document.getElementById('nav-bell-badge');
 
+        const alertStr = String(totalAlerts);
         if (totalAlerts > 0) {
             if (sidebarBadge) {
-                sidebarBadge.innerText = String(totalAlerts);
-                sidebarBadge.style.display = 'inline-flex';
-                sidebarBadge.classList.add('pulse');
+                if (sidebarBadge.innerText !== alertStr) sidebarBadge.innerText = alertStr;
+                if (sidebarBadge.style.display !== 'inline-flex') sidebarBadge.style.display = 'inline-flex';
+                if (!sidebarBadge.classList.contains('pulse')) sidebarBadge.classList.add('pulse');
             }
             if (sidebarBeacon) {
-                sidebarBeacon.style.display = 'block';
+                if (sidebarBeacon.style.display !== 'block') sidebarBeacon.style.display = 'block';
             }
             if (navBadge) {
-                navBadge.innerText = String(totalAlerts);
-                navBadge.style.display = 'inline-flex';
-                navBadge.classList.add('pulse');
+                if (navBadge.innerText !== alertStr) navBadge.innerText = alertStr;
+                if (navBadge.style.display !== 'inline-flex') navBadge.style.display = 'inline-flex';
+                if (!navBadge.classList.contains('pulse')) navBadge.classList.add('pulse');
             }
         } else {
             if (sidebarBadge) {
-                sidebarBadge.innerText = '0';
-                sidebarBadge.style.display = 'none';
-                sidebarBadge.classList.remove('pulse');
+                if (sidebarBadge.innerText !== '0') sidebarBadge.innerText = '0';
+                if (sidebarBadge.style.display !== 'none') sidebarBadge.style.display = 'none';
+                if (sidebarBadge.classList.contains('pulse')) sidebarBadge.classList.remove('pulse');
             }
             if (sidebarBeacon) {
-                sidebarBeacon.style.display = 'none';
+                if (sidebarBeacon.style.display !== 'none') sidebarBeacon.style.display = 'none';
             }
             if (navBadge) {
-                navBadge.innerText = '0';
-                navBadge.style.display = 'none';
-                navBadge.classList.remove('pulse');
+                if (navBadge.innerText !== '0') navBadge.innerText = '0';
+                if (navBadge.style.display !== 'none') navBadge.style.display = 'none';
+                if (navBadge.classList.contains('pulse')) navBadge.classList.remove('pulse');
             }
         }
     }
@@ -1435,10 +1501,15 @@ class DashboardManager {
             }
         });
 
-        this.statTotal.innerText = String(totalQty);
-        this.statBorrowed.innerText = String(checkedOutQty);
-        this.statLow.innerText = String(lowStockCount);
-        this.statOut.innerText = String(outOfStockCount);
+        const totalStr = String(totalQty);
+        const borrowedStr = String(checkedOutQty);
+        const lowStr = String(lowStockCount);
+        const outStr = String(outOfStockCount);
+
+        if (this.statTotal.innerText !== totalStr) this.statTotal.innerText = totalStr;
+        if (this.statBorrowed.innerText !== borrowedStr) this.statBorrowed.innerText = borrowedStr;
+        if (this.statLow.innerText !== lowStr) this.statLow.innerText = lowStr;
+        if (this.statOut.innerText !== outStr) this.statOut.innerText = outStr;
     }
 
     public renderInventory(force = false) {
@@ -1476,7 +1547,7 @@ class DashboardManager {
         });
 
         const currentFingerprint = `${role}_${this.activeCategory}_${this.activeStockFilter}_${this.searchQuery}_` +
-            filtered.map(i => `${i.id}_${i.availableQuantity}_${i.quantity}_${i.name}_${i.location}_${(i.borrowedBy || []).length}`).join('|');
+            filtered.map(i => `${i.id}_${i.availableQuantity}_${i.quantity}_${i.name}_${i.location}_${(i.borrowedBy || []).map((b: any) => `${b.id}:${b.status}:${b.qty}`).join(',')}`).join('|');
 
         if (!force && this.lastRenderedFingerprint === currentFingerprint && this.inventoryGrid.children.length === filtered.length) {
             // Inventory data and filters have not changed; do NOT destroy/re-render DOM cards to prevent items popping up repeatedly
@@ -1501,26 +1572,23 @@ class DashboardManager {
         this.resultsCount.innerText = `Showing ${filtered.length} component${filtered.length > 1 ? 's' : ''}${filterSuffix}`;
 
         filtered.forEach((item, index) => {
-            const card = this.createCardElement(item);
+            const card = this.createCardElement(item, isInitial);
             if (isInitial) {
                 card.style.transitionDelay = `${(index % 4) * 0.06}s`;
-            } else {
-                card.style.transitionDelay = '0s';
-            }
-            this.inventoryGrid.appendChild(card);
-
-            if (isInitial) {
+                this.inventoryGrid.appendChild(card);
                 requestAnimationFrame(() => {
                     setTimeout(() => {
                         card.classList.add('active');
                     }, 40);
                 });
             } else {
+                card.style.transitionDelay = '0s';
                 card.classList.add('active');
+                this.inventoryGrid.appendChild(card);
             }
         });
 
-        lucide.createIcons();
+        renderLucideIcons(this.inventoryGrid);
     }
 
     private async loadInventory() {
@@ -1529,9 +1597,9 @@ class DashboardManager {
         this.renderStats();
     }
 
-    private createCardElement(item: InventoryItem): HTMLElement {
+    private createCardElement(item: InventoryItem, isInitial = false): HTMLElement {
         const card = document.createElement('div');
-        card.className = 'inventory-card glass reveal';
+        card.className = isInitial ? 'inventory-card glass reveal' : 'inventory-card glass active';
 
         const borrowedSum = (item.borrowedBy || []).reduce(
             (sum: number, rec: any) => sum + rec.qty,
@@ -1555,12 +1623,7 @@ class DashboardManager {
         };
         const categoryLabel = catMap[item.category] || item.category.toUpperCase();
 
-        // Ensure "Arduino Board (model unclear)" is displayed as "Arduino Uno R3"
-        let itemName = item.name;
-        if (itemName.toLowerCase().includes('model unclear') || itemName.toLowerCase() === 'arduino board') {
-            itemName = 'Arduino Uno R3';
-            item.name = 'Arduino Uno R3';
-        }
+        const itemName = item.name;
 
         // Dynamic 1-line sizing class so longer component names never get hidden or truncated
         const nameLen = itemName.length;
@@ -2540,26 +2603,61 @@ class ModalManager {
 
         // --- 3. GATHER REQUESTS DATA ---
         const combinedRequests: (RequestRecord | AdminHardwareRequest)[] = [];
-        const seenDrawerReqIds = new Set<string>();
+        const seenDrawerReqKeys = new Set<string>();
+
+        const getDrawerKey = (r: any): string => {
+            if (typeof AdminManager !== 'undefined' && typeof AdminManager.getRequestCanonicalKey === 'function') {
+                return AdminManager.getRequestCanonicalKey(r);
+            }
+            const isReturn = r.type === 'RETURN' || Boolean(r.borrowId);
+            if (isReturn) return `ret__${(r.borrowId || r.id || '').trim()}`;
+            const email = (r.borrowerEmail || r.email || '').toLowerCase().trim();
+            const name = (r.borrowerName || r.name || '').toLowerCase().trim();
+            const itemId = (r.itemId || '').toLowerCase().trim();
+            const qty = Number(r.quantity || r.qty) || 1;
+            const purp = (r.purpose || '').toLowerCase().trim();
+            const reqTime = r.requestedAt ? new Date(r.requestedAt).getTime() : 0;
+            const timeBucket = reqTime > 0 ? Math.floor(reqTime / 120000) : 0;
+            return `iss__${email}__${name}__${itemId}__${qty}__${purp}__${timeBucket}`;
+        };
+
+        const handledIds = typeof AdminManager !== 'undefined' ? AdminManager.getHandledRequestIds() : new Set<string>();
+
+        const isDrawerItemDismissed = (r: any): boolean => {
+            if (!r) return true;
+            if (handledIds.has(r.id)) return true;
+            if (r.borrowId && handledIds.has(r.borrowId)) return true;
+            const key = getDrawerKey(r);
+            if (key && handledIds.has(key)) return true;
+            return false;
+        };
 
         if (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.hardwareRequests)) {
             AdminManager.hardwareRequests.forEach(r => {
-                if (r && !seenDrawerReqIds.has(r.id)) {
-                    seenDrawerReqIds.add(r.id);
-                    combinedRequests.push(r);
+                if (r && !isDrawerItemDismissed(r)) {
+                    const key = getDrawerKey(r);
+                    if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
+                        seenDrawerReqKeys.add(key);
+                        seenDrawerReqKeys.add(r.id);
+                        combinedRequests.push(r);
+                    }
                 }
             });
         }
 
         (requests || []).forEach(r => {
-            if (r && !seenDrawerReqIds.has(r.id)) {
-                seenDrawerReqIds.add(r.id);
-                combinedRequests.push(r);
+            if (r && !isDrawerItemDismissed(r)) {
+                const key = getDrawerKey(r);
+                if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
+                    seenDrawerReqKeys.add(key);
+                    seenDrawerReqKeys.add(r.id);
+                    combinedRequests.push(r);
+                }
             }
         });
 
         const visibleRequests: any[] = isAdmin
-            ? combinedRequests
+            ? combinedRequests.filter(r => r.status === 'PENDING')
             : combinedRequests.filter(r => isUserRequest(r));
 
         // --- 4. GATHER SYSTEM LOGS DATA ---
@@ -3195,7 +3293,7 @@ class ModalManager {
         };
 
         try {
-            await fetch(`${API_BASE}/borrow/request`, {
+            const res = await fetch(`${API_BASE}/borrow/request`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3204,7 +3302,13 @@ class ModalManager {
                 body: JSON.stringify(requestPayload)
             });
 
-            // Always keep in local requests store so it is instantly reflected on this client
+            const resData = await res.json().catch(() => ({})) as any;
+            if (resData?.data?.id) {
+                newReq.id = resData.data.id;
+            }
+
+            // Always keep in local requests store so it is instantly reflected on this client, deduplicating against any existing match
+            requests = requests.filter(r => r.id !== newReq.id && !(r.status === 'PENDING' && r.itemId === newReq.itemId && r.qty === newReq.qty && r.purpose === newReq.purpose));
             requests.unshift(newReq);
             DatabaseManager.save();
 
@@ -3223,6 +3327,7 @@ class ModalManager {
         } catch (e: any) {
             console.error('Request API error:', e);
             // On offline/failover, save locally
+            requests = requests.filter(r => r.id !== newReq.id && !(r.status === 'PENDING' && r.itemId === newReq.itemId && r.qty === newReq.qty && r.purpose === newReq.purpose));
             requests.unshift(newReq);
             DatabaseManager.save();
             (document.getElementById('borrow-form') as HTMLFormElement).reset();
@@ -3295,13 +3400,16 @@ class ModalManager {
         lucide.createIcons();
     }
 
+    private static isSubmittingReturn = false;
+
     // Submits a full or partial return. Always hits /borrow/return-request so that
     // requests (from both admins and members) go to the Admin Portal for verification.
     public static async handleReturnSubmission(borrowId: string, qtyVal: number, _idx: number) {
-        if (!borrowId) {
-            ToastManager.show('Return Error', 'Borrow reference is missing.', 'error');
+        if (!borrowId || this.isSubmittingReturn) {
+            if (!borrowId) ToastManager.show('Return Error', 'Borrow reference is missing.', 'error');
             return;
         }
+        this.isSubmittingReturn = true;
 
         const isAdmin = this.getCurrentRole() === 'ADMIN';
         const token = localStorage.getItem('cicr_token');
@@ -3344,8 +3452,9 @@ class ModalManager {
             const localUser = (() => {
                 try { return JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch { return {}; }
             })();
+            const returnId = payload?.data?.id || `req-ret-local-${Date.now()}`;
             const localReq: RequestRecord = {
-                id: payload?.data?.id || `req-ret-local-${Date.now()}`,
+                id: returnId,
                 type: 'RETURN',
                 borrowId,
                 returnQuantity: requestedQty,
@@ -3358,6 +3467,8 @@ class ModalManager {
                 status: 'PENDING',
                 requestedAt: new Date().toISOString()
             };
+            // Deduplicate: remove any existing pending return for this borrowId or id
+            requests = requests.filter(r => !(r.id === returnId || (r.type === 'RETURN' && (r as any).borrowId === borrowId)));
             requests.unshift(localReq);
             DatabaseManager.save();
 
@@ -3376,6 +3487,8 @@ class ModalManager {
             console.error('Return API error:', e);
             ToastManager.show('Network Error', 'Failed to reach server.', 'error');
             if (submitBtn) submitBtn.disabled = false;
+        } finally {
+            this.isSubmittingReturn = false;
         }
     }
 
@@ -3860,6 +3973,17 @@ class AuthManager {
             return;
         }
 
+        // Optimistic instant session activation: eliminates auth modal flash on page reload
+        const cachedUserStr = localStorage.getItem('cicr_user');
+        const cachedAuth = localStorage.getItem('cicr_auth');
+        const cachedRole = (localStorage.getItem('cicr_role') as UserRole) || 'MEMBER';
+        if (cachedUserStr || cachedAuth) {
+            let userObj = null;
+            try { if (cachedUserStr) userObj = JSON.parse(cachedUserStr); } catch { }
+            const fallbackName = userObj?.name || cachedAuth || 'Operator';
+            this.loginSuccess(fallbackName, cachedRole, userObj);
+        }
+
         try {
             const res = await fetch(`${API_BASE}/auth/profile`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -3885,19 +4009,9 @@ class AuthManager {
             console.warn('Profile validation check failed (server may be waking up):', err);
         }
 
-        // Resilient Session Recovery: If network/cold-start prevented verification, preserve cached user
-        const cachedUserStr = localStorage.getItem('cicr_user');
-        const cachedAuth = localStorage.getItem('cicr_auth');
-        const cachedRole = (localStorage.getItem('cicr_role') as UserRole) || 'MEMBER';
-        if (cachedUserStr || cachedAuth) {
-            let userObj = null;
-            try { if (cachedUserStr) userObj = JSON.parse(cachedUserStr); } catch { }
-            const fallbackName = userObj?.name || cachedAuth || 'Operator';
-            this.loginSuccess(fallbackName, cachedRole, userObj);
-            return;
+        if (!cachedUserStr && !cachedAuth) {
+            this.handleLogout();
         }
-
-        this.handleLogout();
     }
 
     private static showLoginOverlay() {
@@ -4071,8 +4185,7 @@ class AuthManager {
         } else {
             window.dashboard.init();
         }
-        DatabaseManager.syncFromBackend();
-        lucide.createIcons();
+        renderLucideIcons();
         TerminalSimulator.start();
 
         if (effectiveRole === 'ADMIN') {
@@ -4546,6 +4659,9 @@ class AdminManager {
     private static auditSearchTerm = '';
     private static activeUserRoleFilter = 'all';
     private static isInitialized = false;
+    private static lastHardwareQueueFingerprint = '';
+    private static lastPendingQueueFingerprint = '';
+    private static lastUsersTableFingerprint = '';
 
     static init() {
         if (this.isInitialized) return;
@@ -4843,11 +4959,11 @@ class AdminManager {
 
 
         this.updateStats();
-        this.renderPendingQueue();
+        this.renderPendingQueue(force);
 
         const searchInput = document.getElementById('admin-users-search') as HTMLInputElement;
         const query = searchInput ? searchInput.value : '';
-        this.renderUsersTable(this.filterUsers(query));
+        this.renderUsersTable(this.filterUsers(query), force);
     }
 
     static getHandledRequestIds(): Set<string> {
@@ -4861,13 +4977,36 @@ class AdminManager {
         }
     }
 
-    static markRequestHandled(id: string) {
+    static getRequestCanonicalKey(r: any): string {
+        if (!r) return '';
+        const isReturn = r.type === 'RETURN' || Boolean(r.borrowId);
+        if (isReturn) {
+            const bId = (r.borrowId || r.id || '').trim();
+            return `ret__${bId}`;
+        }
+        const email = (r.borrowerEmail || r.email || '').toLowerCase().trim();
+        const name = (r.borrowerName || r.name || '').toLowerCase().trim();
+        const itemId = (r.itemId || '').toLowerCase().trim();
+        const qty = Number(r.quantity || r.qty) || 1;
+        const purpose = (r.purpose || '').toLowerCase().trim();
+        const reqTime = r.requestedAt ? new Date(r.requestedAt).getTime() : 0;
+        const timeBucket = reqTime > 0 ? Math.floor(reqTime / 120000) : 0;
+        return `iss__${email}__${name}__${itemId}__${qty}__${purpose}__${timeBucket}`;
+    }
+
+    static markRequestHandled(...ids: (string | undefined | null)[]) {
         try {
             const raw = localStorage.getItem('cicr_dismissed_requests');
             const list: string[] = raw ? JSON.parse(raw) : [];
-            if (!list.includes(id)) {
-                list.push(id);
-                if (list.length > 200) list.splice(0, list.length - 200);
+            let changed = false;
+            for (const id of ids) {
+                if (id && typeof id === 'string' && !list.includes(id)) {
+                    list.push(id);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                if (list.length > 300) list.splice(0, list.length - 300);
                 localStorage.setItem('cicr_dismissed_requests', JSON.stringify(list));
             }
         } catch { }
@@ -4894,70 +5033,6 @@ class AdminManager {
             console.error('Failed to fetch hardware requests:', err);
         }
 
-        // 1.5 AUDIT STREAM REAL-TIME RECOVERY:
-        // Supabase audit_logs is universally shared across cloud and local nodes.
-        // If an audit event "Hardware Requested" is present in logs and has not been resolved,
-        // guarantee it exists in serverList so Screenshot 1 and Screenshot 2 are 100% in sync!
-        const storedLogsRaw = localStorage.getItem('cicr_logs');
-        if (storedLogsRaw) {
-            try {
-                const parsedLogs = JSON.parse(storedLogsRaw);
-                const resolvedEvents = new Set<string>();
-                (parsedLogs || []).forEach((l: any) => {
-                    const txt = (l.text || '').toLowerCase();
-                    if (txt.includes('approved') || txt.includes('rejected') || txt.includes('declined')) {
-                        resolvedEvents.add(txt);
-                    }
-                });
-
-                (parsedLogs || []).forEach((l: any) => {
-                    const txt = l.text || '';
-                    if (txt.includes('requested') && (txt.includes('for purpose:') || txt.includes('requested 1x') || txt.includes('requested '))) {
-                        const match = txt.match(/^(.*?)\s*\((.*?)\)\s*requested\s*(\d+)x\s*"([^"]+)"\s*for\s*purpose:\s*(.*)$/i) ||
-                            txt.match(/<span>(.*?)<\/span>\s*requested\s*(\d+)x\s*<span>(.*?)<\/span>\s*for\s*'(.*?)'/i);
-                        if (match) {
-                            const bName = match[1].trim();
-                            const bEmail = match[2].includes('@') ? match[2].trim() : `${bName.toLowerCase().replace(/\s+/g, '')}@mail.jiit.ac.in`;
-                            const qty = parseInt(match[3] || match[2] || '1', 10) || 1;
-                            const itemName = (match[4] || match[3] || 'Hardware Component').trim();
-                            const purpose = (match[5] || match[4] || 'Testing').trim();
-
-                            const isResolved = Array.from(resolvedEvents).some(resTxt =>
-                                (resTxt.includes(bName.toLowerCase()) && (resTxt.includes(itemName.toLowerCase()) || resTxt.includes('hardware')))
-                            );
-
-                            if (!isResolved) {
-                                const id = `req_audit_${new Date(l.timestamp || Date.now()).getTime()}`;
-                                const exists = serverList.some(s =>
-                                    (s.borrowerName.toLowerCase() === bName.toLowerCase() && s.itemName.toLowerCase() === itemName.toLowerCase()) ||
-                                    s.id === id
-                                );
-
-                                if (!exists && !handledIds.has(id)) {
-                                    serverList.push({
-                                        id,
-                                        itemId: 'unlisted-item',
-                                        itemName,
-                                        borrowerName: bName,
-                                        borrowerEmail: bEmail,
-                                        rollNumber: bEmail.includes('@') ? bEmail.split('@')[0] : null,
-                                        quantity: qty,
-                                        purpose,
-                                        durationDays: 7,
-                                        dueDate: new Date(new Date(l.timestamp || Date.now()).getTime() + 7 * 86400000).toISOString().split('T')[0],
-                                        status: 'PENDING',
-                                        requestedAt: l.timestamp || new Date().toISOString()
-                                    });
-                                }
-                            }
-                        }
-                    }
-                });
-            } catch (err) {
-                console.warn('Audit stream recovery note:', err);
-            }
-        }
-
         // 2. Collect from local requests state and localStorage
         const localStoredRaw = localStorage.getItem('cicr_requests');
         let localRequests: RequestRecord[] = [];
@@ -4966,10 +5041,10 @@ class AdminManager {
         }
         const combinedLocal = [...(requests || []), ...localRequests];
         const localPending: AdminHardwareRequest[] = combinedLocal
-            .filter((r) => r.status === 'PENDING' && !handledIds.has(r.id))
+            .filter((r) => r.status === 'PENDING')
             .map((r) => ({
                 id: r.id,
-                type: (r as any).type || 'ISSUE',
+                type: (r as any).type || ((r as any).borrowId ? 'RETURN' : 'ISSUE'),
                 borrowId: (r as any).borrowId,
                 returnQuantity: (r as any).returnQuantity,
                 itemId: r.itemId,
@@ -4985,44 +5060,40 @@ class AdminManager {
                 requestedAt: r.requestedAt || new Date().toISOString()
             }));
 
-        // Merge all sources, de-duplicating by id and content
-        const merged: AdminHardwareRequest[] = [];
-        const seenIds = new Set<string>();
-        const seenContent = new Set<string>();
-
-        const makeContentKey = (item: AdminHardwareRequest): string => {
-            const iId = (item.itemId || '').toLowerCase().trim();
-            const bName = (item.borrowerName || '').toLowerCase().trim();
-            const purp = (item.purpose || '').toLowerCase().trim();
-            const qty = Number(item.quantity) || 1;
-            return `${iId}__${bName}__${purp}__${qty}`;
+        const isItemDismissed = (item: any): boolean => {
+            if (!item) return true;
+            if (handledIds.has(item.id)) return true;
+            if (item.borrowId && handledIds.has(item.borrowId)) return true;
+            const key = this.getRequestCanonicalKey(item);
+            if (key && handledIds.has(key)) return true;
+            return false;
         };
+
+        const canonicalQueue = new Map<string, AdminHardwareRequest>();
 
         // 1. Process server list first (canonical source of truth)
         for (const item of serverList) {
             if (!item || item.status !== 'PENDING') continue;
-            if (handledIds.has(item.id)) continue;
-            const contentKey = makeContentKey(item);
-            if (seenIds.has(item.id) || seenContent.has(contentKey)) continue;
-            seenIds.add(item.id);
-            seenContent.add(contentKey);
-            merged.push(item);
+            if (isItemDismissed(item)) continue;
+            const key = this.getRequestCanonicalKey(item) || item.id;
+            if (!canonicalQueue.has(key)) {
+                canonicalQueue.set(key, item);
+            }
         }
 
-        // 2. Add localPending items ONLY if they are not already on the server
+        // 2. Add localPending items ONLY if they are not already in the canonical queue
         for (const item of localPending) {
             if (!item || item.status !== 'PENDING') continue;
-            if (handledIds.has(item.id)) continue;
-            const contentKey = makeContentKey(item);
-            if (seenIds.has(item.id) || seenContent.has(contentKey)) continue;
-            seenIds.add(item.id);
-            seenContent.add(contentKey);
-            merged.push(item);
+            if (isItemDismissed(item)) continue;
+            const key = this.getRequestCanonicalKey(item) || item.id;
+            if (!canonicalQueue.has(key)) {
+                canonicalQueue.set(key, item);
+            }
         }
 
-        this.hardwareRequests = merged;
+        this.hardwareRequests = Array.from(canonicalQueue.values());
         this.updateStats();
-        this.renderHardwareQueue();
+        this.renderHardwareQueue(force);
         DatabaseManager.updateNotificationBadges();
     }
 
@@ -5040,30 +5111,43 @@ class AdminManager {
         const hwTag = document.getElementById('admin-hw-count-tag');
         const sidebarBadge = document.getElementById('admin-pending-badge');
 
-        if (statPendingUsers) statPendingUsers.innerText = pendingUsers.toString();
-        if (statPendingHw) statPendingHw.innerText = pendingHardware.toString();
-        if (statApproved) statApproved.innerText = approved.toString();
-        if (statAdmins) statAdmins.innerText = admins.toString();
-        if (pendingTag) pendingTag.innerText = `${pendingUsers} PENDING`;
-        if (hwTag) hwTag.innerText = `${pendingHardware} PENDING`;
+        const pUserStr = pendingUsers.toString();
+        const pHwStr = pendingHardware.toString();
+        const appStr = approved.toString();
+        const admStr = admins.toString();
+        const pTagStr = `${pendingUsers} PENDING`;
+        const hwTagStr = `${pendingHardware} PENDING`;
+
+        if (statPendingUsers && statPendingUsers.innerText !== pUserStr) statPendingUsers.innerText = pUserStr;
+        if (statPendingHw && statPendingHw.innerText !== pHwStr) statPendingHw.innerText = pHwStr;
+        if (statApproved && statApproved.innerText !== appStr) statApproved.innerText = appStr;
+        if (statAdmins && statAdmins.innerText !== admStr) statAdmins.innerText = admStr;
+        if (pendingTag && pendingTag.innerText !== pTagStr) pendingTag.innerText = pTagStr;
+        if (hwTag && hwTag.innerText !== hwTagStr) hwTag.innerText = hwTagStr;
 
         const totalPending = pendingUsers + pendingHardware;
         if (sidebarBadge) {
             if (totalPending > 0) {
-                sidebarBadge.style.display = 'inline-block';
-                sidebarBadge.innerText = totalPending.toString();
+                if (sidebarBadge.style.display !== 'inline-block') sidebarBadge.style.display = 'inline-block';
+                if (sidebarBadge.innerText !== totalPending.toString()) sidebarBadge.innerText = totalPending.toString();
             } else {
-                sidebarBadge.style.display = 'none';
+                if (sidebarBadge.style.display !== 'none') sidebarBadge.style.display = 'none';
             }
         }
-        DatabaseManager.updateNotificationBadges();
     }
 
-    private static renderHardwareQueue() {
+    private static renderHardwareQueue(force = false) {
         const container = document.getElementById('admin-hardware-list');
         if (!container) return;
 
         const pendingRequests = this.hardwareRequests.filter(r => r.status === 'PENDING');
+        const fingerprint = pendingRequests.map(r => `${r.id}_${r.status}_${r.quantity}_${r.returnQuantity || ''}_${r.borrowerEmail}_${r.itemName}_${r.type || ''}`).join('|');
+
+        if (!force && this.lastHardwareQueueFingerprint === fingerprint && container.children.length === (pendingRequests.length === 0 ? 1 : pendingRequests.length)) {
+            return;
+        }
+        this.lastHardwareQueueFingerprint = fingerprint;
+
         if (pendingRequests.length === 0) {
             container.innerHTML = `
                 <div class="admin-empty-state">
@@ -5071,7 +5155,7 @@ class AdminManager {
                     <p>No pending component requests in queue. Vault operations nominal.</p>
                 </div>
             `;
-            lucide.createIcons();
+            renderLucideIcons(container);
             return;
         }
 
@@ -5117,36 +5201,57 @@ class AdminManager {
         `;
         }).join('');
 
-        lucide.createIcons();
+        renderLucideIcons(container);
     }
 
+    private static pendingActionIds = new Set<string>();
+
     static async approveHardware(id: string) {
+        if (this.pendingActionIds.has(id)) return;
+        this.pendingActionIds.add(id);
+        setTimeout(() => this.pendingActionIds.delete(id), 2500);
+
         const token = localStorage.getItem('cicr_token');
-        const targetReq = this.hardwareRequests.find(r => r.id === id);
+        const targetReq = this.hardwareRequests.find(r => r.id === id)
+            || (requests.find(r => r.id === id) as any);
         const reqSnapshot = targetReq ? { ...targetReq } : null;
+        const targetKey = this.getRequestCanonicalKey(targetReq);
+
+        const matchesTarget = (r: any): boolean => {
+            if (!r) return false;
+            if (r.id === id) return true;
+            if (targetReq?.id && r.id === targetReq.id) return true;
+            if (targetReq?.borrowId && (r.borrowId === targetReq.borrowId || r.id === targetReq.borrowId)) return true;
+            if (r.borrowId && (r.borrowId === id || r.id === id)) return true;
+            if (targetKey) {
+                const k = AdminManager.getRequestCanonicalKey(r);
+                if (k && k === targetKey) return true;
+            }
+            return false;
+        };
 
         // Permanently record as handled so it NEVER resurrects in UI
-        this.markRequestHandled(id);
+        this.markRequestHandled(id, targetReq?.id, targetReq?.borrowId, targetKey);
 
         // 1. INSTANT 1-CLICK OPTIMISTIC UI UPDATE (Zero Latency)
-        this.hardwareRequests = this.hardwareRequests.filter(r => r.id !== id);
-        requests = requests.filter(r => r.id !== id);
+        this.hardwareRequests = this.hardwareRequests.filter(r => !matchesTarget(r));
+        requests = requests.filter(r => !matchesTarget(r));
         this.updateStats();
-        this.renderHardwareQueue();
+        this.renderHardwareQueue(true);
 
         // Immediately purge from localStorage
         const localStoredRaw = localStorage.getItem('cicr_requests');
         if (localStoredRaw) {
             try {
                 const parsed = JSON.parse(localStoredRaw);
-                const filtered = parsed.filter((r: any) => r.id !== id);
+                const filtered = parsed.filter((r: any) => !matchesTarget(r));
                 localStorage.setItem('cicr_requests', JSON.stringify(filtered));
             } catch { }
         }
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
 
-        const isReturnReq = reqSnapshot?.type === 'RETURN';
+        const isReturnReq = reqSnapshot?.type === 'RETURN' || Boolean(reqSnapshot?.borrowId);
         ToastManager.show(
             isReturnReq ? 'Return Authorized' : 'Request Authorized',
             `${isReturnReq ? 'Return' : 'Component issue'} for "${reqSnapshot?.itemName || 'Hardware'}" approved.`,
@@ -5186,31 +5291,49 @@ class AdminManager {
     }
 
     static async rejectHardware(id: string) {
+        if (this.pendingActionIds.has(id)) return;
+        this.pendingActionIds.add(id);
+        setTimeout(() => this.pendingActionIds.delete(id), 2500);
+
         const token = localStorage.getItem('cicr_token');
-        const targetReq = this.hardwareRequests.find(r => r.id === id);
+        const targetReq = this.hardwareRequests.find(r => r.id === id)
+            || (requests.find(r => r.id === id) as any);
         const itemName = targetReq?.itemName || 'Component';
+        const targetKey = this.getRequestCanonicalKey(targetReq);
+
+        const matchesTarget = (r: any): boolean => {
+            if (!r) return false;
+            if (r.id === id) return true;
+            if (targetReq?.id && r.id === targetReq.id) return true;
+            if (targetReq?.borrowId && (r.borrowId === targetReq.borrowId || r.id === targetReq.borrowId)) return true;
+            if (r.borrowId && (r.borrowId === id || r.id === id)) return true;
+            if (targetKey) {
+                const k = AdminManager.getRequestCanonicalKey(r);
+                if (k && k === targetKey) return true;
+            }
+            return false;
+        };
 
         // Permanently record as handled so it NEVER resurrects in UI
-        this.markRequestHandled(id);
+        this.markRequestHandled(id, targetReq?.id, targetReq?.borrowId, targetKey);
 
         // 1. INSTANT 1-CLICK OPTIMISTIC UI UPDATE (Zero Latency)
-        this.hardwareRequests = this.hardwareRequests.filter(r => r.id !== id);
-        const reqObj = requests.find(r => r.id === id);
-        if (reqObj) {
-            reqObj.status = 'REJECTED';
-            reqObj.reviewNote = 'Declined by Administrator.';
-        } else {
-            requests = requests.filter(r => r.id !== id);
-        }
+        this.hardwareRequests = this.hardwareRequests.filter(r => !matchesTarget(r));
+        requests.forEach(r => {
+            if (matchesTarget(r)) {
+                r.status = 'REJECTED';
+                r.reviewNote = 'Declined by Administrator.';
+            }
+        });
         this.updateStats();
-        this.renderHardwareQueue();
+        this.renderHardwareQueue(true);
 
         // Persist updated status to localStorage
         const localStoredRaw = localStorage.getItem('cicr_requests');
         if (localStoredRaw) {
             try {
                 const parsed = JSON.parse(localStoredRaw);
-                const updated = parsed.map((r: any) => r.id === id ? { ...r, status: 'REJECTED', reviewNote: 'Declined by Administrator.' } : r);
+                const updated = parsed.map((r: any) => matchesTarget(r) ? { ...r, status: 'REJECTED', reviewNote: 'Declined by Administrator.' } : r);
                 localStorage.setItem('cicr_requests', JSON.stringify(updated));
             } catch { }
         }
@@ -5250,11 +5373,18 @@ class AdminManager {
         DatabaseManager.syncFromBackend();
     }
 
-    private static renderPendingQueue() {
+    private static renderPendingQueue(force = false) {
         const container = document.getElementById('admin-pending-list');
         if (!container) return;
 
         const pendingUsers = this.users.filter(u => u.status === 'PENDING');
+        const fingerprint = pendingUsers.map(u => `${u.id}_${u.status}_${u.name}_${u.email}_${u.roll_number || ''}_${u.batch || ''}`).join('|');
+
+        if (!force && this.lastPendingQueueFingerprint === fingerprint && container.children.length === (pendingUsers.length === 0 ? 1 : pendingUsers.length)) {
+            return;
+        }
+        this.lastPendingQueueFingerprint = fingerprint;
+
         if (pendingUsers.length === 0) {
             container.innerHTML = `
                 <div class="admin-empty-state">
@@ -5262,7 +5392,7 @@ class AdminManager {
                     <p>No pending registration requests. All accounts are up to date!</p>
                 </div>
             `;
-            lucide.createIcons();
+            renderLucideIcons(container);
             return;
         }
 
@@ -5294,7 +5424,7 @@ class AdminManager {
             `;
         }).join('');
 
-        lucide.createIcons();
+        renderLucideIcons(container);
     }
 
     private static filterUsers(query: string) {
@@ -5303,12 +5433,13 @@ class AdminManager {
         return this.users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
     }
 
-    private static renderUsersTable(usersList: AdminUserRecord[]) {
+    private static renderUsersTable(usersList: AdminUserRecord[], force = false) {
         const tbody = document.getElementById('admin-users-tbody');
         if (!tbody) return;
 
         const totalBadge = document.getElementById('admin-users-total-badge');
-        if (totalBadge) totalBadge.innerText = `${this.users.length} USERS`;
+        const totalText = `${this.users.length} USERS`;
+        if (totalBadge && totalBadge.innerText !== totalText) totalBadge.innerText = totalText;
 
         const allAdmins = this.users.filter(u => u.isMasterAdmin || u.role === 'ADMIN' || ModalManager.isDesignatedAdminUser(u.email, u.name, u.username));
         const allMembers = this.users.filter(u => !(u.isMasterAdmin || u.role === 'ADMIN' || ModalManager.isDesignatedAdminUser(u.email, u.name, u.username)));
@@ -5317,9 +5448,18 @@ class AdminManager {
         const pillAdmin = document.getElementById('pill-filter-admin');
         const pillMember = document.getElementById('pill-filter-member');
 
-        if (pillAll) pillAll.innerText = `ALL (${this.users.length})`;
-        if (pillAdmin) pillAdmin.innerText = `ADMINS (${allAdmins.length})`;
-        if (pillMember) pillMember.innerText = `MEMBERS (${allMembers.length})`;
+        const allText = `ALL (${this.users.length})`;
+        if (pillAll && pillAll.innerText !== allText) pillAll.innerText = allText;
+        const adminText = `ADMINS (${allAdmins.length})`;
+        if (pillAdmin && pillAdmin.innerText !== adminText) pillAdmin.innerText = adminText;
+        const memberText = `MEMBERS (${allMembers.length})`;
+        if (pillMember && pillMember.innerText !== memberText) pillMember.innerText = memberText;
+
+        const usersFingerprint = `${this.activeUserRoleFilter}_` + usersList.map(u => `${u.id}_${u.role}_${u.status}_${u.name}_${u.email}_${u.roll_number || ''}_${u.batch || ''}`).join('|');
+        if (!force && this.lastUsersTableFingerprint === usersFingerprint && tbody.children.length > 0) {
+            return;
+        }
+        this.lastUsersTableFingerprint = usersFingerprint;
 
         // Separate current filtered users into Admins and Members
         const adminUsers = usersList.filter(u => u.isMasterAdmin || u.role === 'ADMIN' || ModalManager.isDesignatedAdminUser(u.email, u.name, u.username));
@@ -5491,7 +5631,7 @@ class AdminManager {
                     </td>
                 </tr>
             `;
-            lucide.createIcons();
+            renderLucideIcons(tbody);
             return;
         }
 
@@ -5503,7 +5643,7 @@ class AdminManager {
             tbody.innerHTML = renderAdminSection() + renderMemberSection();
         }
 
-        lucide.createIcons();
+        renderLucideIcons(tbody);
     }
 
     static async approveUser(id: string) {
@@ -5517,9 +5657,9 @@ class AdminManager {
             targetUser.status = 'APPROVED';
         }
         this.updateStats();
-        this.renderPendingQueue();
+        this.renderPendingQueue(true);
         const searchInput = document.getElementById('admin-users-search') as HTMLInputElement;
-        this.renderUsersTable(this.filterUsers(searchInput ? searchInput.value : ''));
+        this.renderUsersTable(this.filterUsers(searchInput ? searchInput.value : ''), true);
 
         ToastManager.show('User Approved', `Member "${userName}" has been granted access.`, 'success');
         DatabaseManager.addLog('system', `Admin approved membership for ${userName} (${userEmail})`);
@@ -5548,9 +5688,9 @@ class AdminManager {
             targetUser.status = 'REJECTED';
         }
         this.updateStats();
-        this.renderPendingQueue();
+        this.renderPendingQueue(true);
         const searchInput = document.getElementById('admin-users-search') as HTMLInputElement;
-        this.renderUsersTable(this.filterUsers(searchInput ? searchInput.value : ''));
+        this.renderUsersTable(this.filterUsers(searchInput ? searchInput.value : ''), true);
 
         ToastManager.show('User Rejected', `Membership request for "${userName}" declined.`, 'warning');
         DatabaseManager.addLog('system', `Admin rejected membership request for ${userName}`);
@@ -5583,7 +5723,7 @@ class AdminManager {
             if (res.ok) {
                 ToastManager.show('Role Updated', `User permissions changed to ${role}.`, 'info');
                 DatabaseManager.addLog('system', `User ${id} role updated to ${role}`);
-                await this.loadUsers();
+                await this.loadUsers(true);
                 await this.loadAuditLogs();
             } else {
                 const err = await res.json().catch(() => ({}));
@@ -5602,8 +5742,8 @@ class AdminManager {
             // Optimistically update local view immediately
             this.users = this.users.filter(u => u.id !== id);
             const searchInput = document.getElementById('admin-users-search') as HTMLInputElement;
-            this.renderUsersTable(this.filterUsers(searchInput?.value || ''));
-            this.renderPendingQueue();
+            this.renderUsersTable(this.filterUsers(searchInput?.value || ''), true);
+            this.renderPendingQueue(true);
             this.updateStats();
 
             const res = await fetch(`${API_BASE}/auth/admin/users/${id}`, {
@@ -5923,7 +6063,7 @@ class AdminManager {
             `;
         }).join('');
 
-        lucide.createIcons();
+        renderLucideIcons(container);
     }
 
     static openAuditDetail(logId: string) {
@@ -5956,7 +6096,7 @@ class AdminManager {
         if (jsonEl) jsonEl.innerText = JSON.stringify(log, null, 2);
 
         modal.classList.add('active');
-        lucide.createIcons();
+        renderLucideIcons(modal);
     }
 
     static exportAuditLogsCSV() {

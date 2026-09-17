@@ -365,11 +365,43 @@
       "username": "kshaurya74",
       "batch": "H4"
     },
+    "992501220058@mail.jiit.ac.in": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "approvedAt": "2026-09-17T08:30:34.634+00:00",
+      "approvedBy": "ADMIN",
+      "username": "pulkitsukhija",
+      "batch": "F22"
+    },
+    "test@mail.jiit.ac.in": {
+      "status": "PENDING",
+      "role": "MEMBER",
+      "username": "testuser",
+      "batch": "F1",
+      "name": "Test User",
+      "roll_number": "9923103001"
+    },
     "992501030406@mail.jiit.ac.in": {
       "status": "APPROVED",
       "role": "MEMBER",
       "approvedAt": "2026-09-13T20:34:53.686+00:00",
       "approvedBy": "ADMIN"
+    },
+    "admin.1789671959931@cicr.test": {
+      "status": "APPROVED",
+      "role": "ADMIN",
+      "approvedAt": "2026-09-17T19:06:07.264Z",
+      "approvedBy": "MASTER_ADMIN",
+      "username": "Test Admin",
+      "name": "Test Admin"
+    },
+    "member.1789671959931@cicr.test": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "approvedAt": "2026-09-17T19:06:07.271Z",
+      "approvedBy": "MASTER_ADMIN",
+      "username": "Test Member",
+      "name": "Test Member"
     }
   },
   "purgedEmails": [
