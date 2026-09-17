@@ -574,7 +574,7 @@ class DatabaseManager {
                     else if (cat.includes('tool') || cat.includes('comm') || cat.includes('display') || cat.includes('remote') || cat.includes('cable') || cat.includes('mechanical') || cat.includes('misc')) cat = 'tools';
 
                     const itemBorrows = liveBorrows
-                        .filter((b: any) => (b.inventory_id === item.id || b.item_id === item.id) && (b.status === 'BORROWED' || b.status === 'RETURN_REQUESTED'))
+                        .filter((b: any) => (b.inventory_id === item.id || b.item_id === item.id) && (b.status === 'BORROWED' || b.status === 'RETURN_REQUESTED' || b.status === 'RETURNED'))
                         .map((b: any) => ({
                             id: b.id,
                             userId: b.user_id || b.users?.id,
@@ -587,10 +587,13 @@ class DatabaseManager {
                             purpose: b.purpose || 'Robotics Project',
                             date: b.borrowed_at ? b.borrowed_at.split('T')[0] : new Date().toISOString().split('T')[0],
                             dueDate: b.due_date ? b.due_date.split('T')[0] : '',
-                            status: b.status || 'BORROWED'
+                            status: b.status || 'BORROWED',
+                            returned: b.status === 'RETURNED',
+                            returnedAt: b.returned_at
                         }));
 
-                    const borrowedSum = itemBorrows.reduce((sum: number, rec: any) => sum + rec.qty, 0);
+                    const activeBorrows = itemBorrows.filter((b: any) => !b.returned);
+                    const borrowedSum = activeBorrows.reduce((sum: number, rec: any) => sum + rec.qty, 0);
                     const totalQty = Number(item.quantity) || 0;
                     const availableQty = (item.available_quantity !== undefined && item.available_quantity !== null)
                         ? Math.min(totalQty, Math.max(0, Number(item.available_quantity)))
@@ -1530,11 +1533,10 @@ class DashboardManager {
             }
         });
 
-        // "all these things should show as per the account logged in.. Only the admins can see the actual quantity nd data.."
-        // Admins see the actual total quantity of components and global active loans.
-        // Members see catalog item counts and their personal active loans.
-        const totalStr = isAdmin ? String(totalUnits) : String(inventory.length);
-        const availableStr = isAdmin ? String(availableUnits) : String(availableItemsCount);
+        // Total Vaulted is the total inventory units vaulted (173), Vaults Available is the total units available.
+        // Consistency across user and admin accounts per user request ("check 2nd photo..its showing 54 vault in user account..nd 173 in admin acc..fix it")
+        const totalStr = String(totalUnits);
+        const availableStr = String(availableUnits);
         const borrowedStr = String(checkedOutQty);
         const lowStr = String(lowStockCount);
         const outStr = String(outOfStockCount);
@@ -2614,13 +2616,17 @@ class ModalManager {
         const todayStr = new Date().toISOString().split('T')[0];
         const overdueLoans: { item: InventoryItem; rec: BorrowRecord; due: string }[] = [];
         const activeLoans: { item: InventoryItem; rec: BorrowRecord; due: string }[] = [];
+        const returnedLoans: { item: InventoryItem; rec: BorrowRecord; returnedAt?: string }[] = [];
 
         inventory.forEach((item) => {
             (item.borrowedBy || []).forEach((rec) => {
-                if (rec.returned) return;
-
                 const belongsToUser = isUserLoan(rec);
                 if (!isAdmin && !belongsToUser) return;
+
+                if (rec.returned) {
+                    returnedLoans.push({ item, rec, returnedAt: (rec as any).returnedAt });
+                    return;
+                }
 
                 let due = rec.dueDate;
                 if (!due && rec.date) {
@@ -2731,7 +2737,7 @@ class ModalManager {
         // --- UPDATE BADGE COUNTS ON TABS ---
         const totalIssuesCount = issueRequests.length + (isAdmin ? overdueLoans.length : (activeLoans.length + overdueLoans.length));
         const totalRequestsCount = visibleRequests.length;
-        const totalReturnsCount = returnRequests.length + activeLoans.length + overdueLoans.length;
+        const totalReturnsCount = returnRequests.length + activeLoans.length + overdueLoans.length + (overdueLoans.length === 0 && activeLoans.length === 0 ? Math.min(returnedLoans.length, 5) : 0);
         const totalStockCount = lowStockList.length;
         const totalSystemCount = visibleLogs.length;
 
@@ -2756,7 +2762,7 @@ class ModalManager {
 
         // Render functions for each category
         const renderReturnsSection = (container: HTMLElement) => {
-            if (overdueLoans.length === 0 && activeLoans.length === 0) {
+            if (overdueLoans.length === 0 && activeLoans.length === 0 && returnedLoans.length === 0) {
                 container.appendChild(ModalManager.createEmptyNotifCard('rotate-ccw', 'No Return Due Schedules', isAdmin ? 'All borrowed components have been returned on schedule.' : 'You have no active loans or overdue components checked out.'));
                 return;
             }
@@ -2882,6 +2888,42 @@ class ModalManager {
                             ModalManager.openReturnModal(rec, item, origIdx >= 0 ? origIdx : 0);
                         });
                     }
+                    container.appendChild(el);
+                });
+            }
+
+            // Recently Returned Section
+            if (returnedLoans.length > 0) {
+                const secHeader = document.createElement('div');
+                secHeader.className = 'notif-section-header header-return';
+                secHeader.innerHTML = `
+                    <div class="sec-header-left">
+                        <i data-lucide="check-circle-2"></i>
+                        <span>RECENTLY RETURNED & RESTOCKED</span>
+                    </div>
+                    <span class="sec-header-badge badge-green">${returnedLoans.length} RESTOCKED</span>
+                `;
+                container.appendChild(secHeader);
+
+                returnedLoans.slice(0, 10).forEach(({ item, rec, returnedAt }) => {
+                    const el = document.createElement('div');
+                    el.className = 'notif-card card-return card-returned';
+                    const dt = DashboardManager.formatLogDateTime(returnedAt || (rec as any).date || new Date().toISOString());
+                    el.innerHTML = `
+                        <div class="notif-card-header">
+                            <div class="notif-card-tag tag-green">
+                                <i data-lucide="check-circle-2"></i>
+                                <span>RETURNED & RESTOCKED</span>
+                            </div>
+                            <span class="notif-card-due text-green">${dt.dateStr}</span>
+                        </div>
+                        <div class="notif-card-body">
+                            <p class="notif-card-main-text">
+                                <strong>${rec.qty}x ${item.name}</strong> was returned by <span class="notif-user-pill">${rec.name}</span> (${rec.roll || 'Student'}).
+                            </p>
+                            <p class="notif-card-sub-text">Restocked into inventory vault &bull; Purpose was: ${rec.purpose || 'Lab Project'}</p>
+                        </div>
+                    `;
                     container.appendChild(el);
                 });
             }
@@ -3109,6 +3151,10 @@ class ModalManager {
                     }
                     container.appendChild(el);
                 });
+            }
+
+            if (issueRequests.length === 0 && activeLoans.length === 0 && overdueLoans.length === 0) {
+                container.appendChild(ModalManager.createEmptyNotifCard('send', 'No Active Hardware Issues', isAdmin ? 'No hardware components are currently checked out from the vault.' : 'You have no active hardware checkout issues.'));
             }
 
             bindAdminCardActions(container);

@@ -133,15 +133,7 @@ const transporter = {
       return { messageId: '<suppressed@cicr.internal>', accepted: [], rejected: [], response: '250 Mock/Suppressed OK' } as any;
     }
 
-    // Testing route: strictly send to vardaansaxena096@gmail.com
-    const testOptions: nodemailer.SendMailOptions = {
-      ...options,
-      to: TESTING_TEST_EMAIL,
-      cc: undefined,
-      bcc: undefined
-    };
-
-    return getTransporter().sendMail(testOptions);
+    return getTransporter().sendMail(options);
   },
   verify: (callback?: any) => {
     if (!EMAILS_ENABLED || process.env.DISABLE_ALL_EMAILS === 'true') {
