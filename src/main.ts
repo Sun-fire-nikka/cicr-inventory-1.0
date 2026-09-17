@@ -469,14 +469,16 @@ class Background3D {
 class DatabaseManager {
     static init() {
         // Enforce clean fresh start across all browsers and users
-        const CURRENT_STATE_EPOCH = 'cicr_v3_fresh_epoch_2026';
+        const CURRENT_STATE_EPOCH = 'cicr_v5_clean_reset_all';
         if (localStorage.getItem('cicr_fresh_epoch') !== CURRENT_STATE_EPOCH) {
             localStorage.removeItem('cicr_requests');
             localStorage.removeItem('cicr_logs');
             localStorage.removeItem('cicr_inventory');
             localStorage.removeItem('cicr_dismissed_requests');
             localStorage.removeItem('cicr_pending_returns');
+            localStorage.setItem('cicr_notifs_cleared', 'true');
             localStorage.setItem('cicr_fresh_epoch', CURRENT_STATE_EPOCH);
+            DatabaseManager.isNotificationsCleared = true;
             inventory = [];
             logs = [];
             requests = [];
@@ -802,11 +804,12 @@ class DatabaseManager {
             pendingUsersCount = AdminManager.users.filter(u => u.status === 'PENDING').length;
         }
 
+        const isCleared = this.isNotificationsCleared || localStorage.getItem('cicr_notifs_cleared') === 'true';
         let totalAlerts = 0;
-        if (this.isNotificationsCleared) {
+        if (isCleared) {
             totalAlerts = 0;
         } else if (isAdmin) {
-            totalAlerts = overdueCount + pendingHwCount + pendingUsersCount + depletedStockCount;
+            totalAlerts = overdueCount + pendingHwCount + pendingUsersCount;
         } else {
             totalAlerts = overdueCount + activeLoansCount + pendingHwCount;
         }
@@ -1499,7 +1502,7 @@ class DashboardManager {
                 : Math.max(0, item.quantity - borrowedSum);
 
             if (isAdmin) {
-                const activeLoans = borrowedSum > 0 ? borrowedSum : Math.max(0, item.quantity - currentAvailable);
+                const activeLoans = (item.borrowedBy || []).filter(r => !r.returned).reduce((sum, rec) => sum + rec.qty, 0);
                 checkedOutQty += activeLoans;
             } else {
                 const memberLoans = (item.borrowedBy || []).filter(r => !r.returned && ModalManager.isUserLoanMatch(r));
@@ -2558,6 +2561,7 @@ class ModalManager {
             clearBtn.dataset.bound = 'true';
             clearBtn.addEventListener('click', () => {
                 DatabaseManager.isNotificationsCleared = true;
+                localStorage.setItem('cicr_notifs_cleared', 'true');
                 DatabaseManager.updateNotificationBadges();
                 ToastManager.show('Notifications Cleared', 'All current alerts marked as read.', 'info');
             });

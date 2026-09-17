@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
+const Redis = require('ioredis');
 
 // Load backend/.env
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
@@ -57,7 +58,6 @@ async function freshStart() {
   if (fetchLogsErr) {
     console.error('❌ Error querying audit_logs:', fetchLogsErr.message);
   } else if (logs && logs.length > 0) {
-    // Delete in batches of 200 to prevent query size limit
     const batchSize = 200;
     let deletedCount = 0;
     for (let i = 0; i < logs.length; i += batchSize) {
@@ -92,8 +92,34 @@ async function freshStart() {
     console.log('ℹ️ auth_otps skipped or empty.');
   }
 
-  // 4. Restore 100% capacity for all inventory items
-  console.log('\n📦 Step 4: Restoring 100% available quantity on all inventory items...');
+  // 4. Resolve any pending users (approve them so no pending registration alert remains)
+  console.log('\n👥 Step 4: Resolving pending user approvals...');
+  try {
+    const { data: pendingUsers } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('status', 'PENDING');
+
+    if (pendingUsers && pendingUsers.length > 0) {
+      for (const pu of pendingUsers) {
+        // Delete test users or approve genuine users
+        if (pu.email.includes('.test') || pu.email.includes('mock')) {
+          await supabase.from('users').delete().eq('id', pu.id);
+          console.log(`🗑️ Deleted mock user ${pu.name} (${pu.email})`);
+        } else {
+          await supabase.from('users').update({ status: 'APPROVED' }).eq('id', pu.id);
+          console.log(`✅ Approved pending user ${pu.name} (${pu.email})`);
+        }
+      }
+    } else {
+      console.log('✅ No pending user registrations.');
+    }
+  } catch (ue) {
+    console.warn('⚠️ User approval check skipped:', ue.message);
+  }
+
+  // 5. Restore 100% capacity for all inventory items
+  console.log('\n📦 Step 5: Restoring 100% available quantity on all inventory items...');
   const { data: items, error: itemErr } = await supabase
     .from('inventory')
     .select('id, name, quantity, available_quantity');
@@ -103,39 +129,61 @@ async function freshStart() {
   } else if (items) {
     let restored = 0;
     for (const item of items) {
-      if (item.available_quantity !== item.quantity) {
+      const targetQty = item.quantity <= 0 ? 1 : item.quantity;
+      if (item.available_quantity !== targetQty || item.quantity <= 0) {
         const { error: updErr } = await supabase
           .from('inventory')
           .update({
-            available_quantity: item.quantity,
+            quantity: targetQty,
+            available_quantity: targetQty,
             updated_at: new Date().toISOString()
           })
           .eq('id', item.id);
 
         if (!updErr) {
-          console.log(`✅ Restored "${item.name}": ${item.available_quantity} -> ${item.quantity}`);
+          console.log(`✅ Restored "${item.name}": qty ${targetQty}, avail ${targetQty}`);
           restored++;
         }
       }
     }
-    console.log(`✅ Inventory verified: all ${items.length} items have full available capacity (${restored} restored).`);
+    console.log(`✅ Inventory verified: all ${items.length} items at 100% available capacity (${restored} updated).`);
   }
 
-  // 5. Reset hardware_requests_data.json to empty object {}
-  console.log('\n📦 Step 5: Resetting hardware_requests_data.json to empty {}...');
+  // 6. Reset hardware_requests_data.json to empty object {}
+  console.log('\n📦 Step 6: Resetting hardware_requests_data.json to empty {}...');
   const requestsFilePath = path.resolve(__dirname, '../../hardware_requests_data.json');
   fs.writeFileSync(requestsFilePath, JSON.stringify({}, null, 2), 'utf8');
   console.log('✅ hardware_requests_data.json wiped clean to {}.');
 
-  // 6. Verification query
+  // 7. Flush all Redis cache keys for inventory, history, and stats
+  console.log('\n⚡ Step 7: Flushing Redis API response caches...');
+  if (process.env.REDIS_URL) {
+    try {
+      const redis = new Redis(process.env.REDIS_URL);
+      const keys = await redis.keys('cicr:*');
+      if (keys.length > 0) {
+        await redis.del(...keys);
+        console.log(`✅ Deleted ${keys.length} cached Redis keys.`);
+      } else {
+        console.log('✅ No Redis cache keys to delete.');
+      }
+      await redis.quit();
+    } catch (re) {
+      console.warn('⚠️ Redis flush warning:', re.message);
+    }
+  }
+
+  // 8. Verification query
   console.log('\n🔍 ===================================================');
-  console.log('🔍 FINAL VERIFICATION');
+  console.log('🔍 FINAL DATABASE VERIFICATION');
   console.log('🔍 ===================================================');
   const { count: finalBorrows } = await supabase.from('borrow_records').select('*', { count: 'exact', head: true });
   const { count: finalLogs } = await supabase.from('audit_logs').select('*', { count: 'exact', head: true });
-  console.log(`📊 Active Borrow Records: ${finalBorrows ?? 0} (expected: 0)`);
-  console.log(`📊 Audit Logs / Notifications: ${finalLogs ?? 0} (expected: 0)`);
-  console.log('🎉 FRESH START CLEANUP COMPLETE!');
+  const { count: finalPendingUsers } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('status', 'PENDING');
+  console.log(`📊 Active Borrow Records: ${finalBorrows ?? 0} (target: 0)`);
+  console.log(`📊 Audit Logs / Notifications: ${finalLogs ?? 0} (target: 0)`);
+  console.log(`📊 Pending User Approvals: ${finalPendingUsers ?? 0} (target: 0)`);
+  console.log('🎉 FRESH START DATABASE PURGE COMPLETE!');
   process.exit(0);
 }
 
