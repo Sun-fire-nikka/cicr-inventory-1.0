@@ -1221,20 +1221,25 @@
 
             <!-- Segmented Category Tabs -->
             <div class="notif-tabs-bar" id="notif-tabs-bar">
-                <button class="notif-tab-btn active" data-category="return" id="notif-tab-return">
+                <button class="notif-tab-btn active" data-category="issues" id="notif-tab-issues">
+                    <i data-lucide="send"></i>
+                    <span>Issues</span>
+                    <span class="notif-tab-count text-cyan" id="notif-count-issues">0</span>
+                </button>
+                <button class="notif-tab-btn" data-category="requests" id="notif-tab-requests">
+                    <i data-lucide="inbox"></i>
+                    <span>Requests</span>
+                    <span class="notif-tab-count text-purple" id="notif-count-requests">0</span>
+                </button>
+                <button class="notif-tab-btn" data-category="returns" id="notif-tab-returns">
                     <i data-lucide="rotate-ccw"></i>
                     <span>Returns</span>
-                    <span class="notif-tab-count text-red" id="notif-count-return">0</span>
+                    <span class="notif-tab-count text-red" id="notif-count-returns">0</span>
                 </button>
                 <button class="notif-tab-btn" data-category="stock" id="notif-tab-stock">
                     <i data-lucide="boxes"></i>
                     <span>Stock</span>
                     <span class="notif-tab-count text-yellow" id="notif-count-stock">0</span>
-                </button>
-                <button class="notif-tab-btn" data-category="requests" id="notif-tab-requests">
-                    <i data-lucide="send"></i>
-                    <span>Requests</span>
-                    <span class="notif-tab-count text-cyan" id="notif-count-requests">0</span>
                 </button>
                 <button class="notif-tab-btn" data-category="system" id="notif-tab-system">
                     <i data-lucide="terminal"></i>

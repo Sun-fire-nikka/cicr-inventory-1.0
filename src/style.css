@@ -127,9 +127,13 @@ body::before {
     -webkit-mask-image: radial-gradient(circle 350px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 20%, transparent 100%);
 }
 
-/* Scroll Performance Optimization - Disable expensive hover hit-testing and style recalculation during scroll */
-body.is-scrolling * {
-    pointer-events: none !important;
+/* Touch device performance: disable dynamic radial cursor mask rasterization on mobile/touch screens to eliminate scroll jank */
+@media (hover: none) and (pointer: coarse) {
+    body::before {
+        mask-image: none !important;
+        -webkit-mask-image: none !important;
+        opacity: 0.16;
+    }
 }
 
 
@@ -12250,6 +12254,7 @@ body:not(.user-is-admin) #btn-modal-delete-item {
     flex-direction: column;
     gap: 8px;
     padding-bottom: 12px;
+    padding-right: 56px !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     flex-shrink: 0;
 }
@@ -12258,6 +12263,7 @@ body:not(.user-is-admin) #btn-modal-delete-item {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding-right: 8px;
 }
 
 .notif-header-icon-box {
@@ -15080,5 +15086,24 @@ body.theme-sakura .signout-user-strip,
     .signout-modal-actions button {
         width: 100%;
         justify-content: center;
+    }
+
+    .modal-content.drawer .close-modal {
+        top: 16px !important;
+        right: 16px !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .notif-drawer-header {
+        padding-right: 48px !important;
+    }
+
+    .notif-drawer-header h2 {
+        font-size: 15px !important;
+    }
+
+    .notif-drawer-header p {
+        font-size: 11px !important;
     }
 }
