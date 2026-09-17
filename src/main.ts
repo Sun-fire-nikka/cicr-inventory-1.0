@@ -405,18 +405,19 @@ class Background3D {
         window.addEventListener('mousemove', (e) => {
             this.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
             this.mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
+        }, { passive: true });
 
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        });
+        }, { passive: true });
     }
 
     private animate() {
         requestAnimationFrame(() => this.animate());
+        if (typeof document !== 'undefined' && document.hidden) return;
 
         if (this.particles) {
             const positions = this.particles.geometry.attributes.position.array as Float32Array;
@@ -467,6 +468,20 @@ class Background3D {
 // ==========================================
 class DatabaseManager {
     static init() {
+        // Enforce clean fresh start across all browsers and users
+        const CURRENT_STATE_EPOCH = 'cicr_v3_fresh_epoch_2026';
+        if (localStorage.getItem('cicr_fresh_epoch') !== CURRENT_STATE_EPOCH) {
+            localStorage.removeItem('cicr_requests');
+            localStorage.removeItem('cicr_logs');
+            localStorage.removeItem('cicr_inventory');
+            localStorage.removeItem('cicr_dismissed_requests');
+            localStorage.removeItem('cicr_pending_returns');
+            localStorage.setItem('cicr_fresh_epoch', CURRENT_STATE_EPOCH);
+            inventory = [];
+            logs = [];
+            requests = [];
+        }
+
         const storedInventory = localStorage.getItem('cicr_inventory');
         if (storedInventory) {
             try {
@@ -499,7 +514,6 @@ class DatabaseManager {
         if (storedRequests) {
             try {
                 const parsed = JSON.parse(storedRequests);
-                // Purge any stale mock/test records (e.g. purpose containing "Testing" or "Robo Soccer", or stale test ID)
                 requests = (parsed || []).filter((r: any) =>
                     r && r.purpose &&
                     r.id !== 'req_1789341756703_7d6b6494' &&
@@ -632,7 +646,10 @@ class DatabaseManager {
                 try {
                     const rJson = await requestsOutcome.value.json();
                     const serverRequests = Array.isArray(rJson.data) ? rJson.data : [];
-                    if (serverRequests.length > 0) {
+                    if (serverRequests.length === 0) {
+                        requests = [];
+                        localStorage.setItem('cicr_requests', JSON.stringify([]));
+                    } else {
                         const mappedServerReqs: RequestRecord[] = serverRequests.map((r: any) => ({
                             id: r.id,
                             type: r.type || 'ISSUE',
@@ -652,20 +669,7 @@ class DatabaseManager {
                             reviewNote: r.reviewNote
                         }));
 
-                        // Deduplicate with any local unsynced pending requests
-                        const seenSyncIds = new Set<string>();
-                        const mergedSync: RequestRecord[] = [];
-                        for (const sr of mappedServerReqs) {
-                            seenSyncIds.add(sr.id);
-                            if (sr.borrowId) seenSyncIds.add(sr.borrowId);
-                            mergedSync.push(sr);
-                        }
-                        for (const lr of (requests || [])) {
-                            if (!seenSyncIds.has(lr.id) && !(lr.borrowId && seenSyncIds.has(lr.borrowId))) {
-                                mergedSync.push(lr);
-                            }
-                        }
-                        requests = mergedSync;
+                        requests = mappedServerReqs;
                         localStorage.setItem('cicr_requests', JSON.stringify(requests));
                     }
                 } catch (re) {
@@ -843,21 +847,30 @@ class DatabaseManager {
         }
     }
 
-    static startAutoSync(intervalMs = 3000) {
+    private static isSyncInProgress = false;
+
+    static startAutoSync(intervalMs = 8000) {
         if ((window as any)._cicrAutoSyncTimer) {
             clearInterval((window as any)._cicrAutoSyncTimer);
         }
         (window as any)._cicrAutoSyncTimer = setInterval(async () => {
             // Do not consume bandwidth or hammer backend when browser tab is hidden/minimized
             if (typeof document !== 'undefined' && document.hidden) return;
+            if (this.isSyncInProgress) return;
 
-            await this.syncFromBackend();
-            const role = ModalManager.getCurrentRole();
-            if (role === 'ADMIN' && typeof AdminManager !== 'undefined') {
-                await AdminManager.loadHardwareRequests();
-                await AdminManager.loadUsers();
+            this.isSyncInProgress = true;
+            try {
+                await this.syncFromBackend();
+                const role = ModalManager.getCurrentRole();
+                if (role === 'ADMIN' && typeof AdminManager !== 'undefined') {
+                    await AdminManager.loadHardwareRequests();
+                }
+                this.updateNotificationBadges();
+            } catch (syncErr) {
+                console.warn('Background sync cycle warning:', syncErr);
+            } finally {
+                this.isSyncInProgress = false;
             }
-            this.updateNotificationBadges();
         }, intervalMs);
     }
 
@@ -5081,10 +5094,13 @@ class AdminManager {
             }
         }
 
-        // 2. Add localPending items ONLY if they are not already in the canonical queue
+        // 2. Add localPending items ONLY if server request failed OR item is a recent in-flight submission (< 60s)
+        const now = Date.now();
         for (const item of localPending) {
             if (!item || item.status !== 'PENDING') continue;
             if (isItemDismissed(item)) continue;
+            const isRecent = item.requestedAt ? (now - new Date(item.requestedAt).getTime() < 60000) : false;
+            if (!isRecent && serverList.length >= 0) continue;
             const key = this.getRequestCanonicalKey(item) || item.id;
             if (!canonicalQueue.has(key)) {
                 canonicalQueue.set(key, item);
@@ -6857,16 +6873,23 @@ document.addEventListener('DOMContentLoaded', () => {
     AdminManager.init();
     AdminManager.loadHardwareRequests(true);
     DatabaseManager.updateNotificationBadges();
-    DatabaseManager.startAutoSync(3000);
+    DatabaseManager.startAutoSync(8000);
     lucide.createIcons();
 
-    // Global mouse-coordinate spotlight tracker for interactive cyber gridlines
+    // Global mouse-coordinate spotlight tracker for interactive cyber gridlines (requestAnimationFrame throttled)
+    let mouseMoveTicking = false;
     document.addEventListener('mousemove', (e) => {
-        const x = (e.clientX / window.innerWidth) * 100;
-        const y = (e.clientY / window.innerHeight) * 100;
-        document.documentElement.style.setProperty('--mouse-x', `${x}%`);
-        document.documentElement.style.setProperty('--mouse-y', `${y}%`);
-    });
+        if (!mouseMoveTicking) {
+            requestAnimationFrame(() => {
+                const x = (e.clientX / window.innerWidth) * 100;
+                const y = (e.clientY / window.innerHeight) * 100;
+                document.documentElement.style.setProperty('--mouse-x', `${x}%`);
+                document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+                mouseMoveTicking = false;
+            });
+            mouseMoveTicking = true;
+        }
+    }, { passive: true });
 
     // Custom 3D tilt interaction logic for desktop interactivity
     const apply3DTilt = (el: HTMLElement, maxRotation: number = 6) => {
