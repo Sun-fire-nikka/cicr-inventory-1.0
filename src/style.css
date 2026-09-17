@@ -8462,12 +8462,14 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     overflow-x: hidden !important;
 }
 
-.team-showcase-container {
+.team-showcase-container,
+.team-showcase-wrapper {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 26px;
+    gap: 24px;
+    box-sizing: border-box;
 }
 
 /* Header */
@@ -8595,20 +8597,25 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
 /* Main Featured Profile Card (Hero Card) */
 .team-hero-card-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 780px;
     margin: 0 auto;
     display: flex;
     justify-content: center;
+    box-sizing: border-box;
 }
 
 .team-hero-card {
     position: relative;
     width: 100%;
+    max-width: 780px;
+    min-height: 330px;
+    height: 330px;
+    max-height: 330px;
     border-radius: 28px;
-    padding: 38px 48px;
+    padding: 32px 42px;
     display: grid;
-    grid-template-columns: 210px 1fr;
-    gap: 48px;
+    grid-template-columns: 200px 1fr;
+    gap: 36px;
     align-items: center;
     background: rgba(13, 17, 26, 0.86);
     border: 1px solid rgba(0, 240, 255, 0.28);
@@ -8652,12 +8659,15 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     align-items: center;
     position: relative;
     z-index: 2;
+    width: 190px;
+    height: 100%;
+    flex-shrink: 0;
 }
 
 .hero-avatar-glow-ring {
     position: relative;
-    width: 190px;
-    height: 190px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
     padding: 4px;
     background: conic-gradient(from 180deg, var(--neon-cyan), #bd00ff, #ff007a, var(--neon-cyan));
@@ -8704,15 +8714,20 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
 .hero-info-side {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    justify-content: center;
+    gap: 8px;
     z-index: 2;
+    min-width: 0;
+    height: 100%;
 }
 
 .hero-tag-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    height: 30px;
+    flex-shrink: 0;
 }
 
 .hero-role-pill {
@@ -8727,23 +8742,35 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     text-transform: uppercase;
     font-family: 'Rajdhani', sans-serif;
     box-shadow: 0 0 12px rgba(0, 240, 255, 0.18);
+    white-space: nowrap;
 }
 
 .hero-greeting {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 500;
     color: #94a3b8;
     letter-spacing: 0.5px;
-    margin-top: 2px;
+    margin: 0;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .hero-display-name {
-    font-size: 38px;
+    font-size: 34px;
     font-weight: 800;
     font-family: 'Orbitron', 'Space Grotesk', sans-serif;
     margin: 0;
     line-height: 1.15;
     letter-spacing: 1px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 .hero-name-gradient {
@@ -8770,32 +8797,53 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     -webkit-text-fill-color: transparent;
 }
 
+/* Social links: strictly 1 single horizontal row across all screen sizes */
 .hero-social-links {
-    display: flex;
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin-top: 6px;
+    gap: 12px;
+    flex-wrap: nowrap !important;
+    margin-top: 4px;
+    height: 42px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .hero-social-pill {
-    display: inline-flex;
+    display: inline-flex !important;
+    flex-direction: row !important;
     align-items: center;
-    gap: 9px;
-    padding: 9px 20px;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 18px;
     border-radius: 30px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.18);
     color: #f1f5f9;
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    max-width: 200px;
+    flex: 0 1 auto;
 }
 
-.social-svg-icon {
-    width: 16px;
-    height: 16px;
+.hero-social-pill span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.social-svg-icon,
+.social-icon-svg {
+    width: 15px;
+    height: 15px;
     fill: var(--neon-cyan);
     transition: fill 0.2s ease, transform 0.2s ease;
     flex-shrink: 0;
@@ -8809,7 +8857,8 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     color: #ffffff;
 }
 
-.hero-social-pill:hover .social-svg-icon {
+.hero-social-pill:hover .social-svg-icon,
+.hero-social-pill:hover .social-icon-svg {
     fill: #ffffff;
     transform: scale(1.1);
 }
@@ -8836,15 +8885,19 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    gap: 16px;
     width: 100%;
-    max-width: 1000px;
-    margin: 8px auto 0 auto;
+    max-width: 780px;
+    margin: 12px auto 0 auto;
+    position: relative;
+    box-sizing: border-box;
 }
 
 .team-carousel-arrow {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
     border-radius: 50%;
     background: rgba(15, 20, 32, 0.85);
     border: 1px solid rgba(0, 240, 255, 0.28);
@@ -8856,32 +8909,40 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     transition: all 0.25s ease;
     flex-shrink: 0;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+    outline: none;
+    z-index: 5;
 }
 
-.team-carousel-arrow i {
+.team-carousel-arrow i,
+.team-carousel-arrow svg {
     width: 20px;
     height: 20px;
     stroke-width: 2.2;
+    pointer-events: none;
 }
 
 .team-carousel-arrow:hover {
     background: var(--neon-cyan);
     color: #000000;
     box-shadow: 0 0 20px var(--neon-cyan);
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
 .team-carousel-arrow:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
 }
 
 .team-carousel-track-container {
-    overflow: visible;
-    padding: 14px 10px;
+    overflow: hidden;
+    padding: 10px 4px;
     display: flex;
     justify-content: center;
     align-items: center;
-    max-width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .team-carousel-track-container::-webkit-scrollbar {
@@ -8892,7 +8953,7 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 22px;
+    gap: 18px;
     flex-wrap: nowrap;
 }
 
@@ -8909,12 +8970,15 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     padding: 0;
     outline: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
 }
 
 .selector-avatar-circle {
     position: relative;
-    width: 66px;
-    height: 66px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     padding: 3px;
     background: rgba(255, 255, 255, 0.08);
@@ -8954,11 +9018,11 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
 
 /* Active Avatar State */
 .team-avatar-selector.active .selector-avatar-circle {
-    width: 80px;
-    height: 80px;
+    width: 74px;
+    height: 74px;
     filter: none;
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.08);
     background: conic-gradient(from 180deg, var(--neon-cyan), #bd00ff, #ff007a, var(--neon-cyan));
     box-shadow: 0 0 24px rgba(0, 240, 255, 0.68), 0 0 12px rgba(189, 0, 255, 0.38);
     border: none;
@@ -8977,89 +9041,368 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
         padding: 10px 14px 30px 14px;
     }
 
+    .team-hero-card-container {
+        max-width: 440px;
+    }
+
+    /* Fixed uniform dimensions on tablet/mobile so all team members have exact same length, height, width */
     .team-hero-card {
         grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         text-align: center;
-        padding: 28px 20px;
-        gap: 22px;
+        width: 100%;
+        max-width: 440px;
+        min-height: 450px;
+        height: 450px;
+        max-height: 450px;
+        padding: 26px 20px;
+        gap: 14px;
+        box-sizing: border-box;
+    }
+
+    .hero-avatar-side {
+        width: 100%;
+        height: auto;
+        display: flex;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
     .hero-avatar-glow-ring {
-        width: 150px;
-        height: 150px;
+        width: 136px;
+        height: 136px;
+        flex-shrink: 0;
     }
 
     .hero-info-side {
         align-items: center;
+        text-align: center;
+        width: 100%;
+        gap: 6px;
+        height: auto;
     }
 
     .hero-tag-row {
         justify-content: center;
+        height: 28px;
     }
 
-    .hero-social-links {
+    .hero-greeting {
         justify-content: center;
+        font-size: 15px;
+        height: 20px;
     }
 
     .hero-display-name {
-        font-size: 30px;
+        font-size: 26px;
+        justify-content: center;
+        height: 36px;
+        width: 100%;
+    }
+
+    /* Keep socials in 1 line */
+    .hero-social-links {
+        justify-content: center;
+        flex-wrap: nowrap !important;
+        flex-direction: row !important;
+        gap: 10px;
+        width: 100%;
+        max-width: 360px;
+        height: 40px;
+    }
+
+    .hero-social-pill {
+        padding: 7px 14px;
+        font-size: 12px;
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 50%;
+        justify-content: center;
+    }
+
+    .hero-social-pill span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .team-showcase-title {
         font-size: 26px;
     }
 
+    .team-selector-carousel-container {
+        width: 100%;
+        max-width: 460px;
+        box-sizing: border-box;
+        padding: 0 8px;
+        gap: 8px;
+        margin: 12px auto 0 auto;
+        justify-content: space-between;
+    }
+
+    .team-carousel-arrow {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .team-carousel-track-container {
+        padding: 6px 2px;
+    }
+
     .team-carousel-track {
-        gap: 16px;
+        gap: 12px;
     }
 
     .selector-avatar-circle {
-        width: 56px;
-        height: 56px;
+        width: 50px;
+        height: 50px;
     }
 
     .team-avatar-selector.active .selector-avatar-circle {
-        width: 68px;
-        height: 68px;
+        width: 62px;
+        height: 62px;
     }
 }
 
 @media (max-width: 550px) {
-    .team-hero-card {
-        padding: 24px 16px;
+    .developers-section {
+        padding: 6px 10px 24px 10px;
     }
 
-    .hero-avatar-glow-ring {
-        width: 130px;
-        height: 130px;
-    }
-
-    .hero-display-name {
-        font-size: 24px;
-    }
-
-    .team-category-tab {
-        padding: 8px 18px;
-        font-size: 13px;
-    }
-
-    .hero-social-pill {
-        padding: 7px 14px;
-        font-size: 12px;
+    .team-showcase-container,
+    .team-showcase-wrapper {
+        gap: 16px;
     }
 
     .team-showcase-title {
         font-size: 22px;
     }
 
+    .team-category-tab {
+        padding: 7px 18px;
+        font-size: 12.5px;
+    }
+
+    .team-hero-card-container {
+        max-width: 380px;
+        padding: 0 4px;
+        box-sizing: border-box;
+    }
+
+    /* Fixed uniform dimensions on mobile: length, height, width identical for all profiles */
+    .team-hero-card {
+        width: 100%;
+        max-width: 380px;
+        min-height: 430px;
+        height: 430px;
+        max-height: 430px;
+        padding: 22px 14px;
+        gap: 12px;
+        border-radius: 24px;
+    }
+
+    .hero-avatar-glow-ring {
+        width: 124px;
+        height: 124px;
+    }
+
+    .hero-role-pill {
+        padding: 4px 14px;
+        font-size: 11.5px;
+    }
+
+    .hero-greeting {
+        font-size: 14.5px;
+        height: 18px;
+    }
+
+    .hero-display-name {
+        font-size: 24px;
+        height: 32px;
+    }
+
+    /* Social links strictly 1 single horizontal row only */
+    .hero-social-links {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        max-width: 330px;
+        height: 38px;
+        margin-top: 4px;
+        box-sizing: border-box;
+    }
+
+    .hero-social-pill {
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        font-size: 11.5px;
+        gap: 6px;
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: calc(50% - 4px);
+        white-space: nowrap;
+        box-sizing: border-box;
+    }
+
+    .hero-social-pill span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+    }
+
+    .social-svg-icon,
+    .social-icon-svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    /* Carousel side buttons: Fully responsive, fully visible within screen, touch-ready */
+    .team-selector-carousel-container {
+        width: 100%;
+        max-width: 380px;
+        box-sizing: border-box;
+        padding: 0 4px;
+        gap: 6px;
+        margin: 8px auto 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .team-carousel-arrow {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+        flex-shrink: 0;
+        z-index: 5;
+    }
+
+    .team-carousel-arrow i,
+    .team-carousel-arrow svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2.4;
+    }
+
+    .team-carousel-track-container {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 4px 0;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .team-carousel-track {
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
     .selector-avatar-circle {
-        width: 48px;
-        height: 48px;
+        width: 44px;
+        height: 44px;
+        padding: 2px;
+    }
+
+    .selector-avatar-name {
+        font-size: 11px;
     }
 
     .team-avatar-selector.active .selector-avatar-circle {
-        width: 60px;
-        height: 60px;
+        width: 56px;
+        height: 56px;
+    }
+
+    .team-avatar-selector.active .selector-avatar-name {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 380px) {
+    .team-hero-card {
+        min-height: 410px;
+        height: 410px;
+        max-height: 410px;
+        padding: 18px 10px;
+        gap: 10px;
+    }
+
+    .hero-avatar-glow-ring {
+        width: 112px;
+        height: 112px;
+    }
+
+    .hero-display-name {
+        font-size: 21px;
+        height: 28px;
+    }
+
+    .hero-social-links {
+        gap: 6px;
+        height: 34px;
+    }
+
+    .hero-social-pill {
+        padding: 5px 8px;
+        font-size: 10.5px;
+        gap: 4px;
+    }
+
+    .hero-social-pill span {
+        font-size: 10.5px;
+    }
+
+    .team-selector-carousel-container {
+        padding: 0 2px;
+        gap: 4px;
+    }
+
+    .team-carousel-arrow {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        min-height: 34px;
+    }
+
+    .team-carousel-arrow i,
+    .team-carousel-arrow svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .team-carousel-track {
+        gap: 6px;
+    }
+
+    .selector-avatar-circle {
+        width: 40px;
+        height: 40px;
+    }
+
+    .team-avatar-selector.active .selector-avatar-circle {
+        width: 50px;
+        height: 50px;
+    }
+
+    .selector-avatar-name {
+        font-size: 10px;
     }
 }
 
