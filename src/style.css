@@ -7871,18 +7871,24 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
         height: 100vh !important;
         height: 100dvh !important;
         border-radius: 0 20px 20px 0 !important;
-        transform: translateX(-105%) !important;
+        transform: translate3d(-105%, 0, 0) !important;
+        -webkit-transform: translate3d(-105%, 0, 0) !important;
+        will-change: transform;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        transform-style: flat;
+        contain: paint;
         z-index: 3000 !important;
         background: linear-gradient(180deg, #090c1c 0%, #05060f 100%) !important;
-        backdrop-filter: blur(30px) !important;
-        -webkit-backdrop-filter: blur(30px) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         border: none !important;
         border-right: 1px solid rgba(0, 240, 255, 0.22) !important;
         box-shadow: 0 0 60px rgba(0, 0, 0, 0.95), 14px 0 40px rgba(0, 0, 0, 0.85) !important;
         padding: 16px 14px !important;
         padding-top: max(16px, env(safe-area-inset-top)) !important;
         padding-bottom: max(18px, env(safe-area-inset-bottom)) !important;
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
     body.theme-light .app-sidebar {
@@ -7898,7 +7904,8 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     }
 
     .app-container.sidebar-open .app-sidebar {
-        transform: translateX(0) !important;
+        transform: translate3d(0, 0, 0) !important;
+        -webkit-transform: translate3d(0, 0, 0) !important;
     }
 
     .sidebar-close-btn {
@@ -7920,7 +7927,10 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
         font-size: 13px;
         font-weight: 600;
         letter-spacing: 0.3px;
-        transition: all 0.2s ease;
+        transition: background 0.2s ease, border-color 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        user-select: none;
     }
 
     .mobile-sidebar-toggle i,
@@ -7933,13 +7943,15 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
         position: fixed !important;
         inset: 0 !important;
         background: rgba(2, 4, 12, 0.82) !important;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         z-index: 2500 !important;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.25s ease;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
         display: block !important;
+        will-change: opacity;
+        -webkit-tap-highlight-color: transparent;
     }
 
     body.theme-pink .mobile-sidebar-backdrop {

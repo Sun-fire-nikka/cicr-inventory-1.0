@@ -1043,9 +1043,6 @@ class DashboardManager {
         this.mobileSidebarOpen = shouldOpen;
         this.appContainer.classList.toggle('sidebar-open', shouldOpen);
         this.mobileSidebarToggle?.setAttribute('aria-expanded', String(shouldOpen));
-        if (this.mobileSidebarBackdrop) {
-            this.mobileSidebarBackdrop.style.display = shouldOpen ? 'block' : 'none';
-        }
         document.body.style.overflow = shouldOpen ? 'hidden' : '';
     }
 

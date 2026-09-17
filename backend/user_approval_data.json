@@ -387,21 +387,17 @@
       "approvedAt": "2026-09-13T20:34:53.686+00:00",
       "approvedBy": "ADMIN"
     },
-    "admin.1789671959931@cicr.test": {
-      "status": "APPROVED",
-      "role": "ADMIN",
-      "approvedAt": "2026-09-17T19:06:07.264Z",
-      "approvedBy": "MASTER_ADMIN",
-      "username": "Test Admin",
-      "name": "Test Admin"
-    },
-    "member.1789671959931@cicr.test": {
-      "status": "APPROVED",
+    "admin.1789677865680@cicr.test": {
+      "status": "PENDING",
       "role": "MEMBER",
-      "approvedAt": "2026-09-17T19:06:07.271Z",
-      "approvedBy": "MASTER_ADMIN",
-      "username": "Test Member",
-      "name": "Test Member"
+      "username": "Test",
+      "batch": "N/A"
+    },
+    "member.1789677865680@cicr.test": {
+      "status": "PENDING",
+      "role": "MEMBER",
+      "username": "Test",
+      "batch": "N/A"
     }
   },
   "purgedEmails": [
