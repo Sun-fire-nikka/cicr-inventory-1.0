@@ -925,13 +925,14 @@ class DashboardManager {
     private resultsCount: HTMLElement;
 
     private statTotal: HTMLElement;
+    private statAvailable: HTMLElement | null;
     private statBorrowed: HTMLElement;
     private statLow: HTMLElement;
     private statOut: HTMLElement;
     private mobileSidebarToggle: HTMLButtonElement | null;
     private mobileSidebarBackdrop: HTMLElement | null;
 
-    public activeStockFilter: 'all' | 'borrowed' | 'low' | 'out' = 'all';
+    public activeStockFilter: 'all' | 'available' | 'borrowed' | 'low' | 'out' = 'all';
     private activeStockPill: HTMLElement | null = null;
 
     private clockTimerId: any = null;
@@ -948,6 +949,7 @@ class DashboardManager {
         this.activeStockPill = document.getElementById('active-stock-pill');
 
         this.statTotal = document.getElementById('stat-total')!;
+        this.statAvailable = document.getElementById('stat-available');
         this.statBorrowed = document.getElementById('stat-borrowed')!;
         this.statLow = document.getElementById('stat-low')!;
         this.statOut = document.getElementById('stat-out')!;
@@ -1465,6 +1467,7 @@ class DashboardManager {
                 this.activeStockPill.innerHTML = '';
             } else {
                 const labels: Record<string, string> = {
+                    available: 'Vaults Available',
                     borrowed: 'Active Loans',
                     low: 'Low Reserves (≤ 50%)',
                     out: 'Out of Stock'
@@ -1488,8 +1491,10 @@ class DashboardManager {
     }
 
     public renderStats() {
-        let totalQty = 0;
+        let totalUnits = 0;
+        let availableUnits = 0;
         let checkedOutQty = 0;
+        let availableItemsCount = 0;
         let lowStockCount = 0;
         let outOfStockCount = 0;
 
@@ -1497,12 +1502,17 @@ class DashboardManager {
         const isAdmin = role === 'ADMIN';
 
         inventory.forEach(item => {
-            totalQty += item.quantity;
+            totalUnits += item.quantity;
 
             const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
             const currentAvailable = typeof item.availableQuantity === 'number'
-                ? item.availableQuantity
+                ? Math.min(item.quantity, Math.max(0, item.availableQuantity))
                 : Math.max(0, item.quantity - borrowedSum);
+
+            availableUnits += currentAvailable;
+            if (currentAvailable > 0) {
+                availableItemsCount++;
+            }
 
             if (isAdmin) {
                 const activeLoans = (item.borrowedBy || []).filter(r => !r.returned).reduce((sum, rec) => sum + rec.qty, 0);
@@ -1520,15 +1530,20 @@ class DashboardManager {
             }
         });
 
-        const totalStr = String(totalQty);
+        // "all these things should show as per the account logged in.. Only the admins can see the actual quantity nd data.."
+        // Admins see the actual total quantity of components and global active loans.
+        // Members see catalog item counts and their personal active loans.
+        const totalStr = isAdmin ? String(totalUnits) : String(inventory.length);
+        const availableStr = isAdmin ? String(availableUnits) : String(availableItemsCount);
         const borrowedStr = String(checkedOutQty);
         const lowStr = String(lowStockCount);
         const outStr = String(outOfStockCount);
 
-        if (this.statTotal.innerText !== totalStr) this.statTotal.innerText = totalStr;
-        if (this.statBorrowed.innerText !== borrowedStr) this.statBorrowed.innerText = borrowedStr;
-        if (this.statLow.innerText !== lowStr) this.statLow.innerText = lowStr;
-        if (this.statOut.innerText !== outStr) this.statOut.innerText = outStr;
+        if (this.statTotal && this.statTotal.innerText !== totalStr) this.statTotal.innerText = totalStr;
+        if (this.statAvailable && this.statAvailable.innerText !== availableStr) this.statAvailable.innerText = availableStr;
+        if (this.statBorrowed && this.statBorrowed.innerText !== borrowedStr) this.statBorrowed.innerText = borrowedStr;
+        if (this.statLow && this.statLow.innerText !== lowStr) this.statLow.innerText = lowStr;
+        if (this.statOut && this.statOut.innerText !== outStr) this.statOut.innerText = outStr;
     }
 
     public renderInventory(force = false) {
@@ -1548,7 +1563,9 @@ class DashboardManager {
                 : Math.max(0, item.quantity - borrowedSum);
 
             let matchesStock = true;
-            if (this.activeStockFilter === 'borrowed') {
+            if (this.activeStockFilter === 'available') {
+                matchesStock = available > 0;
+            } else if (this.activeStockFilter === 'borrowed') {
                 if (isAdmin) {
                     matchesStock = borrowedSum > 0 || available < item.quantity;
                 } else {
@@ -1721,7 +1738,12 @@ class DashboardManager {
                 </div>
                 <div class="footer-info" style="align-items: flex-end;">
                     <span class="info-title">Availability</span>
-                    <span class="info-content"><strong class="stock-curr ${statusClass}">${available}</strong> <span class="stock-divider">/</span> ${totalQty}</span>
+                    <span class="info-content">
+                        ${isAdmin
+                            ? `<strong class="stock-curr ${statusClass}">${available}</strong> <span class="stock-divider">/</span> ${totalQty}`
+                            : `<strong class="stock-curr ${statusClass}">${statusText}</strong>`
+                        }
+                    </span>
                     <div class="availability-bar-track">
                         <div class="availability-bar-fill fill-${statusClass}" style="width: ${fillPercent}%"></div>
                     </div>
@@ -2229,7 +2251,16 @@ class ModalManager {
         document.getElementById('detail-name')!.innerText = item.name;
         document.getElementById('detail-location')!.innerText = item.location;
         document.getElementById('detail-specs')!.innerText = item.specs;
-        document.getElementById('detail-quantity')!.innerHTML = `<strong>${available}</strong> / ${totalQty} available`;
+        const role = this.getCurrentRole();
+        const detailQtyEl = document.getElementById('detail-quantity');
+        if (detailQtyEl) {
+            if (role === 'ADMIN') {
+                detailQtyEl.innerHTML = `<strong>${available}</strong> / ${totalQty} available`;
+            } else {
+                const itemSt = getItemStockStatus(totalQty, available);
+                detailQtyEl.innerHTML = `<strong class="stock-curr ${itemSt.class}">${itemSt.text}</strong> in Vault`;
+            }
+        }
 
         const catMap: Record<string, string> = {
             microcontrollers: "Microcontroller / Development Board",
@@ -2245,7 +2276,6 @@ class ModalManager {
 
         const borrowBtn = document.getElementById('btn-borrow') as HTMLButtonElement;
         const returnBtn = document.getElementById('btn-return') as HTMLButtonElement;
-        const role = this.getCurrentRole();
 
         const status = getItemStockStatus(totalQty, available);
         badge.innerText = status.text;
@@ -7029,6 +7059,24 @@ class ThemeManager {
         if (theme === 'matrix' || theme === 'midnight' || theme === 'avengers') {
             theme = 'cyberpunk';
         }
+
+        // 1. Temporarily freeze transitions to eliminate multi-element transition lag & compositor flickering
+        const lockId = 'cicr-theme-lock-style';
+        let lockStyle = document.getElementById(lockId) as HTMLStyleElement | null;
+        if (!lockStyle) {
+            lockStyle = document.createElement('style');
+            lockStyle.id = lockId;
+            lockStyle.textContent = `*, *::before, *::after {
+                -webkit-transition: none !important;
+                -moz-transition: none !important;
+                -o-transition: none !important;
+                -ms-transition: none !important;
+                transition: none !important;
+            }`;
+            document.head.appendChild(lockStyle);
+        }
+
+        // 2. Batch attribute and class updates synchronously
         document.documentElement.setAttribute('data-theme', theme);
         document.body.classList.remove(
             'theme-cyberpunk',
@@ -7072,6 +7120,19 @@ class ThemeManager {
         } else {
             this.sakuraAnim?.stop();
         }
+
+        // Force browser to commit style changes synchronously without animation
+        void window.getComputedStyle(document.body).backgroundColor;
+
+        // 3. Remove transition freeze on next frame for buttery smooth user interactions
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const el = document.getElementById(lockId);
+                if (el && el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
+            });
+        });
     }
 }
 

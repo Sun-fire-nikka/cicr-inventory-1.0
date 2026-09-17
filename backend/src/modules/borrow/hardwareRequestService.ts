@@ -741,8 +741,12 @@ export const approveHardwareRequest = async (
       // Check if it exists in Supabase borrow_records with status = 'PENDING'
       const { data: dbRec } = await dbRead.from('borrow_records').select('*, inventory(name, category)').eq('id', id).maybeSingle();
       if (dbRec) {
+        const isRet = dbRec.status === 'RETURN_REQUESTED';
         req = {
           id: dbRec.id,
+          type: isRet ? 'RETURN' : 'ISSUE',
+          borrowId: isRet ? dbRec.id : undefined,
+          returnQuantity: isRet ? (dbRec.quantity || 1) : undefined,
           itemId: dbRec.inventory_id,
           itemName: dbRec.inventory?.name || 'Hardware Component',
           category: dbRec.inventory?.category || 'Robotics',
@@ -751,10 +755,10 @@ export const approveHardwareRequest = async (
           rollNumber: dbRec.roll_number,
           userId: dbRec.user_id,
           quantity: dbRec.quantity || 1,
-          purpose: dbRec.purpose || 'Testing',
+          purpose: dbRec.purpose || (isRet ? `Return ${dbRec.quantity || 1} units` : 'Testing'),
           durationDays: 7,
           dueDate: dbRec.due_date ? dbRec.due_date.split('T')[0] : '',
-          status: dbRec.status,
+          status: 'PENDING',
           requestedAt: dbRec.borrowed_at || new Date().toISOString()
         };
         requestsState[id] = req;
@@ -762,10 +766,14 @@ export const approveHardwareRequest = async (
     }
 
     // Fallback: If not found in server state, reconstruct from client request payload
-    if (!req && fallback && (fallback.itemId || fallback.inventory_id)) {
+    if (!req && fallback && (fallback.itemId || fallback.inventory_id || fallback.borrowerEmail || fallback.borrowerName)) {
+      const isRet = fallback.type === 'RETURN' || Boolean(fallback.borrowId);
       req = {
         id,
-        itemId: fallback.itemId || fallback.inventory_id,
+        type: isRet ? 'RETURN' : 'ISSUE',
+        borrowId: fallback.borrowId || (isRet ? id : undefined),
+        returnQuantity: Number(fallback.returnQuantity || fallback.quantity || 1),
+        itemId: fallback.itemId || fallback.inventory_id || '',
         itemName: fallback.itemName || 'Hardware Component',
         category: fallback.category || 'Robotics',
         borrowerName: fallback.borrowerName || fallback.borrower_name || 'Member',
@@ -773,7 +781,7 @@ export const approveHardwareRequest = async (
         rollNumber: fallback.rollNumber || fallback.roll_number || null,
         userId: fallback.userId || fallback.user_id,
         quantity: Number(fallback.quantity || fallback.qty) || 1,
-        purpose: fallback.purpose || 'Testing',
+        purpose: fallback.purpose || (isRet ? 'Return hardware' : 'Testing'),
         durationDays: Number(fallback.durationDays || fallback.duration_days) || 7,
         dueDate: fallback.dueDate || fallback.due_date || '',
         status: 'PENDING',
@@ -1016,7 +1024,7 @@ export const rejectHardwareRequest = async (
           purpose: dbRec.purpose || (isRet ? 'Return verification' : 'Testing'),
           durationDays: 7,
           dueDate: dbRec.due_date ? dbRec.due_date.split('T')[0] : '',
-          status: dbRec.status,
+          status: 'PENDING',
           requestedAt: dbRec.borrowed_at || new Date().toISOString()
         };
         requestsState[id] = req;

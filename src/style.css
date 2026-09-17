@@ -3585,8 +3585,8 @@ input:-webkit-autofill:active {
 /* Explorer stats sub-row panel styling (More Compact & Sleek) */
 .explorer-stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
     width: 100%;
 }
 
@@ -7839,7 +7839,8 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     }
 
     .explorer-stats-row {
-        grid-template-columns: repeat(4, 1fr) !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 12px !important;
     }
 
     .dashboard-grid {
@@ -8009,8 +8010,8 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     /* Clean 2x2 grid for stats on tablets / medium screens */
     .explorer-stats-row {
         display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 12px !important;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+        gap: 10px !important;
         width: 100% !important;
         margin-bottom: 18px !important;
     }
@@ -12978,6 +12979,8 @@ button[disabled] {
 
 .bulk-return-modal-card .modal-header {
     margin-bottom: 18px;
+    padding-right: 50px;
+    position: relative;
 }
 
 .bulk-return-badge {
@@ -12992,9 +12995,11 @@ button[disabled] {
     font-size: 10px;
     font-weight: 700;
     color: #00f0ff;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     margin-bottom: 8px;
     box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    max-width: calc(100% - 44px);
+    box-sizing: border-box;
 }
 
 .bulk-return-modal-card .modal-header h2 {
@@ -13827,33 +13832,76 @@ body.theme-light #btn-submit-bulk-return,
         width: 95% !important;
         max-height: 92vh !important;
         border-radius: 16px !important;
+        position: relative !important;
+    }
+
+    .bulk-return-modal-card .modal-header {
+        padding-right: 46px !important;
+        margin-bottom: 14px !important;
+    }
+
+    .bulk-return-badge {
+        font-size: 8.5px !important;
+        letter-spacing: 0.5px !important;
+        padding: 3px 9px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        line-height: 1.3 !important;
+        white-space: normal !important;
+    }
+
+    .bulk-return-modal-card .modal-header h2 {
+        font-size: 19px !important;
+        line-height: 1.25 !important;
+        margin-top: 6px !important;
+    }
+
+    .bulk-return-modal-card .modal-header p {
+        font-size: 11.5px !important;
+        line-height: 1.45 !important;
     }
 
     .bulk-return-borrower-card {
-        padding: 10px 12px;
-        gap: 10px;
+        padding: 10px 12px !important;
+        gap: 10px !important;
+        align-items: center !important;
+        min-width: 0 !important;
     }
 
     .borrower-card-avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 16px;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .borrower-card-info {
+        flex: 1 !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
     }
 
     .borrower-card-name {
-        font-size: 14px;
+        font-size: 14px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
     .borrower-card-meta {
-        font-size: 10.5px;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
     .bulk-return-total-issued-badge {
-        padding: 4px 8px;
+        padding: 4px 8px !important;
+        flex-shrink: 0 !important;
     }
 
     .total-issued-num {
-        font-size: 14px;
+        font-size: 14px !important;
     }
 
     .bulk-return-toolbar {
