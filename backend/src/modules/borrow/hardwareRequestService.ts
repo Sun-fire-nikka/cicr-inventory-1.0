@@ -232,6 +232,10 @@ export const createReturnRequest = async (payload: {
     return { success: false, message: 'Active borrow record not found in system.' };
   }
 
+  if (record.status === 'PENDING') {
+    return { success: false, message: 'Cannot request return: This component issue is still pending admin approval.' };
+  }
+
   if (record.status === 'RETURNED') {
     return { success: false, message: 'This item has already been marked as returned.' };
   }
@@ -791,6 +795,20 @@ export const approveHardwareRequest = async (
     if (req.type === 'RETURN') {
       const borrowId = req.borrowId || req.id;
       const returnQty = req.returnQuantity || req.quantity || 1;
+
+      // Order Check: Verify there is no unresolved pending issue request for this exact item and borrower
+      const pendingIssue = Object.values(requestsState).find(r =>
+        r && r.status === 'PENDING' && r.type !== 'RETURN' &&
+        r.itemId === req.itemId &&
+        ((r.borrowerEmail && req.borrowerEmail && r.borrowerEmail.toLowerCase().trim() === req.borrowerEmail.toLowerCase().trim()) ||
+         (r.userId && req.userId && r.userId === req.userId))
+      );
+      if (pendingIssue) {
+        return {
+          success: false,
+          error: 'Order Violation: Cannot approve return before the pending component issue request is approved.'
+        };
+      }
 
       // Fetch borrow record
       const { data: bRecord } = await dbRead

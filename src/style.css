@@ -84,6 +84,19 @@ body {
 
 body {
     background-color: #06060e;
+    color: var(--text-main);
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Hardware-Accelerated Fixed Background Wallpaper (Decoupled from scroll, 0 repaints) */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -4;
+    background-color: #06060e;
     background-image:
         linear-gradient(rgba(6, 6, 14, 0.72), rgba(6, 6, 14, 0.85)),
         radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
@@ -92,14 +105,12 @@ body {
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
-    color: var(--text-main);
-    overflow-x: hidden;
-    min-height: 100vh;
-    position: relative;
+    pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
-/* Highly visible, premium interactive 2D cyber gridlines overlay in front */
+/* Highly visible, premium interactive 2D cyber gridlines overlay (GPU layer, behind content) */
 body::before {
     content: '';
     position: fixed;
@@ -109,11 +120,18 @@ body::before {
         linear-gradient(90deg, var(--grid-color) 1.2px, transparent 1.2px);
     background-size: 55px 55px;
     pointer-events: none;
-    z-index: 10;
+    z-index: -1;
+    transform: translateZ(0);
     /* Spotlight mask that moves with the cursor */
     mask-image: radial-gradient(circle 350px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 20%, transparent 100%);
     -webkit-mask-image: radial-gradient(circle 350px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 20%, transparent 100%);
 }
+
+/* Scroll Performance Optimization - Disable expensive hover hit-testing and style recalculation during scroll */
+body.is-scrolling * {
+    pointer-events: none !important;
+}
+
 
 /* 3D Canvas Background */
 #canvas-3d {
@@ -1693,10 +1711,13 @@ body.theme-light .auth-card input::placeholder,
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    background: linear-gradient(145deg, rgba(13, 17, 28, 0.78) 0%, rgba(6, 9, 16, 0.88) 100%);
+    background: linear-gradient(145deg, rgba(14, 18, 32, 0.94) 0%, rgba(8, 10, 20, 0.96) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
-    backdrop-filter: blur(16px);
+    contain: layout paint style;
+    content-visibility: auto;
+    contain-intrinsic-size: 0 450px;
+    transform: translateZ(0);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease, box-shadow 0.28s ease;
     width: 100%;
     min-width: 0;
@@ -3566,7 +3587,7 @@ input:-webkit-autofill:active {
 }
 
 .stat-bubble-new {
-    background: rgba(10, 14, 23, 0.72);
+    background: rgba(10, 14, 23, 0.90);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     padding: 10px 14px;
@@ -3581,7 +3602,7 @@ input:-webkit-autofill:active {
     position: relative;
     user-select: none;
     transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    backdrop-filter: blur(12px);
+    contain: layout paint style;
     min-width: 0;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -4848,6 +4869,12 @@ html[data-theme="cyberpunk"],
 [data-theme="cyberpunk"] body,
 body.theme-cyberpunk {
     background-color: #06060e !important;
+    color: var(--text-main);
+}
+
+[data-theme="cyberpunk"] body::after,
+body.theme-cyberpunk::after {
+    background-color: #06060e !important;
     background-image:
         linear-gradient(rgba(6, 6, 14, 0.72), rgba(6, 6, 14, 0.85)),
         radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
@@ -4856,8 +4883,6 @@ body.theme-cyberpunk {
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
-    color: var(--text-main);
 }
 
 [data-theme="cyberpunk"] .dashboard-greeting-card,
@@ -4914,14 +4939,18 @@ html[data-theme="light"],
 [data-theme="light"] body,
 body.theme-light {
     background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] body::after,
+body.theme-light::after {
+    background-color: #f1f5f9 !important;
     background-image:
         linear-gradient(rgba(241, 245, 249, 0.84), rgba(226, 232, 240, 0.90)),
         url('/backgrounds/light.jpg') !important;
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
-    color: #0f172a !important;
 }
 
 [data-theme="light"] body::before,
@@ -6302,7 +6331,6 @@ body.theme-pink .dashboard-greeting-card::before {
     cursor: pointer;
     transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 20px rgba(0, 0, 0, 0.06);
-    backdrop-filter: blur(10px);
 }
 
 .action-pill-btn i {
@@ -6373,8 +6401,8 @@ body.theme-pink .card-clock-right {
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    contain: layout paint style;
+    transform: translateZ(0);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -7128,6 +7156,14 @@ html[data-theme="pink"],
 body.theme-sakura,
 body.theme-pink {
     background-color: #fce2ed !important;
+    color: #4c0519 !important;
+}
+
+[data-theme="sakura"] body::after,
+[data-theme="pink"] body::after,
+body.theme-sakura::after,
+body.theme-pink::after {
+    background-color: #fce2ed !important;
     background-image:
         linear-gradient(rgba(252, 226, 237, 0.35), rgba(252, 226, 237, 0.60)),
         radial-gradient(circle at 50% 30%, rgba(255, 240, 248, 0.35) 0%, rgba(244, 114, 182, 0.15) 100%),
@@ -7135,8 +7171,6 @@ body.theme-pink {
     background-size: cover !important;
     background-position: center top !important;
     background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
-    color: #4c0519 !important;
 }
 
 [data-theme="sakura"] body::before,
@@ -14738,4 +14772,313 @@ body.theme-light .audit-json-box,
 body.theme-light .audit-json-pre,
 [data-theme="light"] .audit-json-pre {
     color: #0f172a !important;
+}
+
+/* ==========================================================================
+   Sign Out Confirmation Modal (Futuristic Cyberpunk Aesthetic)
+   ========================================================================== */
+.signout-modal-card {
+    max-width: 460px;
+    width: 100%;
+    border-radius: 22px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(155deg, rgba(16, 20, 36, 0.97) 0%, rgba(8, 10, 20, 0.98) 100%) !important;
+    border: 1px solid rgba(255, 0, 85, 0.35) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(255, 0, 85, 0.16) !important;
+    animation: pop-in-signout 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pop-in-signout {
+    0% {
+        opacity: 0;
+        transform: scale(0.92) translateY(12px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.signout-glow-stripe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ff0055, #ff5500, #bd00ff, #ff0055);
+    background-size: 300% 100%;
+    animation: signout-stripe-flow 4s linear infinite;
+}
+
+@keyframes signout-stripe-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
+
+.signout-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.signout-sys-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    color: #ff0055;
+    background: rgba(255, 0, 85, 0.12);
+    padding: 4px 10px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 0, 85, 0.3);
+}
+
+.signout-pulse-beacon {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff0055;
+    box-shadow: 0 0 8px #ff0055;
+    animation: status-pulse 1.8s infinite;
+}
+
+.signout-status-chip {
+    font-family: 'Space Grotesk', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+}
+
+.signout-hero-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.signout-icon-orb {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 0, 85, 0.18) 0%, rgba(255, 85, 0, 0.08) 100%);
+    border: 1px solid rgba(255, 0, 85, 0.4);
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.signout-icon-orb i,
+.signout-icon-orb svg {
+    width: 24px;
+    height: 24px;
+    color: #ff0055;
+}
+
+.signout-text-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.signout-modal-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #ffffff;
+    margin: 0;
+}
+
+.signout-modal-sub {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0;
+}
+
+.signout-user-strip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 24px;
+}
+
+.signout-user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    color: #06060e;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.signout-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.signout-user-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.signout-user-email {
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.signout-role-tag {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: var(--neon-cyan);
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 6px;
+    padding: 3px 8px;
+}
+
+.signout-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.signout-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.signout-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(0, 240, 255, 0.4);
+    color: #ffffff;
+}
+
+.signout-confirm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ff0055 0%, #d60046 100%) !important;
+    border: 1px solid #ff3377 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(255, 0, 85, 0.35);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.signout-confirm-btn:hover {
+    background: linear-gradient(135deg, #ff1a6b 0%, #e6004c 100%) !important;
+    box-shadow: 0 6px 22px rgba(255, 0, 85, 0.55);
+    transform: translateY(-1px);
+}
+
+/* Theme overrides for Sign Out Modal */
+body.theme-light .signout-modal-card,
+[data-theme="light"] .signout-modal-card {
+    background: linear-gradient(155deg, #ffffff 0%, #f8fafc 100%) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12) !important;
+}
+
+body.theme-light .signout-modal-title,
+[data-theme="light"] .signout-modal-title {
+    color: #0f172a !important;
+}
+
+body.theme-light .signout-user-strip,
+[data-theme="light"] .signout-user-strip {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.theme-sakura .signout-modal-card,
+[data-theme="sakura"] .signout-modal-card {
+    background: linear-gradient(155deg, #fff5fa 0%, #ffe4f0 100%) !important;
+    border-color: rgba(244, 114, 182, 0.5) !important;
+    box-shadow: 0 20px 45px rgba(236, 72, 153, 0.18) !important;
+}
+
+body.theme-sakura .signout-modal-title,
+[data-theme="sakura"] .signout-modal-title {
+    color: #4c0519 !important;
+}
+
+body.theme-sakura .signout-user-strip,
+[data-theme="sakura"] .signout-user-strip {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-color: rgba(244, 114, 182, 0.3) !important;
+}
+
+/* Mobile Lag & Flicker Eliminator */
+@media (max-width: 768px) {
+    body::before {
+        mask-image: none !important;
+        -webkit-mask-image: none !important;
+        opacity: 0.22 !important;
+    }
+
+    body, body::before, body::after, .inventory-card, .dash-card, .modal-content {
+        -webkit-backface-visibility: hidden !important;
+        backface-visibility: hidden !important;
+    }
+
+    .signout-modal-card {
+        padding: 22px 18px;
+        max-width: calc(100vw - 32px);
+    }
+
+    .signout-modal-actions {
+        flex-direction: column-reverse;
+        width: 100%;
+    }
+
+    .signout-modal-actions button {
+        width: 100%;
+        justify-content: center;
+    }
 }

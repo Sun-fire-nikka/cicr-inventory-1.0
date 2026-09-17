@@ -1050,6 +1050,52 @@
         </div>
     </div>
 
+    <!-- Sign Out Confirmation Modal (Cyber Aesthetic) -->
+    <div class="modal-overlay" id="signout-confirm-modal">
+        <div class="modal-content glass signout-modal-card">
+            <button class="close-modal" id="close-signout-confirm"><i data-lucide="x"></i></button>
+            <div class="signout-glow-stripe"></div>
+
+            <div class="signout-badge-row">
+                <span class="signout-sys-chip">
+                    <span class="signout-pulse-beacon"></span>
+                    SECURITY // PROTOCOL 0x4F
+                </span>
+                <span class="signout-status-chip">SYS_LOGOUT_REQ</span>
+            </div>
+
+            <div class="signout-hero-section">
+                <div class="signout-icon-orb">
+                    <i data-lucide="power"></i>
+                </div>
+                <div class="signout-text-col">
+                    <h2 class="signout-modal-title">TERMINATE ACTIVE SESSION?</h2>
+                    <p class="signout-modal-sub">
+                        You are about to disconnect from the <strong>CICR Robotics & Hardware Vault</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="signout-user-strip">
+                <div class="signout-user-avatar" id="signout-user-avatar">M</div>
+                <div class="signout-user-info">
+                    <div class="signout-user-name" id="signout-user-name">Member Name</div>
+                    <div class="signout-user-email" id="signout-user-email">student@mail.jiit.ac.in</div>
+                </div>
+                <div class="signout-role-tag" id="signout-user-role">MEMBER</div>
+            </div>
+
+            <div class="signout-modal-actions">
+                <button class="btn btn-secondary signout-cancel-btn" id="btn-cancel-signout">
+                    <i data-lucide="shield-check"></i> Stay Signed In
+                </button>
+                <button class="btn btn-danger signout-confirm-btn" id="btn-confirm-signout">
+                    <i data-lucide="log-out"></i> Disconnect Now
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Borrow Form Modal -->
     <div class="modal-overlay" id="borrow-form-modal">
         <div class="modal-content glass small-modal">

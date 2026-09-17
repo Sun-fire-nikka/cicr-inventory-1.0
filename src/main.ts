@@ -300,8 +300,9 @@ class Background3D {
             alpha: true,
             powerPreference: "high-performance"
         });
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
     }
 
     private createLighting() {
@@ -319,22 +320,6 @@ class Background3D {
 
     public updateThemeColors(theme: string) {
         this.currentTheme = theme;
-        let fogHex = 0x06060e;
-        if (theme === 'light') fogHex = 0xf1f5f9;
-        else if (theme === 'sakura' || theme === 'pink') fogHex = 0xfce2ed;
-
-        if (this.canvas) {
-            if (theme === 'sakura' || theme === 'pink' || theme === 'light') {
-                this.canvas.style.opacity = '0.04';
-            } else {
-                this.canvas.style.opacity = '1';
-            }
-        }
-
-        if (this.scene) {
-            this.scene.fog = new THREE.FogExp2(fogHex, (theme === 'sakura' || theme === 'pink') ? 0.01 : 0.015);
-        }
-
         this.setParticleColorsForTheme(theme);
     }
 
@@ -343,25 +328,22 @@ class Background3D {
         const colors = this.particles.geometry.attributes.color.array as Float32Array;
         const count = colors.length / 3;
 
-        let color1 = new THREE.Color(0x00f0ff);
-        let color2 = new THREE.Color(0xbd00ff);
-        let color3 = new THREE.Color(0xff007a);
-
-        if (theme === 'sakura' || theme === 'pink') {
-            color1 = new THREE.Color(0xec4899); // Sakura Blossom Pink
-            color2 = new THREE.Color(0xf43f5e); // Rose Petal Crimson
-            color3 = new THREE.Color(0xf472b6); // Soft Blossom Rose
+        let c1: THREE.Color, c2: THREE.Color;
+        if (theme === 'sakura') {
+            c1 = new THREE.Color(0xff75a0); // Vibrant cherry pink
+            c2 = new THREE.Color(0xffb7c5); // Soft blossom petal
         } else if (theme === 'light') {
-            color1 = new THREE.Color(0x0284c7);
-            color2 = new THREE.Color(0x7c3aed);
-            color3 = new THREE.Color(0xdb2777);
+            c1 = new THREE.Color(0x0284c7); // Deep Sky Blue
+            c2 = new THREE.Color(0x38bdf8); // Light Cyan
+        } else {
+            // Default Cyberpunk
+            c1 = new THREE.Color(0x00f0ff);
+            c2 = new THREE.Color(0xbd00ff);
         }
 
         for (let i = 0; i < count; i++) {
-            const rand = Math.random();
-            let c = color1;
-            if (rand > 0.6) c = color2;
-            else if (rand > 0.3) c = color3;
+            const ratio = Math.random();
+            const c = c1.clone().lerp(c2, ratio);
 
             colors[i * 3] = c.r;
             colors[i * 3 + 1] = c.g;
@@ -372,7 +354,8 @@ class Background3D {
     }
 
     private createParticles() {
-        const particleCount = 350;
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        const particleCount = isMobile ? 80 : 350;
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
         const colors = new Float32Array(particleCount * 3);
@@ -389,7 +372,7 @@ class Background3D {
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
         const material = new THREE.PointsMaterial({
-            size: 0.24,
+            size: isMobile ? 0.20 : 0.24,
             vertexColors: true,
             transparent: true,
             opacity: 0.88,
@@ -403,15 +386,23 @@ class Background3D {
 
     private setupEvents() {
         window.addEventListener('mousemove', (e) => {
+            if (window.innerWidth < 768) return;
             this.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
             this.mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
         }, { passive: true });
 
+        let lastWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
         window.addEventListener('resize', () => {
+            // On mobile devices, scrolling expands/collapses the URL address bar which triggers innerHeight resize events.
+            // Only reallocate the WebGL backing canvas buffer if innerWidth actually changes (device rotation / orientation change).
+            if (Math.abs(window.innerWidth - lastWidth) < 4) return;
+            lastWidth = window.innerWidth;
+
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
-            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            const isMobile = window.innerWidth < 768;
+            this.renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
         }, { passive: true });
     }
 
@@ -419,7 +410,8 @@ class Background3D {
         requestAnimationFrame(() => this.animate());
         if (typeof document !== 'undefined' && document.hidden) return;
 
-        if (this.particles) {
+        const isScrolling = typeof document !== 'undefined' && document.body.classList.contains('is-scrolling');
+        if (this.particles && !isScrolling) {
             const positions = this.particles.geometry.attributes.position.array as Float32Array;
             const particleCount = positions.length / 3;
             const time = Date.now() * 0.001;
@@ -1144,6 +1136,14 @@ class DashboardManager {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeMobileSidebar();
+                const signoutModal = document.getElementById('signout-confirm-modal');
+                if (signoutModal && signoutModal.classList.contains('active')) {
+                    signoutModal.style.opacity = '0';
+                    setTimeout(() => {
+                        signoutModal.classList.remove('active');
+                        signoutModal.style.display = 'none';
+                    }, 250);
+                }
             }
         });
 
@@ -1349,13 +1349,16 @@ class DashboardManager {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // trigger logout directly on AuthManager
-                const oldLogoutBtn = document.getElementById('nav-logout');
-                if (oldLogoutBtn) {
-                    oldLogoutBtn.click();
+                if (typeof AuthManager !== 'undefined' && typeof AuthManager.promptLogout === 'function') {
+                    AuthManager.promptLogout();
                 } else {
-                    localStorage.removeItem('cicr_auth');
-                    window.location.reload();
+                    const oldLogoutBtn = document.getElementById('nav-logout');
+                    if (oldLogoutBtn) {
+                        oldLogoutBtn.click();
+                    } else {
+                        localStorage.removeItem('cicr_auth');
+                        window.location.reload();
+                    }
                 }
             });
         }
@@ -1681,7 +1684,7 @@ class DashboardManager {
             </button>
         ` : '';
 
-        const myLoans = (item.borrowedBy || []).filter((r: any) => !r.returned && ModalManager.isUserLoanMatch(r));
+        const myLoans = (item.borrowedBy || []).filter((r: any) => !r.returned && (r as any).status !== 'PENDING' && ModalManager.isUserLoanMatch(r));
         const myLoanTotal = myLoans.reduce((sum: number, r: any) => sum + (Number(r.qty) || 0), 0);
         const myPendingReturn = myLoans.some((r: any) => (r as any).status === 'RETURN_REQUESTED');
         const myLoanBadgeHtml = myLoanTotal > 0 ? `
@@ -2092,7 +2095,9 @@ class ModalManager {
         }
 
         requestInbox.style.display = 'flex';
-        const pendingRequests = requests.filter((request) => request.status === 'PENDING');
+        const pendingRequests = requests
+            .filter((request) => request.status === 'PENDING')
+            .sort((a, b) => new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime());
         requestCountBadge.innerText = String(pendingRequests.length);
         requestList.innerHTML = '';
 
@@ -2254,9 +2259,9 @@ class ModalManager {
             borrowBtn.style.opacity = '0.5';
         }
 
-        const myLoans = (item.borrowedBy || []).filter(rec => !rec.returned && ModalManager.isUserLoanMatch(rec));
+        const myLoans = (item.borrowedBy || []).filter(rec => !rec.returned && (rec as any).status !== 'PENDING' && ModalManager.isUserLoanMatch(rec));
         const myActiveLoan = myLoans.find(r => (r as any).status !== 'RETURN_REQUESTED') || myLoans[0];
-        const anyActiveLoan = (item.borrowedBy || []).find(rec => !rec.returned);
+        const anyActiveLoan = (item.borrowedBy || []).find(rec => !rec.returned && (rec as any).status !== 'PENDING');
         const targetLoan = myActiveLoan || (role === 'ADMIN' ? anyActiveLoan : null);
 
         // Display Return Issued Component button
@@ -2676,6 +2681,7 @@ class ModalManager {
         const visibleRequests: any[] = isAdmin
             ? combinedRequests.filter(r => r.status === 'PENDING')
             : combinedRequests.filter(r => isUserRequest(r));
+        visibleRequests.sort((a, b) => new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime());
 
         // --- 4. GATHER SYSTEM LOGS DATA ---
         const visibleLogs: ActivityLog[] = isAdmin
@@ -3865,7 +3871,7 @@ class AuthManager {
         if (sideLogoutBtn) {
             sideLogoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.handleLogout();
+                this.promptLogout();
             });
         }
 
@@ -3943,7 +3949,7 @@ class AuthManager {
 
         this.navLogoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            this.handleLogout();
+            this.promptLogout();
         });
 
         // Password visibility toggles
@@ -4348,6 +4354,67 @@ class AuthManager {
         this.signupErr.style.animation = 'none';
         this.signupErr.offsetHeight;
         this.signupErr.style.animation = 'shake-error 0.4s ease';
+    }
+
+    public static promptLogout() {
+        const modal = document.getElementById('signout-confirm-modal');
+        if (!modal) {
+            this.handleLogout();
+            return;
+        }
+
+        // Populate user preview details
+        let user: any = {};
+        try {
+            user = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+        } catch { }
+        const nameEl = document.getElementById('signout-user-name');
+        const emailEl = document.getElementById('signout-user-email');
+        const roleEl = document.getElementById('signout-user-role');
+        const avatarEl = document.getElementById('signout-user-avatar');
+
+        const userName = user?.name || user?.username || 'Member';
+        const userEmail = user?.email || 'authenticated@cicr.lab';
+        const userRole = (user?.role || localStorage.getItem('cicr_role') || 'MEMBER').toUpperCase();
+
+        if (nameEl) nameEl.innerText = userName;
+        if (emailEl) emailEl.innerText = userEmail;
+        if (roleEl) roleEl.innerText = userRole === 'ADMIN' ? 'VAULT ADMIN' : 'STUDENT MEMBER';
+        if (avatarEl) avatarEl.innerText = userName.charAt(0).toUpperCase();
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
+        lucide.createIcons();
+
+        const closeBtn = document.getElementById('close-signout-confirm');
+        const cancelBtn = document.getElementById('btn-cancel-signout');
+        const confirmBtn = document.getElementById('btn-confirm-signout');
+
+        const closeModal = () => {
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }, 250);
+        };
+
+        if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
+        if (cancelBtn) cancelBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        if (confirmBtn) {
+            confirmBtn.onclick = (e) => {
+                e.stopPropagation();
+                closeModal();
+                ToastManager.show('Session Terminated', 'You have been disconnected safely.', 'info');
+                this.handleLogout();
+            };
+        }
     }
 
     private static handleLogout() {
@@ -5111,7 +5178,9 @@ class AdminManager {
             }
         }
 
-        this.hardwareRequests = Array.from(canonicalQueue.values());
+        this.hardwareRequests = Array.from(canonicalQueue.values()).sort((a, b) => {
+            return new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime();
+        });
         this.updateStats();
         this.renderHardwareQueue(force);
         DatabaseManager.updateNotificationBadges();
@@ -5160,7 +5229,9 @@ class AdminManager {
         const container = document.getElementById('admin-hardware-list');
         if (!container) return;
 
-        const pendingRequests = this.hardwareRequests.filter(r => r.status === 'PENDING');
+        const pendingRequests = this.hardwareRequests
+            .filter(r => r.status === 'PENDING')
+            .sort((a, b) => new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime());
         const fingerprint = pendingRequests.map(r => `${r.id}_${r.status}_${r.quantity}_${r.returnQuantity || ''}_${r.borrowerEmail}_${r.itemName}_${r.type || ''}`).join('|');
 
         if (!force && this.lastHardwareQueueFingerprint === fingerprint && container.children.length === (pendingRequests.length === 0 ? 1 : pendingRequests.length)) {
@@ -5218,7 +5289,7 @@ class AdminManager {
                     </button>
                 </div>
             </div>
-        `;
+            `;
         }).join('');
 
         renderLucideIcons(container);
@@ -5236,6 +5307,24 @@ class AdminManager {
             || (requests.find(r => r.id === id) as any);
         const reqSnapshot = targetReq ? { ...targetReq } : null;
         const targetKey = this.getRequestCanonicalKey(targetReq);
+
+        const isReturnReq = reqSnapshot?.type === 'RETURN' || Boolean(reqSnapshot?.borrowId);
+
+        // Strict Order Check: If approving a RETURN, ensure there is NO pending ISSUE request for this item & borrower
+        if (isReturnReq) {
+            const hasPendingIssue = this.hardwareRequests.some(r => {
+                if (r.id === id || r.status !== 'PENDING' || r.type === 'RETURN' || Boolean(r.borrowId)) return false;
+                const sameItem = r.itemId === reqSnapshot?.itemId;
+                const sameEmail = Boolean(r.borrowerEmail && reqSnapshot?.borrowerEmail && r.borrowerEmail.toLowerCase().trim() === reqSnapshot.borrowerEmail.toLowerCase().trim());
+                const sameName = Boolean(r.borrowerName && reqSnapshot?.borrowerName && r.borrowerName.toLowerCase().trim() === reqSnapshot.borrowerName.toLowerCase().trim());
+                return sameItem && (sameEmail || sameName);
+            });
+            if (hasPendingIssue) {
+                ToastManager.show('Order Violation Blocked', 'Cannot approve return before the component issue request is approved first.', 'warning');
+                this.pendingActionIds.delete(id);
+                return;
+            }
+        }
 
         const matchesTarget = (r: any): boolean => {
             if (!r) return false;
@@ -5271,7 +5360,6 @@ class AdminManager {
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
 
-        const isReturnReq = reqSnapshot?.type === 'RETURN' || Boolean(reqSnapshot?.borrowId);
         ToastManager.show(
             isReturnReq ? 'Return Authorized' : 'Request Authorized',
             `${isReturnReq ? 'Return' : 'Component issue'} for "${reqSnapshot?.itemName || 'Hardware'}" approved.`,
@@ -6926,12 +7014,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+    // Throttled high-performance scroll state manager to eliminate scroll jank & hover hit-tests
+    let scrollDebounceTimer: number | undefined;
+    window.addEventListener('scroll', () => {
+        if (!document.body.classList.contains('is-scrolling')) {
+            document.body.classList.add('is-scrolling');
+        }
+        if (scrollDebounceTimer !== undefined) {
+            clearTimeout(scrollDebounceTimer);
+        }
+        scrollDebounceTimer = window.setTimeout(() => {
+            document.body.classList.remove('is-scrolling');
+        }, 120);
+    }, { passive: true });
+
     // IntersectionObserver scroll reveal triggers matching Pinterest visual transition
     const revealElements = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
+                observer.unobserve(entry.target);
             }
         });
     }, {
