@@ -14820,23 +14820,30 @@ body.theme-light .audit-json-pre,
 .signout-badge-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: flex-start;
+    padding-right: 48px;
     margin-bottom: 20px;
 }
 
-.signout-sys-chip {
+.signout-modal-card .close-modal {
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+}
+
+.signout-status-chip {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Orbitron', monospace;
     font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
     letter-spacing: 0.8px;
-    color: #ff0055;
-    background: rgba(255, 0, 85, 0.12);
-    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 9999px;
-    border: 1px solid rgba(255, 0, 85, 0.3);
+    padding: 4px 10px;
 }
 
 .signout-pulse-beacon {
@@ -14846,13 +14853,6 @@ body.theme-light .audit-json-pre,
     background: #ff0055;
     box-shadow: 0 0 8px #ff0055;
     animation: status-pulse 1.8s infinite;
-}
-
-.signout-status-chip {
-    font-family: 'Space Grotesk', monospace;
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 0.5px;
 }
 
 .signout-hero-section {
