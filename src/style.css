@@ -15510,3 +15510,282 @@ body.theme-sakura .signout-user-strip,
         font-size: 11px !important;
     }
 }
+
+/* =========================================================
+   Aesthetic Cyber Calendar Picker for Component Issue
+   ========================================================= */
+.form-label-with-badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 6px;
+}
+
+.form-label-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.form-label-badge.badge-cyan {
+    background: rgba(0, 240, 255, 0.12);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.form-label-badge.badge-blue {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #60a5fa;
+}
+
+.form-label-badge.badge-red {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+.aesthetic-date-picker-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: rgba(13, 17, 26, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    border-radius: 12px;
+    padding: 2px 4px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.aesthetic-date-picker-wrapper:hover {
+    border-color: rgba(0, 240, 255, 0.55);
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.2), inset 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.aesthetic-date-picker-wrapper:focus-within {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 22px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.15);
+}
+
+.date-input-prefix-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    color: var(--neon-cyan);
+    flex-shrink: 0;
+    pointer-events: none;
+    transition: transform 0.25s ease;
+}
+
+.date-input-prefix-icon svg,
+.date-input-prefix-icon i {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.2;
+}
+
+.aesthetic-date-picker-wrapper:hover .date-input-prefix-icon {
+    transform: scale(1.1);
+}
+
+.aesthetic-date-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    font-family: 'Space Grotesk', 'Inter', monospace;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    padding: 8px 4px !important;
+    cursor: pointer;
+}
+
+/* Chrome/Safari native calendar picker indicator styling */
+.aesthetic-date-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(70%) sepia(80%) saturate(1200%) hue-rotate(150deg) brightness(1.2);
+    opacity: 0.8;
+    transition: all 0.2s ease;
+    padding: 4px;
+    border-radius: 6px;
+}
+
+.aesthetic-date-input::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    filter: invert(100%) sepia(100%) saturate(2000%) hue-rotate(150deg) brightness(1.5);
+    transform: scale(1.15);
+}
+
+.btn-calendar-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    margin-right: 2px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(189, 0, 255, 0.18));
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    border-radius: 8px;
+    color: var(--neon-cyan);
+    font-family: 'Rajdhani', 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.18);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-calendar-trigger i,
+.btn-calendar-trigger svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.2;
+    transition: transform 0.2s ease;
+    pointer-events: none;
+}
+
+.btn-calendar-trigger:hover {
+    background: var(--neon-cyan);
+    color: #000000;
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 20px var(--neon-cyan);
+    transform: translateY(-1px);
+}
+
+.btn-calendar-trigger:hover i,
+.btn-calendar-trigger:hover svg {
+    transform: rotate(-10deg) scale(1.1);
+}
+
+.btn-calendar-trigger:active {
+    transform: scale(0.95);
+}
+
+/* Quick loan duration preset pills */
+.date-quick-presets {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.date-preset-pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text-dim, #94a3b8);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    touch-action: manipulation;
+}
+
+.date-preset-pill:hover {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: rgba(0, 240, 255, 0.35);
+    color: #ffffff;
+}
+
+.date-preset-pill.active {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(189, 0, 255, 0.25));
+    border-color: var(--neon-cyan);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+    font-weight: 700;
+}
+
+/* Light Theme Calendar Overrides */
+body.theme-light .aesthetic-date-picker-wrapper {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-light .aesthetic-date-input {
+    color: #0f172a !important;
+}
+
+body.theme-light .date-input-prefix-icon {
+    color: #0284c7;
+}
+
+body.theme-light .btn-calendar-trigger {
+    background: #f0f9ff;
+    border-color: #0284c7;
+    color: #0284c7;
+    box-shadow: none;
+}
+
+body.theme-light .btn-calendar-trigger:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+body.theme-light .date-preset-pill {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+
+body.theme-light .date-preset-pill.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+}
+
+/* Sakura / Pink Theme Calendar Overrides */
+body.theme-sakura .aesthetic-date-picker-wrapper,
+body.theme-pink .aesthetic-date-picker-wrapper {
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+
+body.theme-sakura .aesthetic-date-input,
+body.theme-pink .aesthetic-date-input {
+    color: #881337 !important;
+}
+
+body.theme-sakura .date-input-prefix-icon,
+body.theme-pink .date-input-prefix-icon {
+    color: #e11d48;
+}
+
+body.theme-sakura .btn-calendar-trigger,
+body.theme-pink .btn-calendar-trigger {
+    background: #ffe4e6;
+    border-color: #fda4af;
+    color: #e11d48;
+}
+
+body.theme-sakura .btn-calendar-trigger:hover,
+body.theme-pink .btn-calendar-trigger:hover {
+    background: #e11d48;
+    color: #ffffff;
+}

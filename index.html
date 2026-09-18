@@ -1130,8 +1130,26 @@
                     <input type="text" id="borrow-purpose" required placeholder="e.g. Robo Soccer development">
                 </div>
                 <div class="form-group">
-                    <label for="borrow-due-date">Due Return Date</label>
-                    <input type="date" id="borrow-due-date">
+                    <div class="form-label-with-badge">
+                        <label for="borrow-due-date" style="margin-bottom: 0;">Due Return Date</label>
+                        <span class="form-label-badge badge-cyan" id="borrow-duration-badge">7 Days Loan</span>
+                    </div>
+                    <div class="aesthetic-date-picker-wrapper" id="borrow-calendar-wrapper">
+                        <div class="date-input-prefix-icon">
+                            <i data-lucide="calendar"></i>
+                        </div>
+                        <input type="date" id="borrow-due-date" class="aesthetic-date-input" required>
+                        <button type="button" class="btn-calendar-trigger" id="btn-calendar-picker" title="Open Interactive Calendar" aria-label="Open Calendar Picker">
+                            <i data-lucide="calendar-days"></i>
+                            <span class="calendar-btn-label">Pick Date</span>
+                        </button>
+                    </div>
+                    <div class="date-quick-presets">
+                        <button type="button" class="date-preset-pill" data-days="3">+3 Days</button>
+                        <button type="button" class="date-preset-pill active" data-days="7">+7 Days</button>
+                        <button type="button" class="date-preset-pill" data-days="14">+14 Days</button>
+                        <button type="button" class="date-preset-pill" data-days="30">+1 Month</button>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-back-to-detail">Cancel</button>

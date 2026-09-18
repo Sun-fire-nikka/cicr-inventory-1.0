@@ -1507,7 +1507,8 @@ class DashboardManager {
         inventory.forEach(item => {
             totalUnits += item.quantity;
 
-            const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+            const activeBorrows = (item.borrowedBy || []).filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED');
+            const borrowedSum = activeBorrows.reduce((sum, rec) => sum + rec.qty, 0);
             const currentAvailable = typeof item.availableQuantity === 'number'
                 ? Math.min(item.quantity, Math.max(0, item.availableQuantity))
                 : Math.max(0, item.quantity - borrowedSum);
@@ -1518,10 +1519,9 @@ class DashboardManager {
             }
 
             if (isAdmin) {
-                const activeLoans = (item.borrowedBy || []).filter(r => !r.returned).reduce((sum, rec) => sum + rec.qty, 0);
-                checkedOutQty += activeLoans;
+                checkedOutQty += borrowedSum;
             } else {
-                const memberLoans = (item.borrowedBy || []).filter(r => !r.returned && ModalManager.isUserLoanMatch(r));
+                const memberLoans = activeBorrows.filter((r: any) => ModalManager.isUserLoanMatch(r));
                 checkedOutQty += memberLoans.reduce((sum, rec) => sum + rec.qty, 0);
             }
 
@@ -1559,19 +1559,21 @@ class DashboardManager {
                 item.location.toLowerCase().includes(this.searchQuery) ||
                 (Array.isArray(item.tags) && item.tags.some((t: string) => t.toLowerCase().includes(this.searchQuery)));
 
-            const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+            const activeBorrows = (item.borrowedBy || []).filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED');
+            const borrowedSum = activeBorrows.reduce((sum, rec) => sum + rec.qty, 0);
+            const totalQty = Number(item.quantity) || 0;
             const available = typeof item.availableQuantity === 'number'
-                ? item.availableQuantity
-                : Math.max(0, item.quantity - borrowedSum);
+                ? Math.min(totalQty, Math.max(0, item.availableQuantity))
+                : Math.max(0, totalQty - borrowedSum);
 
             let matchesStock = true;
             if (this.activeStockFilter === 'available') {
                 matchesStock = available > 0;
             } else if (this.activeStockFilter === 'borrowed') {
                 if (isAdmin) {
-                    matchesStock = borrowedSum > 0 || available < item.quantity;
+                    matchesStock = borrowedSum > 0 || (typeof item.availableQuantity === 'number' && item.availableQuantity < totalQty);
                 } else {
-                    matchesStock = (item.borrowedBy || []).some(r => !r.returned && ModalManager.isUserLoanMatch(r));
+                    matchesStock = activeBorrows.some((r: any) => ModalManager.isUserLoanMatch(r));
                 }
             } else if (this.activeStockFilter === 'low') {
                 const status = getItemStockStatus(item.quantity, available);
@@ -1639,10 +1641,9 @@ class DashboardManager {
         const card = document.createElement('div');
         card.className = isInitial ? 'inventory-card glass reveal' : 'inventory-card glass active';
 
-        const borrowedSum = (item.borrowedBy || []).reduce(
-            (sum: number, rec: any) => sum + rec.qty,
-            0
-        );
+        const borrowedSum = (item.borrowedBy || [])
+            .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
+            .reduce((sum: number, rec: any) => sum + rec.qty, 0);
         const totalQty = Number(item.quantity) || 0;
         const available = typeof item.availableQuantity === 'number'
             ? Math.min(totalQty, Math.max(0, item.availableQuantity))
@@ -1854,6 +1855,85 @@ class ModalManager {
 
         document.getElementById('btn-borrow')!.addEventListener('click', () => {
             this.openBorrowFormModal();
+        });
+
+        // Interactive Calendar Picker & Presets for Issue Return Date
+        const dueDateInput = document.getElementById('borrow-due-date') as HTMLInputElement | null;
+        const btnCalendar = document.getElementById('btn-calendar-picker');
+        const calendarWrapper = document.getElementById('borrow-calendar-wrapper');
+        const durationBadge = document.getElementById('borrow-duration-badge');
+        const presetPills = document.querySelectorAll('.date-preset-pill');
+
+        const updateDurationBadge = (dateVal: string) => {
+            if (!durationBadge || !dateVal) return;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const target = new Date(dateVal);
+            target.setHours(0, 0, 0, 0);
+            const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays <= 0) {
+                durationBadge.textContent = 'Due Today';
+                durationBadge.className = 'form-label-badge badge-red';
+            } else if (diffDays === 1) {
+                durationBadge.textContent = '1 Day Loan';
+                durationBadge.className = 'form-label-badge badge-blue';
+            } else {
+                durationBadge.textContent = `${diffDays} Days Loan`;
+                durationBadge.className = 'form-label-badge badge-cyan';
+            }
+        };
+
+        const openCalendar = (e?: Event) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (!dueDateInput) return;
+            try {
+                if (typeof (dueDateInput as any).showPicker === 'function') {
+                    (dueDateInput as any).showPicker();
+                } else {
+                    dueDateInput.focus();
+                }
+            } catch (_) {
+                dueDateInput.focus();
+            }
+        };
+
+        btnCalendar?.addEventListener('click', openCalendar);
+        calendarWrapper?.addEventListener('click', (e) => {
+            if (e.target !== dueDateInput) {
+                openCalendar(e);
+            }
+        });
+
+        dueDateInput?.addEventListener('input', () => {
+            if (dueDateInput.value) {
+                updateDurationBadge(dueDateInput.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const target = new Date(dueDateInput.value);
+                target.setHours(0, 0, 0, 0);
+                const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                presetPills.forEach(pill => {
+                    const pDays = Number((pill as HTMLElement).dataset.days);
+                    pill.classList.toggle('active', pDays === diffDays);
+                });
+            }
+        });
+
+        presetPills.forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                e.preventDefault();
+                const days = Number((pill as HTMLElement).dataset.days) || 7;
+                const newDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                if (dueDateInput) {
+                    dueDateInput.value = newDate;
+                    updateDurationBadge(newDate);
+                }
+                presetPills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+            });
         });
 
         document.querySelector('.btn-close-about')!.addEventListener('click', () => {
@@ -2184,7 +2264,11 @@ class ModalManager {
 
         if (nextStatus === 'APPROVED') {
             const item = inventory.find((entry) => entry.id === request.itemId);
-            const borrowedSum = item ? item.borrowedBy.reduce((sum, rec) => sum + rec.qty, 0) : 0;
+            const borrowedSum = item
+                ? (item.borrowedBy || [])
+                    .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
+                    .reduce((sum, rec) => sum + rec.qty, 0)
+                : 0;
             const available = item ? item.quantity - borrowedSum : 0;
 
             if (!item || available < request.qty) {
@@ -2239,7 +2323,9 @@ class ModalManager {
     static openDetailModal(item: InventoryItem) {
         selectedItem = item;
 
-        const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+        const borrowedSum = (item.borrowedBy || [])
+            .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
+            .reduce((sum, rec) => sum + rec.qty, 0);
         const totalQty = Number(item.quantity) || 0;
         const available = typeof item.availableQuantity === 'number'
             ? Math.min(totalQty, Math.max(0, item.availableQuantity))
@@ -2414,7 +2500,9 @@ class ModalManager {
     static openBorrowFormModal() {
         if (!selectedItem) return;
 
-        const borrowedSum = (selectedItem.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+        const borrowedSum = (selectedItem.borrowedBy || [])
+            .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
+            .reduce((sum, rec) => sum + rec.qty, 0);
         const available = typeof selectedItem.availableQuantity === 'number'
             ? selectedItem.availableQuantity
             : Math.max(0, selectedItem.quantity - borrowedSum);
@@ -2487,10 +2575,19 @@ class ModalManager {
             const defaultDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
             dueDateInput.min = today;
             dueDateInput.value = defaultDue;
+            const durationBadge = document.getElementById('borrow-duration-badge');
+            if (durationBadge) {
+                durationBadge.textContent = '7 Days Loan';
+                durationBadge.className = 'form-label-badge badge-cyan';
+            }
+            document.querySelectorAll('.date-preset-pill').forEach(pill => {
+                pill.classList.toggle('active', (pill as HTMLElement).dataset.days === '7');
+            });
         }
 
         this.close('detail-modal');
         this.open('borrow-form-modal');
+        lucide.createIcons();
     }
 
     static activeNotifTab: string = 'issues';
@@ -2944,7 +3041,9 @@ class ModalManager {
             lowStockList.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'notif-card card-stock';
-                const borrowedSum = (item.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+                const borrowedSum = (item.borrowedBy || [])
+                    .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
+                    .reduce((sum, rec) => sum + rec.qty, 0);
                 const totalQty = Number(item.quantity) || 0;
                 const avail = typeof item.availableQuantity === 'number'
                     ? Math.min(totalQty, Math.max(0, item.availableQuantity))
@@ -3441,7 +3540,9 @@ class ModalManager {
         const qty = parseInt((document.getElementById('borrow-qty') as HTMLInputElement).value);
         const purpose = (document.getElementById('borrow-purpose') as HTMLInputElement).value.trim();
 
-        const borrowedSum = (selectedItem.borrowedBy || []).reduce((sum, rec) => sum + rec.qty, 0);
+        const borrowedSum = (selectedItem.borrowedBy || [])
+            .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
+            .reduce((sum, rec) => sum + rec.qty, 0);
         const available = typeof selectedItem.availableQuantity === 'number'
             ? selectedItem.availableQuantity
             : Math.max(0, selectedItem.quantity - borrowedSum);

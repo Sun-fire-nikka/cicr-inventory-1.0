@@ -134,6 +134,15 @@ A large frontend pass (~2,500 line diff across `index.html`, `src/main.ts`, `src
   - Notifications Drawer banner and theme selector controls.
 - **Fluid Mobile & Desktop Responsiveness**: Implemented a responsive auto-fit grid for the Admin Control Center stats and touch-friendly full-width range pill segments on mobile devices (max-width: 640px and 440px).
 
+## 13. v2.13.0 Release — Cyber Calendar, Active Loans Accuracy, Vault Restock & Showcase Polish
+**`v2.13.0` — feat: cyber calendar picker, active loans filter precision, complete vault restock, and showcase UI polish**
+
+- **Interactive Cyber Calendar Picker & Presets**: Integrated an aesthetic date picker modal with calendar icon, dynamic duration badge (`X Days Loan`), and quick presets (`+3 Days`, `+7 Days (Default)`, `+14 Days`, `+1 Month`) for issuing hardware components.
+- **Stock Filter & Active Loans Precision**: Fixed `borrowedSum` and `matchesStock` so returned hardware records (`r.returned === true` or `r.status === 'RETURNED'`) are strictly excluded from the "Active Loans" stock filter. Components with full stock availability (e.g. 1/1, 6/6, 4/4) no longer leak into active loans view.
+- **Complete Inventory Return & Restock**: Ran automated return sync across Supabase PostgreSQL to restock all hardware units (all 173 components in vault with 100% stock available).
+- **Developer Showcase Layout Perfection**: Locked developer social links to 1 horizontal row across all screen sizes; unified hero card length, height, and width across all member profiles; made carousel chevron buttons fully responsive, touch-optimized, and visible without viewport clipping.
+- **Security Hardening**: Purged one-off scripts with hardcoded credentials from git history and repository.
+
 ---
 
 ## Net effect

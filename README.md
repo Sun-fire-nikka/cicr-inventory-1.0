@@ -75,9 +75,10 @@ Track, reserve, and deploy microcontrollers, sensors, and actuators from JIIT's 
 | **v2.9.1** | ✅ Released | **Production Clean Transactional Email Headers.** Removed the debug `[CICR TEST DISPATCH]` banner header across direct and queue-dispatched transactional emails, providing clean, authentic, and modern cyber templates across all user notifications. |
 | **v2.10.0** | ✅ Released | **7-Day Centralized Audit & Telemetry Log System.** Centralized backend log persistence with automated 7-day retention pruning scheduler (runs at boot + every 6 hours), real-time 7-day activity spectrum HUD with interactive day filtering, category counters (Auth, Inventory, Hardware, Loans, System), CSV export, manual retention sync trigger, live detail inspection modal, and client log dispatch pipeline. |
 | **v2.11.0** | ✅ Released | **Consolidated Multi-Component Return System ("Return Everything in 1 Go").** Unified bulk return manifest modal with interactive quantity steppers, FIFO loan allocation engine (`POST /api/borrow/bulk-return-request`) resolving multiple repeated checkouts, drawer & item detail entry points, and 1-click administrative verification workflow. |
-| **v2.12.0** | ✅ Released (current) | **Multi-Theme Contrast Engine & Responsive Audit Hub.** Full text and button contrast overhaul across all 3 themes (Cyber Neon, Clean Light, Cherry Blossom Sakura) for Admin Control Center, stat boxes, tables, cards, and modals. Instant-reactivity audit range filtering (`7 Days (All)`, `Last 3 Days`, `Today (24h)`) with dynamic category counts and streamlined audit ledger layout. |
+| **v2.12.0** | ✅ Released | **Multi-Theme Contrast Engine & Responsive Audit Hub.** Full text and button contrast overhaul across all 3 themes (Cyber Neon, Clean Light, Cherry Blossom Sakura) for Admin Control Center, stat boxes, tables, cards, and modals. Instant-reactivity audit range filtering (`7 Days (All)`, `Last 3 Days`, `Today (24h)`) with dynamic category counts and streamlined audit ledger layout. |
+| **v2.13.0** | ✅ Released (current) | **Cyber Calendar Picker, Active Loans Filter Precision, Complete Vault Restock & Showcase UI Perfection.** Interactive cyber calendar with duration badge and quick loan presets (`+3`, `+7 Default`, `+14`, `+30` days) for component issuing; fixed Active Loans filter to strictly isolate active unreturned loans without phantom returned component leaks; all 173 components safely returned to vault (100% available stock); locked developer showcase socials to 1 horizontal row with uniform card dimensions and fully responsive, touch-ready carousel side buttons; and hardened secret credentials handling. |
 
-> The current active release is **v2.12.0 — Multi-Theme Contrast Engine & Responsive Audit Hub**. Both the Vercel frontend and Render backend run in production with live database sync, multi-tier hardware queues, 7-day centralized audit persistence, and cross-theme readability.
+> The current active release is **v2.13.0 — Cyber Calendar Picker, Active Loans Filter Precision, Complete Vault Restock & Showcase UI Perfection**. Both the Vercel frontend and Render backend run in production with live database sync, multi-tier hardware queues, 7-day centralized audit persistence, and cross-theme readability.
 
 ### 🏷️ Version Registry (Git Tags)
 
@@ -101,6 +102,7 @@ Track, reserve, and deploy microcontrollers, sensors, and actuators from JIIT's 
 | **v2.10.0** | `v2.10.0`, `v2.10` | ✅ Released | 7-Day Centralized Audit Ledger, Telemetry HUD & Backend Auto-Retention |
 | **v2.11.0** | `v2.11.0`, `v2.11` | ✅ Released | Consolidated Multi-Item Return ("Return in 1 Go") & Stepper Manifest |
 | **v2.12.0** | `v2.12.0`, `v2.12` | ✅ Released | Multi-Theme Contrast Engine, Streamlined Audit & Responsive Range Filter |
+| **v2.13.0** | `v2.13.0`, `v2.13` | ✅ Released | Cyber Calendar Picker, Active Loans Filter Precision, Vault Restock & Showcase UI |
 
 ---
 
