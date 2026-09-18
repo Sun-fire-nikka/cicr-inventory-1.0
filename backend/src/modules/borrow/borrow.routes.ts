@@ -4,6 +4,7 @@ import {
   returnItem,
   getBorrowHistory,
   getBorrowLedger,
+  deleteLedgerRecord,
   getAdmins,
   requestOtp,
   verifyOtp,
@@ -31,6 +32,7 @@ router.post('/return-request', authenticateToken, submitReturnRequestHandler);
 router.post('/bulk-return-request', authenticateToken, submitBulkReturnRequestHandler);
 router.get('/history', authenticateToken, getBorrowHistory);
 router.get('/ledger', authenticateToken, requireAdmin, getBorrowLedger);
+router.delete('/ledger/:id', authenticateToken, requireAdmin, deleteLedgerRecord);
 
 export default router;
 

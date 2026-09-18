@@ -1207,6 +1207,7 @@
                                             <th>TIME</th>
                                             <th>PURPOSE / REASON</th>
                                             <th>STATUS / RETURN LOG</th>
+                                            <th>ACTION</th>
                                         </tr>
                                     </thead>
                                     <tbody id="hw-ledger-table-body">
@@ -1987,6 +1988,100 @@
                 <button type="button" class="btn btn-primary btn-cyber-pulse" id="btn-submit-bulk-return"
                     style="display: inline-flex; align-items: center; gap: 8px;">
                     <i data-lucide="corner-up-left"></i> Submit Return to Admin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin User Profile Inspector Modal -->
+    <div class="modal-overlay" id="admin-user-profile-modal" style="display: none;">
+        <div class="modal-card modal-profile-inspector glass glow-border">
+            <button class="modal-close-btn" id="close-user-profile-modal" title="Close Profile">&times;</button>
+            
+            <div class="profile-inspector-header">
+                <div class="profile-inspector-avatar-wrap">
+                    <div class="profile-inspector-avatar" id="inspector-user-avatar">U</div>
+                    <span class="profile-inspector-role-badge" id="inspector-user-role-badge">MEMBER</span>
+                </div>
+                <div class="profile-inspector-info">
+                    <div class="profile-inspector-name-row">
+                        <h2 id="inspector-user-name">Student Name</h2>
+                        <span class="profile-status-pill approved" id="inspector-user-status">ACTIVE</span>
+                    </div>
+                    <div class="profile-inspector-meta-row">
+                        <span class="profile-meta-item" id="inspector-user-roll"><i data-lucide="hash"></i> <span>—</span></span>
+                        <span class="profile-meta-item" id="inspector-user-email"><i data-lucide="mail"></i> <span>student@mail.jiit.ac.in</span></span>
+                        <span class="profile-meta-item" id="inspector-user-batch"><i data-lucide="graduation-cap"></i> <span>JIIT Member</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="profile-inspector-stats">
+                <div class="profile-stat-box">
+                    <span class="profile-stat-num text-yellow" id="inspector-stat-active">0</span>
+                    <span class="profile-stat-lbl">Active Loans</span>
+                </div>
+                <div class="profile-stat-box">
+                    <span class="profile-stat-num text-green" id="inspector-stat-returned">0</span>
+                    <span class="profile-stat-lbl">Returned</span>
+                </div>
+                <div class="profile-stat-box">
+                    <span class="profile-stat-num text-pink" id="inspector-stat-overdue">0</span>
+                    <span class="profile-stat-lbl">Overdue</span>
+                </div>
+                <div class="profile-stat-box">
+                    <span class="profile-stat-num text-cyan" id="inspector-stat-total">0</span>
+                    <span class="profile-stat-lbl">Total Checkout Events</span>
+                </div>
+            </div>
+
+            <!-- Active Borrowed Hardware Section -->
+            <div class="profile-inspector-section">
+                <div class="profile-section-title">
+                    <i data-lucide="cpu" class="text-cyan"></i>
+                    <span>Currently Issued Hardware</span>
+                </div>
+                <div class="profile-inspector-loans-list" id="inspector-active-loans">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btn-inspector-filter-logs" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <i data-lucide="list-filter"></i> Filter In Component Logs
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-close-user-profile-modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Ledger Record Modal -->
+    <div class="modal-overlay" id="delete-ledger-confirm-modal" style="display: none;">
+        <div class="modal-card modal-delete-confirm glass glow-border">
+            <button class="modal-close-btn" id="btn-close-delete-ledger-x" title="Close">&times;</button>
+            <div class="modal-header-cyber">
+                <div class="cyber-badge-sub">
+                    <i data-lucide="alert-triangle" class="text-pink"></i>
+                    <span class="text-pink">ADMIN PURGE ACTION</span>
+                </div>
+                <h2>Delete Ledger Record</h2>
+                <p>Are you sure you want to permanently delete this checkout / return record from the database?</p>
+            </div>
+            <div class="delete-record-summary" id="delete-ledger-record-summary">
+                <!-- Shows item name, borrower name, and date -->
+            </div>
+            <p class="delete-warning-note">
+                <i data-lucide="shield-alert"></i>
+                This action cannot be undone. The entry will be permanently removed from Supabase backend storage.
+            </p>
+            <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-delete-ledger">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm-delete-ledger" style="background: #ef4444; border-color: #ef4444; color: white; display: inline-flex; align-items: center; gap: 8px;">
+                    <i data-lucide="trash-2"></i> Delete Permanently
                 </button>
             </div>
         </div>

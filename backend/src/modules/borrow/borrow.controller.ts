@@ -456,17 +456,35 @@ export const returnItem = async (req: AuthRequest, res: Response) => {
     const itemName = record.inventory?.name || record.inventory_id;
     await logAudit('Returned', userId, record.inventory_id, `Returned ${qtyToReturn} units of "${itemName}"`);
 
-    // 5. Send Return Confirmation Receipt Email to borrower
-    const userEmail = req.user?.email;
-    const userName = req.user?.name || 'Borrower';
-    if (userEmail) {
-      dispatchBackground('return-confirmation', sendReturnConfirmation(userEmail, userName, itemName, returnTimestamp));
+    // 5. Send Return Confirmation Receipt Email to actual borrower
+    let borrowerEmail = '';
+    let borrowerName = record.borrower_name || 'Borrower';
+    if (record.user_id) {
+      try {
+        const { data: u } = await dbRead.from('users').select('email, name, roll_number').eq('id', record.user_id).maybeSingle();
+        if (u) {
+          if (u.email && !u.email.toLowerCase().startsWith('student@')) borrowerEmail = u.email;
+          if (u.name) borrowerName = u.name;
+          if (!borrowerEmail && u.roll_number) borrowerEmail = `${u.roll_number}@mail.jiit.ac.in`;
+        }
+      } catch {}
+    }
+    if (!borrowerEmail && record.roll_number) {
+      borrowerEmail = `${record.roll_number}@mail.jiit.ac.in`;
+    }
+    if (!borrowerEmail && req.user?.email && req.user?.role !== 'ADMIN') {
+      borrowerEmail = req.user.email;
+      borrowerName = req.user.name || borrowerName;
+    }
+
+    if (borrowerEmail) {
+      dispatchBackground('return-confirmation', sendReturnConfirmation(borrowerEmail, borrowerName, itemName, returnTimestamp));
     }
 
     // 6. Instant notification to all superadmins
     dispatchBackground('admin-return-alert', sendAdminReturnNotification(SUPER_ADMIN_EMAILS, {
-      borrowerName: userName,
-      borrowerEmail: userEmail,
+      borrowerName,
+      borrowerEmail: borrowerEmail || 'N/A',
       itemName,
       quantity: qtyToReturn,
       returnedAt: returnTimestamp
@@ -597,6 +615,56 @@ export const getBorrowLedger = async (req: AuthRequest, res: Response) => {
     await cacheSetJSON(cacheKey, payload, BORROW_HISTORY_CACHE_TTL);
 
     return res.status(200).json(payload);
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// DELETE /api/borrow/ledger/:id (Admin permanently deletes a ledger log entry)
+export const deleteLedgerRecord = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const adminName = (req.user as any)?.username || req.user?.name || req.user?.email || 'ADMIN';
+
+    if (!id) {
+      return res.status(400).json({ status: 'error', message: 'Record ID is required.' });
+    }
+
+    // 1. Fetch the record details for audit logging
+    const { data: record } = await dbRead
+      .from('borrow_records')
+      .select('*, inventory(name)')
+      .eq('id', id)
+      .maybeSingle();
+
+    // 2. Permanently delete from borrow_records
+    const { error: deleteErr } = await dbWrite
+      .from('borrow_records')
+      .delete()
+      .eq('id', id);
+
+    if (deleteErr) {
+      return res.status(500).json({ status: 'error', message: deleteErr.message });
+    }
+
+    // 3. Invalidate caches
+    await invalidateBorrowHistoryCache();
+
+    // 4. Record audit log
+    const itemName = record?.inventory?.name || record?.inventory_id || 'Hardware Component';
+    const borrower = record?.borrower_name || 'Borrower';
+    await logAudit(
+      'Ledger Record Deleted',
+      userId,
+      record?.inventory_id || null,
+      `Admin ${adminName} permanently deleted ledger log entry #${id} for ${borrower} ("${itemName}")`
+    );
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Ledger record permanently deleted from database.'
+    });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
   }

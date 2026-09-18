@@ -72,6 +72,28 @@ const saveState = () => {
 
 const processingRequestIds = new Set<string>();
 
+export const resolveRealBorrowerEmail = async (
+  userId?: string | null,
+  rollNumber?: string | null,
+  existingEmail?: string | null
+): Promise<string> => {
+  const norm = (existingEmail || '').toLowerCase().trim();
+  if (norm && norm.includes('@') && !norm.startsWith('student@') && !norm.includes('unknown')) {
+    return norm;
+  }
+  if (userId) {
+    try {
+      const { data: u } = await dbRead.from('users').select('email, roll_number').eq('id', userId).maybeSingle();
+      if (u?.email && !u.email.toLowerCase().startsWith('student@')) return u.email.trim();
+      if (u?.roll_number) return `${u.roll_number.trim()}@mail.jiit.ac.in`;
+    } catch {}
+  }
+  if (rollNumber && rollNumber.trim() && rollNumber !== '—') {
+    return `${rollNumber.trim()}@mail.jiit.ac.in`;
+  }
+  return norm || '';
+};
+
 export const createHardwareRequest = async (payload: {
   itemId: string;
   itemName?: string;
@@ -84,6 +106,12 @@ export const createHardwareRequest = async (payload: {
   durationDays?: number;
   dueDate?: string;
 }): Promise<HardwareIssueRequest> => {
+  // Resolve real email if payload has generic or missing email
+  const resolvedEmail = await resolveRealBorrowerEmail(payload.userId, payload.rollNumber, payload.borrowerEmail);
+  if (resolvedEmail) {
+    payload.borrowerEmail = resolvedEmail;
+  }
+
   // Rapid submission debounce: if the same borrower submitted an identical request within the last 5 seconds, return existing record
   const now = Date.now();
   const recentDuplicate = Object.values(requestsState).find(r => {
@@ -302,7 +330,7 @@ export const createReturnRequest = async (payload: {
   const itemName = record.inventory?.name || 'Hardware Component';
   const category = record.inventory?.category || 'Robotics';
   const borrowerName = record.borrower_name || payload.userName || 'Member';
-  const borrowerEmail = (record.roll_number ? `${record.roll_number}@mail.jiit.ac.in` : '') || record.borrower_email || payload.userEmail || 'student@mail.jiit.ac.in';
+  const borrowerEmail = await resolveRealBorrowerEmail(payload.userId || record.user_id, record.roll_number || payload.userRoll, payload.userEmail || record.borrower_email);
   const rollNumber = record.roll_number || payload.userRoll || null;
   const requestedAt = new Date().toISOString();
   const id = `req-ret-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
@@ -799,6 +827,9 @@ export const approveHardwareRequest = async (
       return { success: true, request: req };
     }
 
+    // Resolve real borrower email immediately so all notification steps have the verified student email
+    req.borrowerEmail = await resolveRealBorrowerEmail(req.userId, req.rollNumber, req.borrowerEmail);
+
     // Handle Return Approval
     if (req.type === 'RETURN') {
       const borrowId = req.borrowId || req.id;
@@ -819,13 +850,38 @@ export const approveHardwareRequest = async (
       }
 
       // Fetch borrow record
-      const { data: bRecord } = await dbRead
-        .from('borrow_records')
-        .select('*, inventory(name, available_quantity)')
-        .eq('id', borrowId)
-        .maybeSingle();
+      let bRecord: any = null;
+      if (borrowId) {
+        const { data } = await dbRead
+          .from('borrow_records')
+          .select('*, inventory(name, available_quantity)')
+          .eq('id', borrowId)
+          .maybeSingle();
+        bRecord = data;
+      }
 
-      if (bRecord) {
+      // Fallback: If not found by borrowId (e.g. client ID mismatch), query active record by item and borrower
+      if (!bRecord && req.itemId) {
+        let q = dbRead
+          .from('borrow_records')
+          .select('*, inventory(name, available_quantity)')
+          .eq('inventory_id', req.itemId)
+          .in('status', ['BORROWED', 'RETURN_REQUESTED']);
+        if (req.userId) {
+          q = q.eq('user_id', req.userId);
+        } else if (req.borrowerName) {
+          q = q.eq('borrower_name', req.borrowerName);
+        }
+        const { data: matches } = await q.limit(1);
+        if (matches && matches.length > 0) {
+          bRecord = matches[0];
+        }
+      }
+
+      const activeRecordId = bRecord?.id || (borrowId && !borrowId.startsWith('req-') ? borrowId : null);
+      const inventoryItemId = bRecord?.inventory_id || req.itemId;
+
+      if (inventoryItemId) {
         // 1. Restock available quantity in inventory using CAS retry loop
         let restockSuccess = false;
         let restockAttempts = 0;
@@ -834,9 +890,10 @@ export const approveHardwareRequest = async (
           const { data: currItem } = await dbRead
             .from('inventory')
             .select('quantity, available_quantity, name')
-            .eq('id', bRecord.inventory_id)
+            .eq('id', inventoryItemId)
             .maybeSingle();
 
+          if (!currItem) break;
           const totalStock = Number(currItem?.quantity) || 1;
           const currentAvail = Number(currItem?.available_quantity) || 0;
           const newAvail = Math.min(totalStock, currentAvail + returnQty);
@@ -844,7 +901,7 @@ export const approveHardwareRequest = async (
           const { data: updatedRows } = await supabase
             .from('inventory')
             .update({ available_quantity: newAvail, updated_at: new Date().toISOString() })
-            .eq('id', bRecord.inventory_id)
+            .eq('id', inventoryItemId)
             .eq('available_quantity', currentAvail)
             .select('available_quantity');
 
@@ -854,35 +911,45 @@ export const approveHardwareRequest = async (
           }
           await new Promise(r => setTimeout(r, 15 + Math.random() * 25));
         }
+      }
 
-        // 2. If all units returned, mark record RETURNED; if partial, decrement remaining borrowed quantity and restore BORROWED status
+      // 2. Mark record RETURNED in Supabase borrow_records
+      if (bRecord && bRecord.id) {
         if (returnQty >= bRecord.quantity) {
           await supabase
             .from('borrow_records')
             .update({ status: 'RETURNED', returned_at: new Date().toISOString() })
-            .eq('id', borrowId);
+            .eq('id', bRecord.id);
         } else {
           await supabase
             .from('borrow_records')
             .update({ quantity: bRecord.quantity - returnQty, status: 'BORROWED' })
-            .eq('id', borrowId);
+            .eq('id', bRecord.id);
         }
-
-        // Log audit
-        try {
-          const isUuid = (str?: string | null) => Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str));
-          await supabase.from('audit_logs').insert([
-            {
-              action: 'Approved Return',
-              user_id: isUuid(req.userId) ? req.userId : null,
-              item_id: isUuid(bRecord?.inventory_id) ? bRecord.inventory_id : null,
-              description: `Admin ${adminName || 'ADMIN'} approved return of ${returnQty} units of "${req.itemName}" from ${req.borrowerName}.`
-            }
-          ]);
-        } catch {}
+      } else if (activeRecordId) {
+        await supabase
+          .from('borrow_records')
+          .update({ status: 'RETURNED', returned_at: new Date().toISOString() })
+          .eq('id', activeRecordId);
       }
 
+      // Log audit
+      try {
+        const isUuid = (str?: string | null) => Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str));
+        await supabase.from('audit_logs').insert([
+          {
+            action: 'Approved Return',
+            user_id: isUuid(req.userId) ? req.userId : null,
+            item_id: isUuid(inventoryItemId) ? inventoryItemId : null,
+            description: `Admin ${adminName || 'ADMIN'} approved return of ${returnQty} units of "${req.itemName}" from ${req.borrowerName}.`
+          }
+        ]);
+      } catch {}
+
       resolveMatchingInRequestsState(req, id, 'APPROVED', adminName, adminEmail);
+
+      // Re-resolve real borrower email with fallback from bRecord
+      req.borrowerEmail = await resolveRealBorrowerEmail(req.userId || bRecord?.user_id, req.rollNumber || bRecord?.roll_number, req.borrowerEmail);
 
       // Send Return Confirmation to student
       if (req.borrowerEmail) {
@@ -897,7 +964,7 @@ export const approveHardwareRequest = async (
       // Send Admin Return Notification
       sendAdminReturnNotification(SUPER_ADMIN_EMAILS, {
         borrowerName: req.borrowerName,
-        borrowerEmail: req.borrowerEmail,
+        borrowerEmail: req.borrowerEmail || 'N/A',
         itemName: req.itemName,
         quantity: returnQty,
         returnedAt: new Date()
@@ -923,6 +990,8 @@ export const approveHardwareRequest = async (
     console.warn(`[HARDWARE REQUEST] finalizeBorrow note: ${result.error.message}. Resolving request as APPROVED.`);
     resolveMatchingInRequestsState(req, id, 'APPROVED', adminName, adminEmail, `Approved (Item offline/unlisted: ${result.error.message})`);
 
+    req.borrowerEmail = await resolveRealBorrowerEmail(req.userId, req.rollNumber, req.borrowerEmail);
+
     if (req.borrowerEmail) {
       sendHardwareRequestStatusEmail(
         req.borrowerEmail,
@@ -940,6 +1009,16 @@ export const approveHardwareRequest = async (
   resolveMatchingInRequestsState(req, id, 'APPROVED', adminName, adminEmail);
 
   const { borrowRecord, item, newAvailableQty, dueDate } = result;
+
+  // Clean up transient initial pending mirror record if present
+  if (req.borrowId && borrowRecord?.id && req.borrowId !== borrowRecord.id) {
+    try {
+      await supabase.from('borrow_records').delete().eq('id', req.borrowId);
+    } catch {}
+  }
+
+  // Re-resolve real borrower email for notification dispatch
+  req.borrowerEmail = await resolveRealBorrowerEmail(req.userId, req.rollNumber, req.borrowerEmail);
 
   // Send approval status email to borrower (with CC to admins)
   if (req.borrowerEmail) {

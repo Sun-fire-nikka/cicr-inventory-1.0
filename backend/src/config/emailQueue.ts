@@ -75,19 +75,13 @@ if (isRedisEnabled && REDIS_URL) {
         return;
       }
 
-      // Testing override target
-      const testEmail = 'vardaansaxena096@gmail.com';
-      const originalTo = (mailOptions as any)?.to;
       const finalOptions: nodemailer.SendMailOptions = {
-        ...(mailOptions as nodemailer.SendMailOptions),
-        to: testEmail,
-        cc: undefined,
-        bcc: undefined
+        ...(mailOptions as nodemailer.SendMailOptions)
       };
 
       const info = await getWorkerTransporter().sendMail(finalOptions);
       console.log(
-        `[EMAIL QUEUE] ${kind} sent to ${testEmail} (intended: ${JSON.stringify(originalTo)}) (job ${job.id}) | messageId=${info.messageId} | accepted=${JSON.stringify(info.accepted || [])}`
+        `[EMAIL QUEUE] ${kind} sent to ${JSON.stringify(finalOptions.to)} (job ${job.id}) | messageId=${info.messageId} | accepted=${JSON.stringify(info.accepted || [])}`
       );
     },
     { connection: workerConnection, concurrency: 3 }

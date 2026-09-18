@@ -19358,4 +19358,317 @@ body.theme-pink .hw-admin-role-tag,
 [data-theme="sakura"] .hw-admin-role-tag,
 [data-theme="pink"] .hw-admin-role-tag {
     color: #be123c;
+}
+
+/* ==========================================================================
+   Admin User Clickable & Profile Inspector Modal
+   ========================================================================== */
+.admin-user-clickable {
+    cursor: pointer !important;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    transition: all 0.2s ease;
+    border-bottom: 1px dashed rgba(0, 240, 255, 0.4);
+    padding-bottom: 1px;
+}
+
+.admin-user-clickable:hover {
+    color: var(--neon-cyan, #00f0ff) !important;
+    border-bottom-color: var(--neon-cyan, #00f0ff);
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+.hw-btn-delete-log {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hw-btn-delete-log:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+    transform: scale(1.05);
+}
+
+.hw-btn-delete-log i {
+    width: 14px;
+    height: 14px;
+}
+
+/* Profile Inspector Modal Card */
+.modal-profile-inspector {
+    max-width: 640px;
+    width: 95%;
+    border-radius: 12px;
+    padding: 24px;
+    background: rgba(10, 15, 26, 0.95);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.15);
+    position: relative;
+}
+
+.profile-inspector-header {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-inspector-avatar-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-inspector-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #00f0ff, #3b82f6);
+    color: #05070a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 800;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+    text-transform: uppercase;
+}
+
+.profile-inspector-role-badge {
+    margin-top: -8px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(0, 240, 255, 0.2);
+    border: 1px solid #00f0ff;
+    color: #00f0ff;
+}
+
+.profile-inspector-role-badge.admin {
+    background: rgba(255, 0, 122, 0.2);
+    border-color: #ff007a;
+    color: #ff007a;
+}
+
+.profile-inspector-info {
+    flex: 1;
+}
+
+.profile-inspector-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.profile-inspector-name-row h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.profile-status-pill {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-status-pill.approved {
+    background: rgba(57, 255, 20, 0.15);
+    color: #39ff14;
+    border: 1px solid rgba(57, 255, 20, 0.3);
+}
+
+.profile-inspector-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.profile-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.profile-meta-item i {
+    width: 13px;
+    height: 13px;
+    color: #00f0ff;
+}
+
+.profile-inspector-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.profile-stat-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+}
+
+.profile-stat-num {
+    display: block;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.2;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.profile-stat-lbl {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-inspector-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 16px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.profile-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+.profile-section-title i {
+    width: 15px;
+    height: 15px;
+}
+
+.inspector-loan-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.inspector-loan-item:last-child {
+    margin-bottom: 0;
+}
+
+.inspector-loan-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.inspector-loan-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.inspector-loan-meta {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.inspector-loan-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+}
+
+.inspector-loan-qty {
+    padding: 2px 8px;
+    background: rgba(0, 240, 255, 0.15);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: #00f0ff;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.inspector-loan-due {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.inspector-loan-due.overdue {
+    color: #ff007a;
+    font-weight: 700;
+}
+
+/* Delete Ledger Confirm Modal */
+.modal-delete-confirm {
+    max-width: 480px;
+    width: 90%;
+    border-radius: 12px;
+    padding: 24px;
+    background: rgba(14, 18, 30, 0.98);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.2);
+}
+
+.delete-record-summary {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #f1f5f9;
+    margin: 14px 0;
+    line-height: 1.5;
+}
+
+.delete-warning-note {
+    font-size: 12px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+}
+
+.delete-warning-note i {
+    width: 14px;
+    height: 14px;
+    color: #f87171;
+    flex-shrink: 0;
 }

@@ -398,6 +398,42 @@
       "role": "MEMBER",
       "username": "Test",
       "batch": "N/A"
+    },
+    "992501210003@mail.jiit.ac.in": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "name": "GOURAV MANDAL",
+      "roll_number": "992501210003",
+      "batch": "ECM - E1 batch",
+      "approvedAt": "2026-09-18T17:17:33.339Z",
+      "approvedBy": "SYSTEM (AUTO-APPROVE)"
+    },
+    "bcg26260@mail.jiit.ac.in": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "name": "mohammad arsh",
+      "roll_number": "bcg26260",
+      "batch": "N/A",
+      "approvedAt": "2026-09-18T17:17:33.343Z",
+      "approvedBy": "SYSTEM (AUTO-APPROVE)"
+    },
+    "njg262503@mail.jiit.ac.in": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "name": "Gungun Yadav",
+      "roll_number": "njg262503",
+      "batch": "N/A",
+      "approvedAt": "2026-09-18T17:17:33.344Z",
+      "approvedBy": "SYSTEM (AUTO-APPROVE)"
+    },
+    "jeg262612@mail.jiit.ac.in": {
+      "status": "APPROVED",
+      "role": "MEMBER",
+      "name": "Dhairya Mittal",
+      "roll_number": "Jeg262612",
+      "batch": "F20",
+      "approvedAt": "2026-09-18T17:19:19.452Z",
+      "approvedBy": "SYSTEM (AUTO-APPROVE)"
     }
   },
   "purgedEmails": [

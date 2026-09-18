@@ -5423,6 +5423,22 @@ class AdminManager {
             });
         }
 
+        // Wire User Profile Inspector for clickable user items in Admin Portal & Ledger
+        document.addEventListener('click', (e) => {
+            const target = (e.target as HTMLElement).closest('.admin-user-clickable') as HTMLElement | null;
+            if (target) {
+                e.preventDefault();
+                e.stopPropagation();
+                AdminManager.inspectUserProfile({
+                    id: target.dataset.userId,
+                    name: target.dataset.userName,
+                    email: target.dataset.userEmail,
+                    roll: target.dataset.userRoll,
+                    batch: target.dataset.userBatch
+                });
+            }
+        });
+
         // Attach window methods for onclick handlers
         window.openAuditDetail = (id: string) => this.openAuditDetail(id);
         window.openBulkReturnModal = () => ModalManager.openBulkReturnModal();
@@ -5431,6 +5447,7 @@ class AdminManager {
         window.adminSetRole = (id: string, role: 'ADMIN' | 'MEMBER') => this.setRole(id, role);
         window.adminDeleteUser = (id: string, name: string) => this.deleteUser(id, name);
         window.adminDeleteItem = (id: string, name: string) => this.promptDeleteItem(id, name);
+        (window as any).inspectUserProfile = (info: any) => AdminManager.inspectUserProfile(info);
 
         window.adminApproveHardware = (id: string) => this.approveHardware(id);
         window.adminRejectHardware = (id: string) => this.rejectHardware(id);
@@ -5764,9 +5781,9 @@ class AdminManager {
                 </div>
 
                 <div class="hw-card-requester">
-                    <div class="hw-avatar">${r.borrowerName.charAt(0).toUpperCase()}</div>
+                    <div class="hw-avatar admin-user-clickable" data-user-name="${this.escapeHtml(r.borrowerName)}" data-user-email="${this.escapeHtml(r.borrowerEmail)}" data-user-roll="${this.escapeHtml(r.rollNumber || '')}" title="Inspect Member Profile">${r.borrowerName.charAt(0).toUpperCase()}</div>
                     <div class="hw-meta-col">
-                        <span class="hw-requester-name">${r.borrowerName}</span>
+                        <span class="hw-requester-name admin-user-clickable" data-user-name="${this.escapeHtml(r.borrowerName)}" data-user-email="${this.escapeHtml(r.borrowerEmail)}" data-user-roll="${this.escapeHtml(r.rollNumber || '')}" title="Inspect Member Profile">${r.borrowerName}</span>
                         <span class="hw-requester-email">${r.borrowerEmail}</span>
                     </div>
                 </div>
@@ -6056,9 +6073,9 @@ class AdminManager {
             return `
             <div class="pending-request-card glass" data-user-id="${u.id}">
                 <div class="pending-card-top">
-                    <div class="pending-card-avatar">${u.name.charAt(0).toUpperCase()}</div>
+                    <div class="pending-card-avatar admin-user-clickable" data-user-id="${u.id}" data-user-name="${this.escapeHtml(u.name)}" data-user-email="${this.escapeHtml(u.email)}" data-user-roll="${this.escapeHtml(u.roll_number || '')}" data-user-batch="${this.escapeHtml(u.batch || '')}" title="Inspect Profile">${u.name.charAt(0).toUpperCase()}</div>
                     <div class="pending-card-meta">
-                        <span class="pending-card-name">${this.escapeHtml(u.name)}</span>
+                        <span class="pending-card-name admin-user-clickable" data-user-id="${u.id}" data-user-name="${this.escapeHtml(u.name)}" data-user-email="${this.escapeHtml(u.email)}" data-user-roll="${this.escapeHtml(u.roll_number || '')}" data-user-batch="${this.escapeHtml(u.batch || '')}" title="Inspect Profile">${this.escapeHtml(u.name)}</span>
                         <span class="pending-card-email">${this.escapeHtml(u.email)}</span>
                     </div>
                 </div>
@@ -6176,11 +6193,11 @@ class AdminManager {
                 <tr data-user-id="${u.id}">
                     <td>
                         <div class="user-cell-name">
-                            <div class="user-cell-avatar" style="background: ${avatarGradient}; box-shadow: ${avatarShadow};">
+                            <div class="user-cell-avatar admin-user-clickable" data-user-id="${u.id}" data-user-name="${this.escapeHtml(u.name || 'Anonymous')}" data-user-email="${this.escapeHtml(u.email)}" data-user-roll="${this.escapeHtml(u.roll_number || '')}" data-user-batch="${this.escapeHtml(u.batch || '')}" title="Inspect Profile" style="background: ${avatarGradient}; box-shadow: ${avatarShadow};">
                                 ${u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                             </div>
                             <div class="user-cell-meta-wrap">
-                                <span class="user-cell-display-name">${this.escapeHtml(u.name || 'Anonymous')}</span>
+                                <span class="user-cell-display-name admin-user-clickable" data-user-id="${u.id}" data-user-name="${this.escapeHtml(u.name || 'Anonymous')}" data-user-email="${this.escapeHtml(u.email)}" data-user-roll="${this.escapeHtml(u.roll_number || '')}" data-user-batch="${this.escapeHtml(u.batch || '')}" title="Inspect Profile">${this.escapeHtml(u.name || 'Anonymous')}</span>
                                 ${metaSub}
                             </div>
                         </div>
@@ -6498,6 +6515,175 @@ class AdminManager {
             };
         }
         lucide.createIcons();
+    }
+
+    public static inspectUserProfile(data: { id?: string; name?: string; email?: string; roll?: string; batch?: string }) {
+        const modal = document.getElementById('admin-user-profile-modal');
+        if (!modal) return;
+
+        // Try to match registered user
+        const matchedUser = this.users.find(u =>
+            (data.id && u.id === data.id) ||
+            (data.email && u.email.toLowerCase() === data.email.toLowerCase()) ||
+            (data.roll && u.roll_number && u.roll_number.toLowerCase() === data.roll.toLowerCase()) ||
+            (data.name && u.name.toLowerCase() === data.name.toLowerCase())
+        );
+
+        const displayName = matchedUser?.name || data.name || 'Student Borrower';
+        const displayEmail = matchedUser?.email || data.email || 'student@mail.jiit.ac.in';
+        const displayRoll = matchedUser?.roll_number || data.roll || (displayEmail.includes('@') ? displayEmail.split('@')[0] : '—');
+        const displayBatch = matchedUser?.batch || data.batch || 'JIIT Member';
+        const displayRole = matchedUser?.role || (ModalManager.isDesignatedAdminUser(displayEmail, displayName) ? 'ADMIN' : 'MEMBER');
+        const displayStatus = matchedUser?.status || 'ACTIVE';
+
+        // Avatar
+        const avatarEl = document.getElementById('inspector-user-avatar');
+        if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+
+        // Role badge
+        const roleBadgeEl = document.getElementById('inspector-user-role-badge');
+        if (roleBadgeEl) {
+            roleBadgeEl.textContent = displayRole;
+            roleBadgeEl.className = `profile-inspector-role-badge ${displayRole === 'ADMIN' ? 'admin' : ''}`;
+        }
+
+        // Name and status
+        const nameEl = document.getElementById('inspector-user-name');
+        if (nameEl) nameEl.textContent = displayName;
+
+        const statusEl = document.getElementById('inspector-user-status');
+        if (statusEl) {
+            statusEl.textContent = displayStatus;
+            statusEl.className = `profile-status-pill ${displayStatus.toLowerCase()}`;
+        }
+
+        // Meta items
+        const rollEl = document.getElementById('inspector-user-roll');
+        if (rollEl) rollEl.innerHTML = `<i data-lucide="hash"></i> <span>Roll: ${AdminManager.escapeHtml(displayRoll)}</span>`;
+
+        const emailEl = document.getElementById('inspector-user-email');
+        if (emailEl) emailEl.innerHTML = `<i data-lucide="mail"></i> <span>${AdminManager.escapeHtml(displayEmail)}</span>`;
+
+        const batchEl = document.getElementById('inspector-user-batch');
+        if (batchEl) batchEl.innerHTML = `<i data-lucide="graduation-cap"></i> <span>Batch: ${AdminManager.escapeHtml(displayBatch)}</span>`;
+
+        // Gather active and historical borrowings for this user
+        const normName = displayName.toLowerCase().trim();
+        const normEmail = displayEmail.toLowerCase().trim();
+        const normRoll = displayRoll.toLowerCase().trim();
+
+        // Check active borrowings from inventory
+        const activeLoans: Array<{ itemName: string; category: string; quantity: number; date: string; dueDate?: string; isOverdue: boolean }> = [];
+        const now = new Date();
+
+        if (Array.isArray(inventory)) {
+            inventory.forEach(item => {
+                (item.borrowedBy || []).forEach((b: any) => {
+                    const isRet = b.returned || b.status === 'RETURNED';
+                    if (isRet) return;
+                    const bName = (b.userName || b.borrowerName || b.name || '').toLowerCase().trim();
+                    const bEmail = (b.userEmail || b.email || '').toLowerCase().trim();
+                    const bRoll = (b.userRoll || b.roll || '').toLowerCase().trim();
+
+                    const matches = (normEmail && bEmail === normEmail) ||
+                        (normRoll && normRoll !== '—' && bRoll === normRoll) ||
+                        (normName && bName === normName);
+
+                    if (matches) {
+                        const rawDueDate = b.dueDate ? new Date(b.dueDate) : null;
+                        const isOverdue = rawDueDate && !isNaN(rawDueDate.getTime()) && rawDueDate < now;
+                        activeLoans.push({
+                            itemName: item.name,
+                            category: item.category || 'Component',
+                            quantity: Number(b.qty) || Number(b.quantity) || 1,
+                            date: b.date || '',
+                            dueDate: b.dueDate || undefined,
+                            isOverdue: Boolean(isOverdue)
+                        });
+                    }
+                });
+            });
+        }
+
+        // Also check HardwareLedgerManager.records
+        const ledgerRecords = (HardwareLedgerManager as any).records || [];
+        const userLedger = ledgerRecords.filter((r: any) => {
+            const bName = (r.borrower_name || '').toLowerCase().trim();
+            const bEmail = (r.borrower_email || '').toLowerCase().trim();
+            const bRoll = (r.borrower_roll || '').toLowerCase().trim();
+            return (normEmail && bEmail === normEmail) ||
+                (normRoll && normRoll !== '—' && bRoll === normRoll) ||
+                (normName && bName === normName);
+        });
+
+        const totalCheckoutEvents = userLedger.length;
+        const totalReturned = userLedger.filter((r: any) => r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED').length;
+        const activeLoansCount = Math.max(activeLoans.length, userLedger.filter((r: any) => r.action_type !== 'RETURNED' && !r.return_date && r.status !== 'RETURNED').length);
+        const overdueCount = activeLoans.filter(l => l.isOverdue).length;
+
+        const statActive = document.getElementById('inspector-stat-active');
+        const statReturned = document.getElementById('inspector-stat-returned');
+        const statOverdue = document.getElementById('inspector-stat-overdue');
+        const statTotal = document.getElementById('inspector-stat-total');
+
+        if (statActive) statActive.textContent = String(activeLoansCount);
+        if (statReturned) statReturned.textContent = String(totalReturned);
+        if (statOverdue) statOverdue.textContent = String(overdueCount);
+        if (statTotal) statTotal.textContent = String(totalCheckoutEvents);
+
+        // Populate active loans container
+        const loansContainer = document.getElementById('inspector-active-loans');
+        if (loansContainer) {
+            if (activeLoans.length === 0) {
+                loansContainer.innerHTML = `
+                    <div style="text-align:center; padding: 16px; color:#64748b; font-size: 12px;">
+                        <i data-lucide="package-check" style="width:24px;height:24px;display:block;margin:0 auto 8px;color:#39ff14;"></i>
+                        No hardware components currently checked out by this member.
+                    </div>
+                `;
+            } else {
+                loansContainer.innerHTML = activeLoans.map(loan => `
+                    <div class="inspector-loan-item">
+                        <div class="inspector-loan-left">
+                            <span class="inspector-loan-name">${AdminManager.escapeHtml(loan.itemName)}</span>
+                            <span class="inspector-loan-meta">${AdminManager.escapeHtml(loan.category)}</span>
+                        </div>
+                        <div class="inspector-loan-right">
+                            <span class="inspector-loan-qty">${loan.quantity} unit${loan.quantity > 1 ? 's' : ''}</span>
+                            <span class="inspector-loan-due ${loan.isOverdue ? 'overdue' : ''}">
+                                ${loan.dueDate ? `Due: ${new Date(loan.dueDate).toLocaleDateString()}` : 'Open Loan'}
+                                ${loan.isOverdue ? ' (OVERDUE)' : ''}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // "Filter In Component Logs" button
+        const filterBtn = document.getElementById('btn-inspector-filter-logs');
+        if (filterBtn) {
+            filterBtn.onclick = () => {
+                modal.style.display = 'none';
+                if (typeof (window as any).switchSection === 'function') {
+                    (window as any).switchSection('hardware-logs-view');
+                }
+                const searchInput = document.getElementById('hw-ledger-search') as HTMLInputElement;
+                if (searchInput) {
+                    searchInput.value = displayRoll !== '—' ? displayRoll : displayName;
+                    (HardwareLedgerManager as any).searchQuery = searchInput.value.toLowerCase().trim();
+                    HardwareLedgerManager.renderTable();
+                }
+            };
+        }
+
+        const closeBtn = document.getElementById('btn-close-user-profile-modal');
+        const closeX = document.getElementById('close-user-profile-modal');
+        if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; };
+        if (closeX) closeX.onclick = () => { modal.style.display = 'none'; };
+
+        modal.style.display = 'flex';
+        renderLucideIcons(modal);
     }
 
     static activeAuditDay: string = 'all';
@@ -8217,6 +8403,35 @@ class HardwareLedgerManager {
                 setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
             });
         }
+
+        // Delete modal triggers
+        const cancelDeleteBtn = document.getElementById('btn-cancel-delete-ledger');
+        const closeDeleteX = document.getElementById('btn-close-delete-ledger-x');
+        const confirmDeleteBtn = document.getElementById('btn-confirm-delete-ledger');
+
+        if (cancelDeleteBtn) cancelDeleteBtn.onclick = () => {
+            const m = document.getElementById('delete-ledger-confirm-modal');
+            if (m) m.style.display = 'none';
+        };
+        if (closeDeleteX) closeDeleteX.onclick = () => {
+            const m = document.getElementById('delete-ledger-confirm-modal');
+            if (m) m.style.display = 'none';
+        };
+        if (confirmDeleteBtn) confirmDeleteBtn.onclick = () => {
+            HardwareLedgerManager.confirmDeleteRecord();
+        };
+
+        const tbodyEl = document.getElementById('hw-ledger-table-body');
+        if (tbodyEl) {
+            tbodyEl.addEventListener('click', (e) => {
+                const btn = (e.target as HTMLElement).closest('.hw-btn-delete-log') as HTMLElement | null;
+                if (btn && btn.dataset.logId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    HardwareLedgerManager.promptDeleteRecord(btn.dataset.logId);
+                }
+            });
+        }
     }
 
     public static async render() {
@@ -8293,19 +8508,37 @@ class HardwareLedgerManager {
                 });
             }
 
-            // Merge and deduplicate
+            // Merge and deduplicate with rigorous normalization
             const mergedMap = new Map<string, LedgerEntry>();
             fetchedData.forEach((r: any) => {
+                const isReturned = r.status === 'RETURNED' || Boolean(r.returned_at);
                 const borrower = r.borrower_name || r.users?.name || r.userName || 'Student Borrower';
+                const roll = r.borrower_roll || r.roll_number || r.users?.roll_number || (r.borrower_email ? r.borrower_email.split('@')[0] : '—');
+                const email = r.borrower_email || r.users?.email || (roll && roll !== '—' ? `${roll}@mail.jiit.ac.in` : '');
                 let adminApprover = r.admin_approved_by || r.reviewed_by || r.adminName || r.operator_name || '';
                 if (!adminApprover || adminApprover.includes('SRVKILLER09')) {
                     adminApprover = (r.users?.role === 'ADMIN' ? r.users.name : (activeAdminName ? `${activeAdminName} (Admin)` : 'Lab Administrator'));
                 }
-                mergedMap.set(String(r.id), {
-                    ...r,
+                const normalized: LedgerEntry = {
+                    id: String(r.id),
+                    component_id: r.inventory_id || r.component_id || (r.inventory?.id) || '',
+                    component_name: r.component_name || r.inventory?.name || r.itemName || 'Hardware Component',
+                    category: r.category || r.inventory?.category || 'Component',
                     borrower_name: borrower,
-                    admin_approved_by: adminApprover
-                });
+                    borrower_email: email,
+                    borrower_roll: roll,
+                    admin_approved_by: adminApprover,
+                    operator_name: adminApprover,
+                    action_type: isReturned ? 'RETURNED' : 'ISSUED',
+                    quantity: Number(r.quantity) || 1,
+                    date: r.date || r.borrowed_at || r.created_at || new Date().toISOString(),
+                    due_date: r.due_date || r.dueDate || null,
+                    return_date: r.return_date || r.returned_at || (isReturned ? (r.borrowed_at || new Date().toISOString()) : null),
+                    purpose: r.purpose || 'Academic Research',
+                    remarks: r.remarks || null,
+                    status: isReturned ? 'RETURNED' : (r.status || 'BORROWED')
+                };
+                mergedMap.set(String(r.id), normalized);
             });
             localRecords.forEach(r => {
                 if (!mergedMap.has(String(r.id))) {
@@ -8326,8 +8559,8 @@ class HardwareLedgerManager {
     public static renderTable() {
         // Update stats
         const totalLogs = this.records.length;
-        const activeIssued = this.records.filter(r => r.action_type === 'ISSUED' && !r.return_date && r.status !== 'RETURNED').length;
-        const totalReturned = this.records.filter(r => r.action_type === 'RETURNED' || r.return_date || r.status === 'RETURNED').length;
+        const activeIssued = this.records.filter(r => r.action_type !== 'RETURNED' && !r.return_date && r.status !== 'RETURNED').length;
+        const totalReturned = this.records.filter(r => r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED').length;
 
         const statTotal = document.getElementById('hw-stat-total-logs');
         const statActive = document.getElementById('hw-stat-active-issued');
@@ -8341,11 +8574,12 @@ class HardwareLedgerManager {
         const filter = this.activeFilter;
 
         const filtered = this.records.filter(r => {
-            if (filter === 'borrowed' && (r.action_type !== 'ISSUED' || r.return_date || r.status === 'RETURNED')) return false;
-            if (filter === 'returned' && (r.action_type !== 'RETURNED' && !r.return_date && r.status !== 'RETURNED')) return false;
+            const isRet = r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED';
+            if (filter === 'borrowed' && isRet) return false;
+            if (filter === 'returned' && !isRet) return false;
 
             if (query) {
-                const searchStr = `${r.component_name} ${r.category} ${r.borrower_name} ${r.borrower_roll} ${r.borrower_email} ${r.admin_approved_by} ${r.purpose} ${r.action_type}`.toLowerCase();
+                const searchStr = `${r.component_name} ${r.category} ${r.borrower_name} ${r.borrower_roll} ${r.borrower_email} ${r.admin_approved_by} ${r.purpose} ${r.action_type} ${r.status}`.toLowerCase();
                 if (!searchStr.includes(query)) return false;
             }
 
@@ -8364,7 +8598,7 @@ class HardwareLedgerManager {
         if (filtered.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="hw-ledger-empty-cell">
+                    <td colspan="10" class="hw-ledger-empty-cell">
                         <div class="hw-empty-state">
                             <i data-lucide="clipboard-x"></i>
                             <h4>No Ledger Records Found</h4>
@@ -8380,7 +8614,7 @@ class HardwareLedgerManager {
         const now = new Date();
 
         tbody.innerHTML = filtered.map(r => {
-            const isReturned = r.action_type === 'RETURNED' || !!r.return_date || r.status === 'RETURNED';
+            const isReturned = r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED';
             const rawDate = r.date ? new Date(r.date) : null;
             const dateStr = rawDate && !isNaN(rawDate.getTime())
                 ? rawDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -8431,7 +8665,7 @@ class HardwareLedgerManager {
                     <td>
                         <div class="hw-td-borrower">
                             <div class="hw-borrower-top">
-                                <span class="hw-borrower-name">${AdminManager.escapeHtml(r.borrower_name)}</span>
+                                <a href="#" class="admin-user-clickable hw-borrower-name" data-user-name="${AdminManager.escapeHtml(r.borrower_name)}" data-user-email="${AdminManager.escapeHtml(r.borrower_email)}" data-user-roll="${AdminManager.escapeHtml(r.borrower_roll)}" title="Inspect Member Profile">${AdminManager.escapeHtml(r.borrower_name)}</a>
                                 <span class="hw-roll-badge">${AdminManager.escapeHtml(r.borrower_roll || 'JIIT')}</span>
                             </div>
                             <span class="hw-borrower-email">${AdminManager.escapeHtml(r.borrower_email || '')}</span>
@@ -8480,12 +8714,71 @@ class HardwareLedgerManager {
                     <td>
                         ${statusCell}
                     </td>
+
+                    <!-- Action -->
+                    <td>
+                        <button type="button" class="hw-btn-delete-log" data-log-id="${r.id}" title="Permanently Delete Record (Admin Only)">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
         }).join('');
 
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
             lucide.createIcons();
+        }
+    }
+
+    public static pendingDeleteId: string | null = null;
+
+    public static promptDeleteRecord(id: string) {
+        const record = this.records.find(r => r.id === id);
+        if (!record) return;
+
+        this.pendingDeleteId = id;
+        const modal = document.getElementById('delete-ledger-confirm-modal');
+        const summary = document.getElementById('delete-ledger-record-summary');
+        if (summary) {
+            summary.innerHTML = `
+                <div><strong>Component:</strong> ${AdminManager.escapeHtml(record.component_name)} (${record.quantity} unit${record.quantity > 1 ? 's' : ''})</div>
+                <div><strong>Borrower:</strong> ${AdminManager.escapeHtml(record.borrower_name)} (${AdminManager.escapeHtml(record.borrower_roll || '—')})</div>
+                <div><strong>Status:</strong> ${record.action_type === 'RETURNED' || record.return_date ? 'Returned' : 'Issued / Active'}</div>
+                <div><strong>Record ID:</strong> <code>${AdminManager.escapeHtml(record.id)}</code></div>
+            `;
+        }
+        if (modal) {
+            modal.style.display = 'flex';
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+    }
+
+    public static async confirmDeleteRecord() {
+        if (!this.pendingDeleteId) return;
+        const id = this.pendingDeleteId;
+        this.pendingDeleteId = null;
+
+        const modal = document.getElementById('delete-ledger-confirm-modal');
+        if (modal) modal.style.display = 'none';
+
+        const token = localStorage.getItem('cicr_token');
+        try {
+            const res = await fetch(`${API_BASE}/borrow/ledger/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                this.records = this.records.filter(r => r.id !== id);
+                this.renderTable();
+                ToastManager.show('Ledger Record Purged', 'Record permanently removed from backend database.', 'success');
+            } else {
+                const json = await res.json().catch(() => ({}));
+                ToastManager.show('Delete Failed', json.message || 'Could not delete ledger record.', 'error');
+            }
+        } catch (err: any) {
+            ToastManager.show('Network Error', err.message || 'Server unreachable.', 'error');
         }
     }
 }
