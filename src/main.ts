@@ -1167,7 +1167,7 @@ class DashboardManager {
                 if (sec.id === targetId) {
                     sec.classList.add('active');
                     sec.style.display = 'flex';
-                    if (sec.id === 'inventory-view' || sec.id === 'projects-view' || sec.id === 'meetings-view' || sec.id === 'events-view' || sec.id === 'developers-view') {
+                    if (sec.id === 'inventory-view' || sec.id === 'projects-view' || sec.id === 'meetings-view' || sec.id === 'events-view' || sec.id === 'developers-view' || sec.id === 'profile-view' || sec.id === 'hardware-logs-view') {
                         sec.style.display = 'block';
                     }
                 } else {
@@ -1179,10 +1179,10 @@ class DashboardManager {
             // Toggle body classes for current view
             document.body.classList.toggle('view-dashboard-view', targetId === 'dashboard-view');
             document.body.classList.toggle('view-developers-view', targetId === 'developers-view');
+            document.body.classList.toggle('view-profile-view', targetId === 'profile-view');
             document.body.classList.toggle('view-admin-view', targetId === 'admin-view');
             document.body.classList.toggle('view-inventory-view', targetId === 'inventory-view');
-
-
+            document.body.classList.toggle('view-hardware-logs-view', targetId === 'hardware-logs-view');
 
             // Refresh Lucide icons if needed
             if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -1207,7 +1207,9 @@ class DashboardManager {
                     'meetings-view': 'MEETINGS',
                     'events-view': 'EVENTS',
                     'inventory-view': 'INVENTORY',
+                    'hardware-logs-view': 'COMPONENT LEDGER',
                     'developers-view': 'MEET THE DEVELOPERS',
+                    'profile-view': 'MY PROFILE',
                     'admin-view': 'ADMIN MANAGEMENT'
                 };
                 breadcrumbActive.textContent = nameMap[targetId] || targetId.toUpperCase();
@@ -1230,6 +1232,18 @@ class DashboardManager {
                 AdminManager.loadAuditLogs();
             }
 
+            // If switching to hardware-logs-view, enforce admin access & render component issue & return ledger
+            if (targetId === 'hardware-logs-view') {
+                if (ModalManager.getCurrentRole() !== 'ADMIN') {
+                    ToastManager.show('Access Restricted', 'Admin privileges required to access Component Ledger.', 'warning');
+                    switchSection('inventory-view');
+                    return;
+                }
+                if (typeof HardwareLedgerManager !== 'undefined') {
+                    HardwareLedgerManager.render();
+                }
+            }
+
             // If switching to developers-view, render team showcase with Team as default
             if (targetId === 'developers-view') {
                 if (typeof TeamShowcaseManager !== 'undefined') {
@@ -1238,10 +1252,18 @@ class DashboardManager {
                 }
             }
 
+            // If switching to profile-view, render aesthetic operator profile HUD
+            if (targetId === 'profile-view') {
+                if (typeof ProfileViewManager !== 'undefined') {
+                    ProfileViewManager.render();
+                }
+            }
+
             closeMobileSidebar();
         };
 
         (this as any).switchSection = switchSection;
+        (window as any).switchSection = switchSection;
         switchSection('dashboard-view');
 
         sidebarLinks.forEach(link => {
@@ -1255,10 +1277,18 @@ class DashboardManager {
             });
         });
 
-        // Floating Navbar developers link
+        // Floating Navbar component logs, developers & profile links
+        const navHwLogs = document.getElementById('nav-hardware-logs');
+        if (navHwLogs) {
+            navHwLogs.addEventListener('click', () => switchSection('hardware-logs-view'));
+        }
         const navDevs = document.getElementById('nav-developers');
         if (navDevs) {
             navDevs.addEventListener('click', () => switchSection('developers-view'));
+        }
+        const navProfile = document.getElementById('nav-profile');
+        if (navProfile) {
+            navProfile.addEventListener('click', () => switchSection('profile-view'));
         }
 
         // 2. Dashboard action pills switching listeners
@@ -1298,9 +1328,17 @@ class DashboardManager {
                 ModalManager.openLogsDrawer();
             });
         }
+        const cardHwLogs = document.getElementById('dash-card-hardware-logs');
+        if (cardHwLogs) {
+            cardHwLogs.addEventListener('click', () => switchSection('hardware-logs-view'));
+        }
         const cardDevs = document.getElementById('dash-card-devs');
         if (cardDevs) {
             cardDevs.addEventListener('click', () => switchSection('developers-view'));
+        }
+        const cardProfile = document.getElementById('dash-card-profile');
+        if (cardProfile) {
+            cardProfile.addEventListener('click', () => switchSection('profile-view'));
         }
         const cardAdmin = document.getElementById('dash-card-admin');
         if (cardAdmin) {
@@ -1336,7 +1374,16 @@ class DashboardManager {
             });
         }
 
-        // 5. Password Reset / Change Key trigger
+        // 5. Sidebar profile box click -> Profile view
+        const sidebarProfileBox = document.getElementById('sidebar-profile-widget');
+        if (sidebarProfileBox) {
+            sidebarProfileBox.addEventListener('click', (e) => {
+                if ((e.target as HTMLElement).closest('#sidebar-reset-pass-btn')) return;
+                switchSection('profile-view');
+            });
+        }
+
+        // 6. Password Reset / Change Key trigger
         const resetPassBtn = document.getElementById('sidebar-reset-pass-btn');
         if (resetPassBtn && !resetPassBtn.dataset.bound) {
             resetPassBtn.dataset.bound = 'true';
@@ -1629,6 +1676,12 @@ class DashboardManager {
         });
 
         renderLucideIcons(this.inventoryGrid);
+
+        // If currently viewing profile, keep active loans & quota updated in real time
+        const profileSec = document.getElementById('profile-view');
+        if (profileSec && profileSec.classList.contains('active') && typeof ProfileViewManager !== 'undefined') {
+            ProfileViewManager.render();
+        }
     }
 
     private async loadInventory() {
@@ -4439,13 +4492,26 @@ class AuthManager {
             this.navUsername.innerText = username;
         }
 
-        // Set username, role, and initial in the left sidebar profile card
+        // Set username, role, initial, and avatar in the left sidebar profile card
         const profileUserDisplay = document.getElementById('profile-username-display');
         const profileAvatarInitial = document.getElementById('profile-avatar-initial');
+        const sidebarAvatarImg = document.getElementById('sidebar-avatar-img') as HTMLImageElement;
         const profileRoleDisplay = document.querySelector('.sidebar-profile-box .profile-role') as HTMLElement;
 
         if (profileUserDisplay) profileUserDisplay.innerText = username;
-        if (profileAvatarInitial) profileAvatarInitial.innerText = username.charAt(0).toUpperCase();
+        if (sidebarAvatarImg && profileAvatarInitial) {
+            if (_userObj?.avatar_url) {
+                sidebarAvatarImg.src = _userObj.avatar_url;
+                sidebarAvatarImg.style.display = 'block';
+                profileAvatarInitial.style.display = 'none';
+            } else {
+                sidebarAvatarImg.style.display = 'none';
+                profileAvatarInitial.style.display = 'inline-block';
+                profileAvatarInitial.innerText = username.charAt(0).toUpperCase();
+            }
+        } else if (profileAvatarInitial) {
+            profileAvatarInitial.innerText = username.charAt(0).toUpperCase();
+        }
         if (profileRoleDisplay) {
             profileRoleDisplay.innerText = effectiveRole;
             if (effectiveRole === 'ADMIN') {
@@ -4515,6 +4581,11 @@ class AuthManager {
         const adminViewSection = document.getElementById('admin-view');
         const btnInventoryAdd = document.getElementById('btn-inventory-add-item');
 
+        const sideHwLogsLink = document.getElementById('side-nav-hardware-logs');
+        const dashHwLogsCard = document.getElementById('dash-card-hardware-logs');
+        const navHwLogsLink = document.getElementById('nav-hardware-logs');
+        const hwLogsSection = document.getElementById('hardware-logs-view');
+
         const activeRole = role !== undefined ? role : ModalManager.getCurrentRole();
         const isAdmin = activeRole === 'ADMIN';
 
@@ -4537,6 +4608,18 @@ class AuthManager {
                 btnInventoryAdd.style.removeProperty('display');
                 btnInventoryAdd.style.setProperty('display', 'inline-flex', 'important');
             }
+            if (sideHwLogsLink) {
+                sideHwLogsLink.style.removeProperty('display');
+                sideHwLogsLink.style.setProperty('display', 'flex', 'important');
+            }
+            if (dashHwLogsCard) {
+                dashHwLogsCard.style.removeProperty('display');
+                dashHwLogsCard.style.setProperty('display', 'flex', 'important');
+            }
+            if (navHwLogsLink) {
+                navHwLogsLink.style.removeProperty('display');
+                navHwLogsLink.style.setProperty('display', 'inline-flex', 'important');
+            }
             AdminManager.init();
         } else {
             document.body.classList.remove('user-is-admin');
@@ -4552,6 +4635,19 @@ class AuthManager {
             if (adminViewSection) {
                 adminViewSection.style.setProperty('display', 'none', 'important');
                 adminViewSection.classList.remove('active');
+            }
+            if (sideHwLogsLink) {
+                sideHwLogsLink.style.setProperty('display', 'none', 'important');
+            }
+            if (dashHwLogsCard) {
+                dashHwLogsCard.style.setProperty('display', 'none', 'important');
+            }
+            if (navHwLogsLink) {
+                navHwLogsLink.style.setProperty('display', 'none', 'important');
+            }
+            if (hwLogsSection) {
+                hwLogsSection.style.setProperty('display', 'none', 'important');
+                hwLogsSection.classList.remove('active');
             }
         }
 
@@ -7213,6 +7309,1012 @@ class TeamShowcaseManager {
 (window as any).TeamShowcaseManager = TeamShowcaseManager;
 
 // ==========================================
+// Profile View Manager System (Aesthetic Operator HUD)
+// ==========================================
+class ProfileViewManager {
+    private static isInitialized: boolean = false;
+
+    public static init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+
+        // 1. Password Reset / Security button inside profile view
+        const editBtn = document.getElementById('profile-edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof PasswordResetManager !== 'undefined' && typeof PasswordResetManager.open === 'function') {
+                    PasswordResetManager.open();
+                } else {
+                    const modal = document.getElementById('reset-password-modal');
+                    if (modal) modal.classList.add('active');
+                }
+            });
+        }
+
+        // 2. Edit Profile Modal triggers (Aesthetic Operator HUD & Camera Click)
+        const openEditBtn = document.getElementById('profile-open-edit-btn');
+        if (openEditBtn) {
+            openEditBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof ProfileEditManager !== 'undefined') {
+                    ProfileEditManager.open();
+                }
+            });
+        }
+
+        const avatarTrigger = document.getElementById('profile-avatar-edit-trigger');
+        if (avatarTrigger) {
+            avatarTrigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof ProfileEditManager !== 'undefined') {
+                    ProfileEditManager.open();
+                }
+            });
+        }
+
+        // 3. Profile Logout button inside profile view
+        const logoutBtn = document.getElementById('profile-logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof AuthManager !== 'undefined' && typeof AuthManager.promptLogout === 'function') {
+                    AuthManager.promptLogout();
+                } else {
+                    const navLogout = document.getElementById('nav-logout');
+                    if (navLogout) navLogout.click();
+                }
+            });
+        }
+    }
+
+    public static render() {
+        this.init();
+
+        let user: any = {};
+        try {
+            user = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+        } catch {
+            user = {};
+        }
+
+        const authName = localStorage.getItem('cicr_auth') || '';
+        const name = (user.name || user.username || authName || 'Operator').trim();
+        const username = (user.username || (authName ? authName.toLowerCase() : 'operator')).trim();
+        const role = (user.role || localStorage.getItem('cicr_user_role') || 'MEMBER').toUpperCase();
+        const roll = (user.roll_number || user.roll || '').trim();
+        const email = (user.email || (roll ? `${roll}@mail.jiit.ac.in` : '')).trim() || 'operator@mail.jiit.ac.in';
+        const batch = (user.batch || (roll && roll.length >= 2 ? `20${roll.substring(0, 2)}-20${parseInt(roll.substring(0, 2), 10) + 4}` : '2023-2027')).trim();
+        const userId = user.id ? `#${String(user.id).substring(0, 8)}` : `#${roll || 'JIIT-09'}`;
+
+        // Hero initials & avatar image sync
+        const heroAvatarImg = document.getElementById('profile-hero-avatar-img') as HTMLImageElement;
+        const heroInitial = document.getElementById('profile-hero-initial');
+        if (heroAvatarImg && heroInitial) {
+            if (user.avatar_url) {
+                heroAvatarImg.src = user.avatar_url;
+                heroAvatarImg.style.display = 'block';
+                heroInitial.style.display = 'none';
+            } else {
+                heroAvatarImg.style.display = 'none';
+                heroInitial.style.display = 'block';
+                heroInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+            }
+        } else if (heroInitial) {
+            heroInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+        }
+
+        // Sidebar avatar & initial sync
+        const sidebarAvatarImg = document.getElementById('sidebar-avatar-img') as HTMLImageElement;
+        const sidebarInitial = document.getElementById('profile-avatar-initial');
+        if (sidebarAvatarImg && sidebarInitial) {
+            if (user.avatar_url) {
+                sidebarAvatarImg.src = user.avatar_url;
+                sidebarAvatarImg.style.display = 'block';
+                sidebarInitial.style.display = 'none';
+            } else {
+                sidebarAvatarImg.style.display = 'none';
+                sidebarInitial.style.display = 'inline-block';
+                sidebarInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+            }
+        } else if (sidebarInitial) {
+            sidebarInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+        }
+
+        const heroName = document.getElementById('profile-hero-display-name');
+        if (heroName) {
+            heroName.textContent = name;
+        }
+
+        const heroHandle = document.getElementById('profile-hero-handle');
+        if (heroHandle) {
+            heroHandle.textContent = `@${username}`;
+        }
+
+        const heroEmail = document.getElementById('profile-hero-email');
+        if (heroEmail) {
+            heroEmail.textContent = email;
+        }
+
+        // Role & Status Badges
+        const roleBadgeText = document.getElementById('profile-badge-role-text');
+        if (roleBadgeText) {
+            roleBadgeText.textContent = role === 'ADMIN' ? 'SYSADMIN' : 'MEMBER';
+        }
+
+        const roleBadge = document.getElementById('profile-hero-role-badge');
+        if (roleBadge) {
+            if (role === 'ADMIN') {
+                roleBadge.classList.add('badge-role-admin');
+            } else {
+                roleBadge.classList.remove('badge-role-admin');
+            }
+        }
+
+        const statusBadgeText = document.getElementById('profile-badge-status-text');
+        if (statusBadgeText) {
+            statusBadgeText.textContent = role === 'ADMIN' ? 'VAULT SUPERVISOR' : 'VERIFIED OPERATOR';
+        }
+
+        const idBadgeText = document.getElementById('profile-badge-id-text');
+        if (idBadgeText) {
+            idBadgeText.textContent = `UID: ${userId}`;
+        }
+
+        // Institutional Credentials
+        const credName = document.getElementById('cred-full-name');
+        if (credName) credName.textContent = name;
+
+        const credRoll = document.getElementById('cred-roll-no');
+        if (credRoll) credRoll.textContent = roll || 'Not Linked';
+
+        const credUser = document.getElementById('cred-username');
+        if (credUser) credUser.textContent = `@${username}`;
+
+        const credMail = document.getElementById('cred-email');
+        if (credMail) credMail.textContent = email;
+
+        const credBat = document.getElementById('cred-batch');
+        if (credBat) credBat.textContent = batch || '—';
+
+        const credRol = document.getElementById('cred-role');
+        if (credRol) {
+            credRol.innerHTML = role === 'ADMIN'
+                ? '<span class="role-pill-admin"><i data-lucide="shield-alert"></i> Administrator</span>'
+                : '<span class="role-pill-member"><i data-lucide="shield-check"></i> Verified Member</span>';
+        }
+
+        // Active Hardware Loans Calculation
+        const activeLoans: { item: InventoryItem; rec: BorrowRecord; origIdx: number }[] = [];
+        let totalReturnedCount = 0;
+
+        inventory.forEach(item => {
+            (item.borrowedBy || []).forEach((rec, idx) => {
+                if (ModalManager.isUserLoanMatch(rec)) {
+                    if (rec.returned) {
+                        totalReturnedCount += (rec.qty || (rec as any).quantity || 1);
+                    } else {
+                        activeLoans.push({ item, rec, origIdx: idx });
+                    }
+                }
+            });
+        });
+
+        const MAX_LOAN_QUOTA = 5;
+        const activeCount = activeLoans.length;
+
+        // Metric: Active Loans
+        const metricActiveCount = document.getElementById('profile-metric-active-count');
+        if (metricActiveCount) metricActiveCount.textContent = String(activeCount);
+
+        const quotaPill = document.getElementById('profile-loans-quota-pill');
+        if (quotaPill) quotaPill.textContent = `${activeCount} / ${MAX_LOAN_QUOTA} Used`;
+
+        const progressFill = document.getElementById('profile-loan-progress-fill');
+        if (progressFill) {
+            const pct = Math.min(100, Math.round((activeCount / MAX_LOAN_QUOTA) * 100));
+            progressFill.style.width = `${pct}%`;
+            if (activeCount >= MAX_LOAN_QUOTA) {
+                progressFill.style.background = 'var(--neon-pink)';
+            } else {
+                progressFill.style.background = 'var(--neon-cyan)';
+            }
+        }
+
+        // Metric: Return History
+        const metricHistory = document.getElementById('profile-metric-history-count');
+        if (metricHistory) metricHistory.textContent = String(totalReturnedCount);
+
+        // Metric: Account Standing
+        const now = new Date();
+        const hasOverdue = activeLoans.some(l => {
+            if (!l.rec.dueDate) return false;
+            const d = new Date(l.rec.dueDate);
+            return !isNaN(d.getTime()) && d < now;
+        });
+
+        const metricStanding = document.getElementById('profile-metric-standing');
+        if (metricStanding) {
+            if (hasOverdue) {
+                metricStanding.textContent = 'Action Required';
+                metricStanding.className = 'metric-value text-pink';
+            } else {
+                metricStanding.textContent = 'Clear';
+                metricStanding.className = 'metric-value text-green';
+            }
+        }
+
+        // Metric: Vault Clearance
+        const metricClearance = document.getElementById('profile-metric-clearance');
+        const clearancePill = document.getElementById('profile-clearance-pill');
+        const clearanceSub = document.getElementById('profile-clearance-sub');
+        if (metricClearance) {
+            if (role === 'ADMIN') {
+                metricClearance.textContent = 'SYSADMIN';
+                if (clearancePill) clearancePill.textContent = 'Tier 4';
+                if (clearanceSub) clearanceSub.textContent = 'Full lab telemetry & vault write access';
+            } else {
+                metricClearance.textContent = 'OPERATOR';
+                if (clearancePill) clearancePill.textContent = 'Tier 1';
+                if (clearanceSub) clearanceSub.textContent = 'Standard hardware checkout access';
+            }
+        }
+
+        // Active Loans List Heading Badge
+        const activeLoansBadge = document.getElementById('profile-active-loans-badge');
+        if (activeLoansBadge) {
+            activeLoansBadge.textContent = `${activeCount} Active ${activeCount === 1 ? 'Loan' : 'Loans'}`;
+        }
+
+        // Render Active Loans
+        const loansContainer = document.getElementById('profile-active-loans-list');
+        if (loansContainer) {
+            if (activeLoans.length === 0) {
+                loansContainer.innerHTML = `
+                    <div class="profile-empty-loans">
+                        <div class="empty-icon-shield">
+                            <i data-lucide="shield-check"></i>
+                        </div>
+                        <h4 class="empty-loans-title">All Hardware Returned & Clear</h4>
+                        <p class="empty-loans-desc">You currently have no pending hardware checkouts. Your full borrowing allowance (${MAX_LOAN_QUOTA} slots) is ready for use.</p>
+                        <button type="button" class="profile-browse-vault-btn" id="profile-browse-vault-btn">
+                            <i data-lucide="box"></i>
+                            <span>Explore Inventory Vault</span>
+                        </button>
+                    </div>
+                `;
+                const browseBtn = document.getElementById('profile-browse-vault-btn');
+                if (browseBtn) {
+                    browseBtn.addEventListener('click', () => {
+                        if ((window as any).dashboard && (window as any).dashboard.switchSection) {
+                            (window as any).dashboard.switchSection('inventory-view');
+                        }
+                    });
+                }
+            } else {
+                loansContainer.innerHTML = activeLoans.map(({ item, rec, origIdx }) => {
+                    const isOverdue = rec.dueDate && new Date(rec.dueDate) < now;
+                    const isReturnRequested = (rec as any).status === 'RETURN_REQUESTED';
+                    const dueDateStr = rec.dueDate ? new Date(rec.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'No Due Date';
+                    const borrowDateStr = rec.date ? new Date(rec.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—';
+                    const qty = rec.qty || (rec as any).quantity || 1;
+
+                    return `
+                        <div class="profile-loan-card glass ${isOverdue ? 'loan-card-overdue' : ''}">
+                            <div class="loan-card-top-row">
+                                <div class="loan-card-cat-wrap">
+                                    <span class="loan-cat-pill">${(item.category || 'COMPONENT').toUpperCase()}</span>
+                                    ${isOverdue ? '<span class="loan-tag tag-overdue"><i data-lucide="alert-triangle"></i> OVERDUE</span>' : ''}
+                                    ${isReturnRequested ? '<span class="loan-tag tag-pending"><i data-lucide="clock"></i> RETURN REQUESTED</span>' : '<span class="loan-tag tag-active"><i data-lucide="check-circle-2"></i> ACTIVE LOAN</span>'}
+                                </div>
+                                <span class="loan-qty-badge">${qty} ${qty === 1 ? 'Unit' : 'Units'}</span>
+                            </div>
+
+                            <div class="loan-card-info-row">
+                                <div class="loan-icon-thumb">
+                                    <i data-lucide="cpu"></i>
+                                </div>
+                                <div class="loan-details-wrap">
+                                    <h4 class="loan-item-title">${item.name}</h4>
+                                    <div class="loan-meta-pills">
+                                        <span><i data-lucide="calendar"></i> Borrowed: ${borrowDateStr}</span>
+                                        <span class="${isOverdue ? 'text-pink font-bold' : ''}"><i data-lucide="clock"></i> Due: ${dueDateStr}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="loan-card-action-bar">
+                                <button type="button" class="profile-return-hw-btn ${isReturnRequested ? 'disabled' : ''}" 
+                                    data-item-id="${item.id}" data-rec-idx="${origIdx}" ${isReturnRequested ? 'disabled' : ''}>
+                                    <i data-lucide="${isReturnRequested ? 'clock' : 'corner-up-left'}"></i>
+                                    <span>${isReturnRequested ? 'Return Pending Approval' : 'Return Component'}</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const returnButtons = loansContainer.querySelectorAll('.profile-return-hw-btn');
+                returnButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const itemId = (btn as HTMLElement).dataset.itemId;
+                        const origIdx = parseInt((btn as HTMLElement).dataset.recIdx || '0', 10);
+                        const targetItem = inventory.find(i => String(i.id) === String(itemId));
+                        if (targetItem && targetItem.borrowedBy && targetItem.borrowedBy[origIdx]) {
+                            ModalManager.openReturnModal(targetItem.borrowedBy[origIdx], targetItem, origIdx);
+                        }
+                    });
+                });
+            }
+        }
+
+        // Recreate Lucide icons for freshly injected HTML
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+}
+
+(window as any).ProfileViewManager = ProfileViewManager;
+
+// ==========================================
+// Profile Edit Manager System (Avatar & Details Sync)
+// ==========================================
+class ProfileEditManager {
+    private static isInitialized = false;
+    private static pendingAvatarUrl: string | null | undefined = undefined;
+
+    public static init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+
+        const modal = document.getElementById('edit-profile-modal');
+        const closeBtn = document.getElementById('close-edit-profile-modal');
+        const cancelBtn = document.getElementById('cancel-edit-profile-btn');
+        const form = document.getElementById('edit-profile-form') as HTMLFormElement;
+        const fileInput = document.getElementById('edit-avatar-file-input') as HTMLInputElement;
+        const resetAvatarBtn = document.getElementById('edit-avatar-remove-btn');
+
+        if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+        if (cancelBtn) cancelBtn.addEventListener('click', () => this.close());
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) this.close();
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', async (e) => {
+                const files = (e.target as HTMLInputElement).files;
+                if (!files || files.length === 0) return;
+                const file = files[0];
+
+                if (!file.type.startsWith('image/')) {
+                    ToastManager.show('Invalid Format', 'Please choose a PNG, JPG, or WEBP image file.', 'warning');
+                    return;
+                }
+
+                if (file.size > 8 * 1024 * 1024) {
+                    ToastManager.show('File Too Large', 'Please select an image smaller than 8MB.', 'warning');
+                    return;
+                }
+
+                try {
+                    const compressedBase64 = await this.compressAndCropAvatar(file);
+                    this.pendingAvatarUrl = compressedBase64;
+                    this.updatePreview(compressedBase64);
+                } catch (err: any) {
+                    ToastManager.show('Image Processing Error', 'Could not process selected image.', 'error');
+                }
+            });
+        }
+
+        if (resetAvatarBtn) {
+            resetAvatarBtn.addEventListener('click', () => {
+                this.pendingAvatarUrl = '';
+                this.updatePreview('');
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.saveProfile();
+            });
+        }
+    }
+
+    private static updatePreview(avatarUrl: string | null | undefined) {
+        const previewImg = document.getElementById('edit-avatar-img-preview') as HTMLImageElement;
+        const previewInitial = document.getElementById('edit-avatar-initial-preview');
+        const nameInput = document.getElementById('edit-profile-name') as HTMLInputElement;
+        const char = (nameInput?.value || 'U').charAt(0).toUpperCase();
+
+        if (previewImg && previewInitial) {
+            if (avatarUrl) {
+                previewImg.src = avatarUrl;
+                previewImg.style.display = 'block';
+                previewInitial.style.display = 'none';
+            } else {
+                previewImg.style.display = 'none';
+                previewInitial.textContent = char;
+                previewInitial.style.display = 'flex';
+            }
+        }
+    }
+
+    private static compressAndCropAvatar(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (readerEvent) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 256;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Canvas context not available'));
+                        return;
+                    }
+
+                    // Crop to center square
+                    const minDim = Math.min(img.width, img.height);
+                    const startX = (img.width - minDim) / 2;
+                    const startY = (img.height - minDim) / 2;
+
+                    ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+
+                    try {
+                        const dataUrl = canvas.toDataURL('image/webp', 0.86);
+                        if (dataUrl && dataUrl.startsWith('data:image/webp')) {
+                            resolve(dataUrl);
+                            return;
+                        }
+                    } catch { }
+
+                    resolve(canvas.toDataURL('image/jpeg', 0.86));
+                };
+                img.onerror = reject;
+                img.src = readerEvent.target?.result as string;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    public static open() {
+        this.init();
+
+        let user: any = {};
+        try {
+            user = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+        } catch {
+            user = {};
+        }
+
+        const nameInput = document.getElementById('edit-profile-name') as HTMLInputElement;
+        const usernameInput = document.getElementById('edit-profile-username') as HTMLInputElement;
+        const batchInput = document.getElementById('edit-profile-batch') as HTMLInputElement;
+        const emailInput = document.getElementById('edit-profile-email') as HTMLInputElement;
+        const rollInput = document.getElementById('edit-profile-roll') as HTMLInputElement;
+        const errorEl = document.getElementById('edit-profile-error');
+
+        const authName = localStorage.getItem('cicr_auth') || '';
+        const name = (user.name || user.username || authName || '').trim();
+        const username = (user.username || (authName ? authName.toLowerCase() : '')).trim();
+        const roll = (user.roll_number || user.roll || '').trim();
+        const email = (user.email || (roll ? `${roll}@mail.jiit.ac.in` : '')).trim();
+        const batch = (user.batch || (roll && roll.length >= 2 ? `20${roll.substring(0, 2)}-20${parseInt(roll.substring(0, 2), 10) + 4}` : '2023-2027')).trim();
+
+        if (nameInput) nameInput.value = name;
+        if (usernameInput) usernameInput.value = username;
+        if (batchInput) batchInput.value = batch;
+        if (emailInput) {
+            emailInput.value = email || 'student@mail.jiit.ac.in';
+            emailInput.readOnly = true;
+            emailInput.disabled = true;
+        }
+        if (rollInput) {
+            rollInput.value = roll || 'Enrolled Student';
+            rollInput.readOnly = true;
+            rollInput.disabled = true;
+        }
+
+        this.pendingAvatarUrl = user.avatar_url;
+        this.updatePreview(user.avatar_url);
+
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+        }
+
+        const modal = document.getElementById('edit-profile-modal');
+        if (modal) {
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+        }
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+
+    public static close() {
+        const modal = document.getElementById('edit-profile-modal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
+        this.pendingAvatarUrl = undefined;
+    }
+
+    private static async saveProfile() {
+        const nameInput = document.getElementById('edit-profile-name') as HTMLInputElement;
+        const usernameInput = document.getElementById('edit-profile-username') as HTMLInputElement;
+        const batchInput = document.getElementById('edit-profile-batch') as HTMLInputElement;
+        const saveBtn = document.getElementById('save-edit-profile-btn') as HTMLButtonElement;
+        const errorEl = document.getElementById('edit-profile-error');
+
+        const newName = nameInput ? nameInput.value.trim() : '';
+        const newUsername = usernameInput ? usernameInput.value.trim() : '';
+        const newBatch = batchInput ? batchInput.value.trim() : '';
+
+        if (!newName) {
+            if (errorEl) {
+                errorEl.textContent = 'Full name is required.';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+        }
+
+        const origBtnHtml = saveBtn ? saveBtn.innerHTML : 'Save & Sync';
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Syncing...</span>';
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
+        let user: any = {};
+        try {
+            user = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+        } catch { }
+
+        const token = localStorage.getItem('cicr_token') || '';
+        const payload: any = {
+            name: newName,
+            username: newUsername || undefined,
+            batch: newBatch || undefined
+        };
+
+        if (this.pendingAvatarUrl !== undefined) {
+            payload.avatar_url = this.pendingAvatarUrl || null;
+        }
+
+        try {
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json'
+            };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            let cloudSync = false;
+            let updatedUser: any = null;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/profile`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok) {
+                    cloudSync = true;
+                    updatedUser = data.data;
+                } else {
+                    console.warn('Backend profile update note:', data.message);
+                }
+            } catch (netErr) {
+                console.warn('Backend unreachable, saving profile locally:', netErr);
+            }
+
+            if (!updatedUser) {
+                updatedUser = {
+                    ...user,
+                    name: newName,
+                    username: newUsername || user.username,
+                    batch: newBatch || user.batch,
+                    avatar_url: this.pendingAvatarUrl !== undefined ? (this.pendingAvatarUrl || null) : user.avatar_url
+                };
+            }
+
+            // Update local storage
+            localStorage.setItem('cicr_user', JSON.stringify(updatedUser));
+            if (updatedUser.username) {
+                localStorage.setItem('cicr_auth', updatedUser.username);
+            }
+
+            // Sync with other active UI components
+            const navUserName = document.getElementById('nav-user-name');
+            if (navUserName) navUserName.textContent = updatedUser.name || updatedUser.username;
+
+            const profileUserDisplay = document.getElementById('profile-username-display');
+            if (profileUserDisplay) profileUserDisplay.textContent = updatedUser.username || updatedUser.name;
+
+            // Update avatar in sidebar & profile view
+            ProfileViewManager.render();
+
+            if (cloudSync) {
+                ToastManager.show('Profile Synchronized', 'Your identity and profile picture are securely synced with cloud vault.', 'success');
+            } else {
+                ToastManager.show('Profile Saved', 'Profile details updated. Local cache saved.', 'success');
+            }
+            this.close();
+        } catch (err: any) {
+            console.error('Save profile error:', err);
+            if (errorEl) {
+                errorEl.textContent = err.message || 'Error synchronizing with backend.';
+                errorEl.style.display = 'block';
+            }
+            ToastManager.show('Update Failed', err.message || 'Could not update profile.', 'error');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = origBtnHtml;
+                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            }
+        }
+    }
+}
+
+(window as any).ProfileEditManager = ProfileEditManager;
+(window as any).openProfileEditModal = () => ProfileEditManager.open();
+(window as any).closeProfileEditModal = () => ProfileEditManager.close();
+
+// ==========================================
+// Hardware Ledger Manager (Tabular Issue & Return Registry)
+// ==========================================
+interface LedgerEntry {
+    id: string;
+    component_id: string | number;
+    component_name: string;
+    category: string;
+    borrower_name: string;
+    borrower_email: string;
+    borrower_roll: string;
+    admin_approved_by: string;
+    operator_name?: string;
+    action_type: 'ISSUED' | 'RETURNED';
+    quantity: number;
+    date: string;
+    due_date?: string | null;
+    return_date?: string | null;
+    purpose: string;
+    remarks?: string | null;
+    status: string;
+}
+
+class HardwareLedgerManager {
+    private static isInitialized = false;
+    private static records: LedgerEntry[] = [];
+    private static activeFilter: 'all' | 'borrowed' | 'returned' = 'all';
+    private static searchQuery = '';
+    private static isLoading = false;
+
+    public static init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+
+        // Filter tabs
+        const filterBtns = document.querySelectorAll('.hw-filter-btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.activeFilter = ((btn as HTMLElement).dataset.filter as any) || 'all';
+                this.renderTable();
+            });
+        });
+
+        // Search bar
+        const searchInput = document.getElementById('hw-ledger-search') as HTMLInputElement;
+        if (searchInput) {
+            let searchTimeout: number | undefined;
+            searchInput.addEventListener('input', () => {
+                if (searchTimeout) clearTimeout(searchTimeout);
+                searchTimeout = window.setTimeout(() => {
+                    this.searchQuery = (searchInput.value || '').toLowerCase().trim();
+                    this.renderTable();
+                }, 150);
+            });
+        }
+
+        // Sync / Refresh button
+        const refreshBtn = document.getElementById('hw-ledger-refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                refreshBtn.classList.add('spinning');
+                await this.fetchLedger(true);
+                this.renderTable();
+                setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
+            });
+        }
+    }
+
+    public static async render() {
+        this.init();
+        await this.fetchLedger();
+        this.renderTable();
+    }
+
+    public static async fetchLedger(force = false) {
+        if (this.isLoading) return;
+        if (this.records.length > 0 && !force) {
+            return;
+        }
+
+        this.isLoading = true;
+        try {
+            const token = localStorage.getItem('cicr_token');
+            let fetchedData: LedgerEntry[] = [];
+
+            try {
+                const headers: Record<string, string> = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const res = await fetch(`${API_BASE}/borrow/ledger`, { headers });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (Array.isArray(json.data)) {
+                        fetchedData = json.data;
+                    }
+                }
+            } catch (err) {
+                console.warn('Backend /borrow/ledger unreachable, aggregating from inventory...', err);
+            }
+
+            // Fallback / merge with local inventory records
+            const localRecords: LedgerEntry[] = [];
+            if (Array.isArray(inventory)) {
+                inventory.forEach(item => {
+                    (item.borrowedBy || []).forEach((b: any, idx: number) => {
+                        const isReturned = b.returned || b.status === 'RETURNED';
+                        const borrower = b.userName || b.borrowerName || b.name || 'Student Borrower';
+                        const adminApprover = b.adminApprovedBy || b.approvedBy || b.reviewedBy || 'SRVKILLER09 (Admin)';
+                        localRecords.push({
+                            id: b.id || `local-${item.id}-${idx}`,
+                            component_id: item.id,
+                            component_name: item.name,
+                            category: item.category || 'Component',
+                            borrower_name: borrower,
+                            borrower_email: b.userEmail || b.email || (b.userRoll ? `${b.userRoll}@mail.jiit.ac.in` : 'operator@mail.jiit.ac.in'),
+                            borrower_roll: b.userRoll || b.roll || (b.userEmail ? b.userEmail.split('@')[0] : '—'),
+                            admin_approved_by: adminApprover,
+                            operator_name: adminApprover,
+                            action_type: isReturned ? 'RETURNED' : 'ISSUED',
+                            quantity: Number(b.qty) || Number(b.quantity) || 1,
+                            date: b.date || new Date().toISOString(),
+                            due_date: b.dueDate || null,
+                            return_date: b.returnDate || (isReturned ? (b.date || new Date().toISOString()) : null),
+                            purpose: b.purpose || b.reason || 'Hardware Prototyping & Capstone Research',
+                            remarks: b.remarks || b.note || null,
+                            status: isReturned ? 'RETURNED' : (b.status || 'APPROVED')
+                        });
+                    });
+                });
+            }
+
+            // Merge and deduplicate
+            const mergedMap = new Map<string, LedgerEntry>();
+            fetchedData.forEach((r: any) => {
+                const borrower = r.borrower_name || r.users?.name || r.userName || 'Student Borrower';
+                const adminApprover = r.admin_approved_by || r.reviewed_by || r.adminName || r.operator_name || (r.users?.role === 'ADMIN' ? r.users.name : 'Lab Administrator');
+                mergedMap.set(String(r.id), {
+                    ...r,
+                    borrower_name: borrower,
+                    admin_approved_by: adminApprover
+                });
+            });
+            localRecords.forEach(r => {
+                if (!mergedMap.has(String(r.id))) {
+                    mergedMap.set(String(r.id), r);
+                }
+            });
+
+            this.records = Array.from(mergedMap.values()).sort((a, b) => {
+                const timeA = new Date(a.date).getTime() || 0;
+                const timeB = new Date(b.date).getTime() || 0;
+                return timeB - timeA;
+            });
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    public static renderTable() {
+        // Update stats
+        const totalLogs = this.records.length;
+        const activeIssued = this.records.filter(r => r.action_type === 'ISSUED' && !r.return_date && r.status !== 'RETURNED').length;
+        const totalReturned = this.records.filter(r => r.action_type === 'RETURNED' || r.return_date || r.status === 'RETURNED').length;
+
+        const statTotal = document.getElementById('hw-stat-total-logs');
+        const statActive = document.getElementById('hw-stat-active-issued');
+        const statReturned = document.getElementById('hw-stat-total-returned');
+        if (statTotal) statTotal.textContent = String(totalLogs);
+        if (statActive) statActive.textContent = String(activeIssued);
+        if (statReturned) statReturned.textContent = String(totalReturned);
+
+        // Filter
+        const query = this.searchQuery;
+        const filter = this.activeFilter;
+
+        const filtered = this.records.filter(r => {
+            if (filter === 'borrowed' && (r.action_type !== 'ISSUED' || r.return_date || r.status === 'RETURNED')) return false;
+            if (filter === 'returned' && (r.action_type !== 'RETURNED' && !r.return_date && r.status !== 'RETURNED')) return false;
+
+            if (query) {
+                const searchStr = `${r.component_name} ${r.category} ${r.borrower_name} ${r.borrower_roll} ${r.borrower_email} ${r.admin_approved_by} ${r.purpose} ${r.action_type}`.toLowerCase();
+                if (!searchStr.includes(query)) return false;
+            }
+
+            return true;
+        });
+
+        const tbody = document.getElementById('hw-ledger-table-body');
+        const countLabel = document.getElementById('hw-table-count-label');
+
+        if (countLabel) {
+            countLabel.textContent = `Showing ${filtered.length} log ${filtered.length === 1 ? 'entry' : 'entries'}${query ? ` matching "${query}"` : ''}`;
+        }
+
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="hw-ledger-empty-cell">
+                        <div class="hw-empty-state">
+                            <i data-lucide="clipboard-x"></i>
+                            <h4>No Ledger Records Found</h4>
+                            <p>${query ? `No transactions match "${AdminManager.escapeHtml(query)}". Try a different search.` : 'There are currently no component checkout or return transactions recorded in the system.'}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            return;
+        }
+
+        const now = new Date();
+
+        tbody.innerHTML = filtered.map(r => {
+            const isReturned = r.action_type === 'RETURNED' || !!r.return_date || r.status === 'RETURNED';
+            const rawDate = r.date ? new Date(r.date) : null;
+            const dateStr = rawDate && !isNaN(rawDate.getTime())
+                ? rawDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                : '—';
+            const timeStr = rawDate && !isNaN(rawDate.getTime())
+                ? rawDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()
+                : '—';
+
+            const rawDueDate = r.due_date ? new Date(r.due_date) : null;
+            const isOverdue = !isReturned && rawDueDate && !isNaN(rawDueDate.getTime()) && rawDueDate < now;
+            const dueDateStr = rawDueDate && !isNaN(rawDueDate.getTime())
+                ? rawDueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                : 'Open Loan';
+
+            const rawReturnDate = r.return_date ? new Date(r.return_date) : null;
+            const returnDateStr = rawReturnDate && !isNaN(rawReturnDate.getTime())
+                ? `${rawReturnDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${rawReturnDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}`
+                : 'Verified Return';
+
+            const catMap: Record<string, string> = {
+                microcontrollers: "MCU",
+                sensors: "SENSOR",
+                actuators: "ACTUATOR",
+                power: "POWER",
+                tools: "HARDWARE"
+            };
+            const catLabel = catMap[r.category?.toLowerCase()] || (r.category || 'COMPONENT').toUpperCase();
+
+            const actionBadge = isReturned
+                ? `<span class="hw-badge-event badge-returned"><i data-lucide="check-circle-2"></i> RETURNED</span>`
+                : `<span class="hw-badge-event badge-issued"><i data-lucide="arrow-down-right"></i> ISSUED</span>`;
+
+            const statusCell = isReturned
+                ? `<div class="hw-return-log text-green"><i data-lucide="shield-check"></i> <span>Returned: ${returnDateStr}</span></div>`
+                : `<div class="hw-due-log"><span class="${isOverdue ? 'text-pink font-bold' : 'text-cyan'}"><i data-lucide="clock"></i> Due: ${dueDateStr}</span>${isOverdue ? '<span class="badge-overdue-pill"><i data-lucide="alert-triangle"></i> OVERDUE</span>' : ''}</div>`;
+
+            return `
+                <tr class="hw-ledger-row ${isOverdue ? 'row-overdue' : ''}">
+                    <!-- Component -->
+                    <td>
+                        <div class="hw-td-component">
+                            <span class="hw-item-name" title="${AdminManager.escapeHtml(r.component_name)}">${AdminManager.escapeHtml(r.component_name)}</span>
+                            <span class="hw-cat-pill cat-${(r.category || '').toLowerCase()}">${catLabel}</span>
+                        </div>
+                    </td>
+
+                    <!-- Borrower -->
+                    <td>
+                        <div class="hw-td-borrower">
+                            <div class="hw-borrower-top">
+                                <span class="hw-borrower-name">${AdminManager.escapeHtml(r.borrower_name)}</span>
+                                <span class="hw-roll-badge">${AdminManager.escapeHtml(r.borrower_roll || 'JIIT')}</span>
+                            </div>
+                            <span class="hw-borrower-email">${AdminManager.escapeHtml(r.borrower_email || '')}</span>
+                        </div>
+                    </td>
+
+                    <!-- Approved By (Admin) -->
+                    <td>
+                        <div class="hw-td-admin">
+                            <div class="hw-admin-badge-pill">
+                                <i data-lucide="shield-check"></i>
+                                <span class="hw-admin-name">${AdminManager.escapeHtml(r.admin_approved_by || 'Admin Supervisor')}</span>
+                            </div>
+                            <span class="hw-admin-role-tag">VERIFIED ADMIN</span>
+                        </div>
+                    </td>
+
+                    <!-- Event Type -->
+                    <td>
+                        ${actionBadge}
+                    </td>
+
+                    <!-- Quantity -->
+                    <td>
+                        <span class="hw-qty-pill">${r.quantity} unit${r.quantity > 1 ? 's' : ''}</span>
+                    </td>
+
+                    <!-- Date -->
+                    <td>
+                        <span class="hw-date-val"><i data-lucide="calendar"></i> ${dateStr}</span>
+                    </td>
+
+                    <!-- Time -->
+                    <td>
+                        <span class="hw-time-val"><i data-lucide="clock"></i> ${timeStr}</span>
+                    </td>
+
+                    <!-- Purpose / Reason -->
+                    <td>
+                        <div class="hw-purpose-cell" title="${AdminManager.escapeHtml(r.purpose)}">
+                            <span class="hw-purpose-text">${AdminManager.escapeHtml(r.purpose || 'Academic Project')}</span>
+                        </div>
+                    </td>
+
+                    <!-- Status / Return Log -->
+                    <td>
+                        ${statusCell}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+}
+
+(window as any).HardwareLedgerManager = HardwareLedgerManager;
+(window as any).openHardwareLedger = () => {
+    if (typeof (window as any).switchSection === 'function') {
+        (window as any).switchSection('hardware-logs-view');
+    }
+};
+
+// ==========================================
 // Theme Manager System
 // ==========================================
 class ThemeManager {
@@ -7367,6 +8469,9 @@ document.addEventListener('DOMContentLoaded', () => {
     ModalManager.init();
     PasswordResetManager.init();
     TeamShowcaseManager.init();
+    ProfileViewManager.init();
+    ProfileEditManager.init();
+    HardwareLedgerManager.init();
 
     AuthManager.init();
     AdminManager.init();

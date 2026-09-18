@@ -19,7 +19,8 @@ import {
   findUserApprovalByIdentifier,
   getAllAdminEmails,
   syncApprovalsFromDatabase,
-  checkUserApprovalInDatabase
+  checkUserApprovalInDatabase,
+  updateUserMetadata
 } from './userApprovalService';
 import {
   sendAdminNewUserRegistrationAlert,
@@ -293,7 +294,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     let approval = (isMasterAdmin || isDesignated)
-      ? { status: 'APPROVED' as const, role: 'ADMIN' as const, username: user.name, batch: undefined }
+      ? { status: 'APPROVED' as const, role: 'ADMIN' as const, username: user.name, batch: undefined, avatar_url: user.avatar_url || undefined }
       : getUserApproval(user.email, user.role);
 
     // Auto-approve college accounts and designated admins if pending
@@ -369,8 +370,9 @@ export const login = async (req: Request, res: Response) => {
         roll_number: user.roll_number,
         role: effectiveRole,
         status: approval.status,
-        username: approval.username || undefined,
-        batch: approval.batch || undefined
+        username: user.username || (approval as any).username || undefined,
+        batch: user.batch || (approval as any).batch || undefined,
+        avatar_url: user.avatar_url || (approval as any).avatar_url || undefined
       }
     });
   } catch (err: any) {
@@ -396,7 +398,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
     const { data: user, error } = await dbRead
       .from('users')
-      .select('id, name, email, roll_number, role, created_at')
+      .select('*')
       .eq('id', req.user?.id)
       .single();
 
@@ -409,10 +411,140 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     return res.status(200).json({
       status: 'success',
-      data: { ...user, role: approval.role, status: approval.status, isMasterAdmin: true }
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        roll_number: user.roll_number,
+        role: approval.role,
+        status: approval.status,
+        username: user.username || approval.username || undefined,
+        batch: user.batch || approval.batch || undefined,
+        avatar_url: user.avatar_url || approval.avatar_url || undefined,
+        created_at: user.created_at,
+        isMasterAdmin
+      }
     });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'Unauthorized. Authentication token missing.' });
+    }
+
+    const { name, username, batch, avatar_url, profile_pic } = req.body;
+
+    // Strict institutional security policy:
+    // Email and Roll Number / Enrollment Number CANNOT be modified by the user
+    // We intentionally discard any attempt to mutate email or roll_number
+
+    const updates: Record<string, any> = {};
+
+    if (typeof name === 'string' && name.trim().length > 0) {
+      updates.name = name.trim();
+    }
+
+    if (typeof username === 'string') {
+      const cleanUsername = username.trim().toLowerCase().replace(/^@/, '');
+      if (cleanUsername.length > 0) {
+        // Enforce uniqueness if username is being changed
+        const { data: existingUser } = await dbRead
+          .from('users')
+          .select('id')
+          .ilike('username', cleanUsername)
+          .neq('id', userId)
+          .maybeSingle();
+
+        if (existingUser) {
+          return res.status(400).json({
+            status: 'error',
+            message: `Username "@${cleanUsername}" is already taken. Please choose another handle.`
+          });
+        }
+        updates.username = cleanUsername;
+      }
+    }
+
+    if (typeof batch === 'string') {
+      updates.batch = batch.trim();
+    }
+
+    const resolvedAvatar = avatar_url !== undefined ? avatar_url : profile_pic;
+    if (resolvedAvatar !== undefined) {
+      updates.avatar_url = resolvedAvatar;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'No editable fields provided. Email and enrollment ID are institutional records and cannot be modified.'
+      });
+    }
+
+    // Persist changes to PostgreSQL
+    let updatedUser: any = null;
+    try {
+      const { data, error } = await dbWrite
+        .from('users')
+        .update(updates)
+        .eq('id', userId)
+        .select('*')
+        .single();
+
+      if (error) {
+        // If avatar_url column is not yet present, retry without avatar_url to maintain resilience
+        if (error.message && error.message.includes('avatar_url')) {
+          delete updates.avatar_url;
+          const retry = await dbWrite
+            .from('users')
+            .update(updates)
+            .eq('id', userId)
+            .select('*')
+            .single();
+          if (retry.error) throw retry.error;
+          updatedUser = { ...retry.data, avatar_url: resolvedAvatar };
+        } else {
+          throw error;
+        }
+      } else {
+        updatedUser = data;
+      }
+    } catch (dbErr: any) {
+      throw dbErr;
+    }
+
+    // Keep memory & disk approval state synchronized
+    if (updatedUser?.email) {
+      updateUserMetadata(updatedUser.email, {
+        name: updatedUser.name,
+        username: updatedUser.username,
+        batch: updatedUser.batch,
+        avatar_url: updatedUser.avatar_url
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Profile updated successfully',
+      data: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        roll_number: updatedUser.roll_number,
+        role: updatedUser.role,
+        username: updatedUser.username,
+        batch: updatedUser.batch,
+        avatar_url: updatedUser.avatar_url,
+        created_at: updatedUser.created_at
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message || 'Failed to update user profile.' });
   }
 };
 

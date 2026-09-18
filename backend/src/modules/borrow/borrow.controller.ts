@@ -18,7 +18,7 @@ const ADMIN_DIRECTORY_CACHE_TTL = 60; // seconds
 const BORROW_HISTORY_CACHE_TTL = 15; // 15 seconds cache to eliminate DB connection saturation
 
 export const invalidateBorrowHistoryCache = async (): Promise<void> => {
-  await cacheInvalidatePattern('cicr:cache:borrow:history:*');
+  await cacheInvalidatePattern('cicr:cache:borrow:*');
 };
 
 export const MIN_RENTAL_DAYS = 1;
@@ -545,6 +545,55 @@ export const getBorrowHistory = async (req: AuthRequest, res: Response) => {
     }));
 
     const payload = { status: 'success', count: history.length, data: history };
+    await cacheSetJSON(cacheKey, payload, BORROW_HISTORY_CACHE_TTL);
+
+    return res.status(200).json(payload);
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const getBorrowLedger = async (req: AuthRequest, res: Response) => {
+  try {
+    const force = req.query.force === 'true';
+    const cacheKey = 'cicr:cache:borrow:ledger:all';
+
+    if (!force) {
+      const cached = await cacheGetJSON<{ status: string; count: number; data: any[] }>(cacheKey);
+      if (cached) {
+        return res.status(200).json(cached);
+      }
+    }
+
+    const { data: records, error } = await dbRead
+      .from('borrow_records')
+      .select('*')
+      .order('borrowed_at', { ascending: false });
+
+    if (error) throw error;
+
+    const userIds = [...new Set((records || []).map((r: any) => r.user_id).filter(Boolean))];
+    const itemIds = [...new Set((records || []).map((r: any) => r.inventory_id).filter(Boolean))];
+
+    const [usersRes, itemsRes] = await Promise.all([
+      userIds.length
+        ? dbRead.from('users').select('id, name, email, roll_number').in('id', userIds)
+        : Promise.resolve({ data: [] }),
+      itemIds.length
+        ? dbRead.from('inventory').select('id, name, category, image').in('id', itemIds)
+        : Promise.resolve({ data: [] })
+    ]);
+
+    const userMap = Object.fromEntries((usersRes.data || []).map((u: any) => [u.id, u]));
+    const itemMap = Object.fromEntries((itemsRes.data || []).map((i: any) => [i.id, i]));
+
+    const ledger = (records || []).map((r: any) => ({
+      ...r,
+      users: userMap[r.user_id] || null,
+      inventory: itemMap[r.inventory_id] || null
+    }));
+
+    const payload = { status: 'success', count: ledger.length, data: ledger };
     await cacheSetJSON(cacheKey, payload, BORROW_HISTORY_CACHE_TTL);
 
     return res.status(200).json(payload);

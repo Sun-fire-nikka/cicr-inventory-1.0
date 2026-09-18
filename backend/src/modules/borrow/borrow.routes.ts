@@ -3,6 +3,7 @@ import {
   borrowItem,
   returnItem,
   getBorrowHistory,
+  getBorrowLedger,
   getAdmins,
   requestOtp,
   verifyOtp,
@@ -29,6 +30,7 @@ router.post('/return', authenticateToken, returnItem);
 router.post('/return-request', authenticateToken, submitReturnRequestHandler);
 router.post('/bulk-return-request', authenticateToken, submitBulkReturnRequestHandler);
 router.get('/history', authenticateToken, getBorrowHistory);
+router.get('/ledger', authenticateToken, requireAdmin, getBorrowLedger);
 
 export default router;
 

@@ -219,7 +219,9 @@
                 <a class="nav-link" id="nav-inventory"><i data-lucide="layers"></i> Inventory</a>
                 <a class="nav-link" id="nav-add-item"><i data-lucide="plus-circle"></i> Add Component</a>
                 <a class="nav-link" id="nav-about"><i data-lucide="info"></i> About</a>
-                <a class="nav-link" id="nav-developers"><i data-lucide="terminal"></i> Developers</a>
+                <a class="nav-link" id="nav-hardware-logs" style="display: none !important;" onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')"><i data-lucide="clipboard-list"></i> Component Logs</a>
+                <a class="nav-link" id="nav-developers" onclick="event.preventDefault(); window.switchSection && window.switchSection('developers-view')"><i data-lucide="terminal"></i> Developers</a>
+                <a class="nav-link" id="nav-profile" onclick="event.preventDefault(); window.switchSection && window.switchSection('profile-view')"><i data-lucide="user"></i> Profile</a>
                 <a class="nav-link" id="nav-logs-bell" style="position: relative;">
                     <i data-lucide="bell"></i> History
                     <span class="notification-badge" id="nav-bell-badge"></span>
@@ -297,6 +299,13 @@
                             <span class="badge" id="admin-pending-badge"
                                 style="display: none; background: #ff007a; color: #ffffff; margin-left: auto; font-size: 7.5px; padding: 1px 5px; border-radius: 9999px; font-weight: 800;">0</span>
                         </a>
+                        <a href="#" class="sidebar-nav-link" id="side-nav-hardware-logs" data-target="hardware-logs-view"
+                            style="display: none !important;" onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')">
+                            <i data-lucide="clipboard-check"></i>
+                            <span>Component Logs</span>
+                            <span class="badge" id="hw-logs-count-badge"
+                                style="display: none; background: var(--neon-cyan, #00f0ff); color: #000; margin-left: auto; font-size: 7.5px; padding: 1px 5px; border-radius: 9999px; font-weight: 800;">0</span>
+                        </a>
 
                         <details class="vault-dropdown" open>
                             <summary class="sidebar-nav-title">
@@ -340,9 +349,13 @@
                         <i data-lucide="chevron-down" class="section-arrow"></i>
                     </div>
                     <div class="sidebar-nav-links">
-                        <a href="#" class="sidebar-nav-link" id="side-nav-developers" data-target="developers-view">
+                        <a href="#" class="sidebar-nav-link" id="side-nav-developers" data-target="developers-view" onclick="event.preventDefault(); window.switchSection && window.switchSection('developers-view')">
                             <i data-lucide="code-2"></i>
                             <span>Meet The Developers</span>
+                        </a>
+                        <a href="#" class="sidebar-nav-link" id="side-nav-profile" data-target="profile-view" onclick="event.preventDefault(); window.switchSection && window.switchSection('profile-view')">
+                            <i data-lucide="user"></i>
+                            <span>My Profile</span>
                         </a>
                     </div>
                 </div>
@@ -352,7 +365,10 @@
 
             <!-- Profile widget section at bottom -->
             <div class="sidebar-profile-box" id="sidebar-profile-widget">
-                <div class="profile-avatar" id="profile-avatar-initial">S</div>
+                <div class="profile-avatar" id="profile-avatar-initial">
+                    <span id="sidebar-avatar-initial-text">S</span>
+                    <img id="sidebar-avatar-img" class="sidebar-avatar-img" src="" alt="Avatar" style="display: none;">
+                </div>
                 <div class="profile-info">
                     <span class="profile-name" id="profile-username-display">SRVKILLER09</span>
                     <span class="profile-role">ADMIN</span>
@@ -456,7 +472,23 @@
                             </div>
                         </div>
 
-                        <div class="dash-card card-cyan" id="dash-card-devs">
+                        <div class="dash-card card-yellow" id="dash-card-hardware-logs" style="display: none !important;" onclick="window.switchSection && window.switchSection('hardware-logs-view')">
+                            <div class="dash-card-header">
+                                <div class="dash-card-icon-wrapper">
+                                    <i data-lucide="clipboard-check"></i>
+                                </div>
+                                <span class="dash-card-tag">AUDIT REGISTRY</span>
+                            </div>
+                            <div class="dash-card-body">
+                                <h3 class="dash-card-title">Component Issue & Return Logs</h3>
+                                <p class="dash-card-desc">Detailed tabular ledger of who has issued and returned components, exact timestamps, and declared purposes.</p>
+                            </div>
+                            <div class="dash-card-footer">
+                                <i data-lucide="arrow-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="dash-card card-cyan" id="dash-card-devs" onclick="window.switchSection && window.switchSection('developers-view')">
                             <div class="dash-card-header">
                                 <div class="dash-card-icon-wrapper">
                                     <i data-lucide="code-2"></i>
@@ -467,6 +499,22 @@
                                 <h3 class="dash-card-title">Meet The Developers</h3>
                                 <p class="dash-card-desc">Meet the engineering minds and mentors behind the CICR
                                     Robotics Vault.</p>
+                            </div>
+                            <div class="dash-card-footer">
+                                <i data-lucide="arrow-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="dash-card card-purple" id="dash-card-profile" onclick="window.switchSection && window.switchSection('profile-view')">
+                            <div class="dash-card-header">
+                                <div class="dash-card-icon-wrapper">
+                                    <i data-lucide="user-check"></i>
+                                </div>
+                                <span class="dash-card-tag">OPERATOR HUD</span>
+                            </div>
+                            <div class="dash-card-body">
+                                <h3 class="dash-card-title">My Profile</h3>
+                                <p class="dash-card-desc">Inspect credentials, verified student tier, active hardware checkouts, and security controls.</p>
                             </div>
                             <div class="dash-card-footer">
                                 <i data-lucide="arrow-right"></i>
@@ -674,6 +722,263 @@
                                 aria-label="Next Profile">
                                 <i data-lucide="chevron-right"></i>
                             </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Member Profile & Equipment Access Pass (CICR Robotics Lab) -->
+                <section class="profile-layout-section reveal" id="profile-view" style="display: none;">
+                    <div class="profile-view-container">
+                        <!-- Top ID Card Hero Banner -->
+                        <div class="profile-pass-hero glass">
+                            <div class="profile-pass-ambient-glow"></div>
+                            <div class="profile-pass-grid-lines"></div>
+
+                            <div class="profile-pass-header-row">
+                                <div class="profile-pass-brand">
+                                    <div class="profile-pass-logo-badge">
+                                        <i data-lucide="cpu"></i>
+                                    </div>
+                                    <div class="profile-pass-brand-text">
+                                        <span class="profile-pass-sub">JIIT NOIDA • ROBOTICS RESEARCH LAB</span>
+                                        <h2 class="profile-pass-hub-title">Lab Equipment & Member Pass</h2>
+                                    </div>
+                                </div>
+                                <div class="profile-pass-status-cluster">
+                                    <span class="pass-chip-id" id="profile-badge-id-text"><i data-lucide="fingerprint"></i> UID: #000</span>
+                                    <span class="pass-verified-badge" id="profile-hero-status-badge">
+                                        <i data-lucide="check-circle-2"></i>
+                                        <span id="profile-badge-status-text">ACTIVE PASS</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="profile-pass-identity-row">
+                                <!-- Tactile Avatar with Holographic Pulse & Quick Edit Camera Button -->
+                                <div class="profile-hero-avatar-wrap">
+                                    <div class="profile-hero-avatar-ring">
+                                        <div class="profile-hero-avatar-frame" id="profile-hero-avatar-frame">
+                                            <span class="profile-hero-avatar-initial" id="profile-hero-initial">U</span>
+                                            <img id="profile-hero-avatar-img" class="profile-hero-avatar-img" src="" alt="Profile Picture" style="display: none;">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="profile-avatar-edit-badge" id="profile-avatar-edit-trigger" title="Change Profile Picture" onclick="window.openProfileEditModal && window.openProfileEditModal()">
+                                        <i data-lucide="camera"></i>
+                                    </button>
+                                    <div class="profile-status-indicator" title="Connected to Vault Hub">
+                                        <span class="status-pulse-dot"></span>
+                                        <span class="status-pulse-ring"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Personal Identity Block -->
+                                <div class="profile-hero-info">
+                                    <div class="profile-hero-name-wrap">
+                                        <h1 class="profile-hero-name" id="profile-hero-display-name">STUDENT NAME</h1>
+                                        <span class="profile-hero-badge badge-role" id="profile-hero-role-badge">
+                                            <i data-lucide="shield-check"></i>
+                                            <span id="profile-badge-role-text">MEMBER</span>
+                                        </span>
+                                    </div>
+                                    <div class="profile-hero-meta-row">
+                                        <span class="profile-hero-handle" id="profile-hero-handle">@username</span>
+                                        <span class="profile-dot-sep">•</span>
+                                        <span class="profile-hero-email" id="profile-hero-email">student@mail.jiit.ac.in</span>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="profile-hero-actions">
+                                    <button type="button" class="profile-action-btn btn-primary" id="profile-open-edit-btn"
+                                        title="Edit Profile Information & Picture" onclick="window.openProfileEditModal && window.openProfileEditModal()">
+                                        <i data-lucide="user-cog"></i>
+                                        <span>Edit Profile</span>
+                                    </button>
+                                    <button type="button" class="profile-action-btn btn-secondary" id="profile-edit-btn"
+                                        title="Change Password & Security">
+                                        <i data-lucide="key-round"></i>
+                                        <span>Security & Keys</span>
+                                    </button>
+                                    <button type="button" class="profile-action-btn btn-danger" id="profile-logout-btn"
+                                        title="Sign out of CICR Vault">
+                                        <i data-lucide="log-out"></i>
+                                        <span>Sign Out</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sleek Laboratory Telemetry Strip (Horizontal 4-Stat HUD) -->
+                        <div class="profile-telemetry-strip glass">
+                            <div class="telemetry-item">
+                                <div class="telemetry-icon icon-cyan">
+                                    <i data-lucide="cpu"></i>
+                                </div>
+                                <div class="telemetry-details">
+                                    <div class="telemetry-meta">
+                                        <span class="telemetry-label">Active Loans</span>
+                                        <span class="telemetry-sub" id="profile-loans-quota-pill">0 / 5 Used</span>
+                                    </div>
+                                    <div class="telemetry-value" id="profile-metric-active-count">0</div>
+                                    <div class="telemetry-bar">
+                                        <div class="telemetry-fill fill-cyan" id="profile-loan-progress-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="telemetry-divider"></div>
+
+                            <div class="telemetry-item">
+                                <div class="telemetry-icon icon-purple">
+                                    <i data-lucide="history"></i>
+                                </div>
+                                <div class="telemetry-details">
+                                    <div class="telemetry-meta">
+                                        <span class="telemetry-label">Returned Items</span>
+                                        <span class="telemetry-sub">Total Lifetime</span>
+                                    </div>
+                                    <div class="telemetry-value" id="profile-metric-history-count">0</div>
+                                    <span class="telemetry-foot text-purple"><i data-lucide="check-check"></i> Verified Records</span>
+                                </div>
+                            </div>
+
+                            <div class="telemetry-divider"></div>
+
+                            <div class="telemetry-item">
+                                <div class="telemetry-icon icon-green">
+                                    <i data-lucide="shield-check"></i>
+                                </div>
+                                <div class="telemetry-details">
+                                    <div class="telemetry-meta">
+                                        <span class="telemetry-label">Lab Standing</span>
+                                        <span class="telemetry-sub">Security Audit</span>
+                                    </div>
+                                    <div class="telemetry-value text-green" id="profile-metric-standing">Clear</div>
+                                    <span class="telemetry-foot text-green"><i data-lucide="sparkles"></i> In Good Standing</span>
+                                </div>
+                            </div>
+
+                            <div class="telemetry-divider"></div>
+
+                            <div class="telemetry-item">
+                                <div class="telemetry-icon icon-yellow">
+                                    <i data-lucide="key"></i>
+                                </div>
+                                <div class="telemetry-details">
+                                    <div class="telemetry-meta">
+                                        <span class="telemetry-label">Lab Access</span>
+                                        <span class="telemetry-sub" id="profile-clearance-pill">Tier 1</span>
+                                    </div>
+                                    <div class="telemetry-value" id="profile-metric-clearance">OPERATOR</div>
+                                    <span class="telemetry-foot text-muted" id="profile-clearance-sub">Hardware Checkout Pass</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Two-Column Interactive Workspace -->
+                        <div class="profile-layout-grid">
+                            <!-- Left: Physical-Digital Lab Access Pass -->
+                            <div class="profile-column-card glass profile-id-badge-card">
+                                <div class="profile-card-header">
+                                    <div class="profile-card-title-group">
+                                        <div class="profile-card-icon-tag tag-cyan">
+                                            <i data-lucide="credit-card"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="profile-card-title">Lab Access Pass</h3>
+                                            <p class="profile-card-sub">Institutional member identity & authorized credentials</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Smart Chip & University Badge Graphic -->
+                                <div class="lab-card-chip-row">
+                                    <div class="lab-smart-chip">
+                                        <span class="chip-line horizontal"></span>
+                                        <span class="chip-line vertical"></span>
+                                        <div class="chip-core"></div>
+                                    </div>
+                                    <div class="lab-nfc-wave">
+                                        <i data-lucide="wifi"></i>
+                                        <span>NFC ENABLED</span>
+                                    </div>
+                                </div>
+
+                                <div class="profile-credentials-list">
+                                    <div class="cred-item">
+                                        <div class="cred-label">
+                                            <i data-lucide="user"></i>
+                                            <span>Full Name</span>
+                                        </div>
+                                        <div class="cred-value" id="cred-full-name">—</div>
+                                    </div>
+
+                                    <div class="cred-item">
+                                        <div class="cred-label">
+                                            <i data-lucide="hash"></i>
+                                            <span>Enrollment / Roll No.</span>
+                                        </div>
+                                        <div class="cred-value font-mono highlight-cyan" id="cred-roll-no">—</div>
+                                    </div>
+
+                                    <div class="cred-item">
+                                        <div class="cred-label">
+                                            <i data-lucide="at-sign"></i>
+                                            <span>Username Handle</span>
+                                        </div>
+                                        <div class="cred-value font-mono" id="cred-username">—</div>
+                                    </div>
+
+                                    <div class="cred-item">
+                                        <div class="cred-label">
+                                            <i data-lucide="mail"></i>
+                                            <span>Campus Email</span>
+                                        </div>
+                                        <div class="cred-value font-mono" id="cred-email">—</div>
+                                    </div>
+
+                                    <div class="cred-item">
+                                        <div class="cred-label">
+                                            <i data-lucide="calendar"></i>
+                                            <span>Academic Batch</span>
+                                        </div>
+                                        <div class="cred-value highlight-purple" id="cred-batch">—</div>
+                                    </div>
+
+                                    <div class="cred-item">
+                                        <div class="cred-label">
+                                            <i data-lucide="shield"></i>
+                                            <span>Authorization Level</span>
+                                        </div>
+                                        <div class="cred-value" id="cred-role">—</div>
+                                    </div>
+                                </div>
+
+                                <div class="profile-card-footer-tip">
+                                    <i data-lucide="lock"></i>
+                                    <span>Campus email & enrollment roll number are institutionally locked.</span>
+                                </div>
+                            </div>
+
+                            <!-- Right: Active Laboratory Equipment Desk -->
+                            <div class="profile-column-card glass profile-active-equipment-card">
+                                <div class="profile-card-header">
+                                    <div class="profile-card-title-group">
+                                        <div class="profile-card-icon-tag tag-purple">
+                                            <i data-lucide="boxes"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="profile-card-title">Currently Issued Equipment</h3>
+                                            <p class="profile-card-sub">Components checked out under your authorization</p>
+                                        </div>
+                                    </div>
+                                    <span class="profile-active-loans-counter" id="profile-active-loans-badge">0 Active</span>
+                                </div>
+
+                                <div class="profile-active-loans-container" id="profile-active-loans-list">
+                                    <!-- Dynamic hardware loans or empty state injected via ProfileViewManager.render() -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -898,6 +1203,95 @@
                                 <button class="btn btn-secondary btn-sm" id="admin-audit-footer-all-btn">
                                     <i data-lucide="history"></i> Load Full 7-Day History (All Records)
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Component Issue & Return Ledger (Core Workspace - Just below Admin Portal - Admin Only) -->
+                <section class="hardware-logs-section reveal" id="hardware-logs-view" style="display: none !important;">
+                    <div class="hw-ledger-container">
+                        <!-- Top Banner Header -->
+                        <div class="hw-ledger-header-card glass">
+                            <div class="hw-ledger-header-left">
+                                <div class="hw-ledger-header-icon">
+                                    <i data-lucide="clipboard-check"></i>
+                                </div>
+                                <div>
+                                    <span class="hw-ledger-tag">ADMIN AUDIT REGISTRY</span>
+                                    <h1 class="hw-ledger-title">Component Issue & Return Ledger</h1>
+                                    <p class="hw-ledger-desc">Official administrative registry tracking component checkouts, verified borrower credentials, authorizing administrator, timestamps, and return verification.</p>
+                                </div>
+                            </div>
+                            <div class="hw-ledger-stats-bar">
+                                <div class="hw-stat-pill pill-cyan">
+                                    <span class="hw-stat-num" id="hw-stat-total-logs">0</span>
+                                    <span class="hw-stat-lbl">Total Events</span>
+                                </div>
+                                <div class="hw-stat-pill pill-yellow">
+                                    <span class="hw-stat-num" id="hw-stat-active-issued">0</span>
+                                    <span class="hw-stat-lbl">Active Loans</span>
+                                </div>
+                                <div class="hw-stat-pill pill-green">
+                                    <span class="hw-stat-num" id="hw-stat-total-returned">0</span>
+                                    <span class="hw-stat-lbl">Returned</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search, Filter & Action Toolbar -->
+                        <div class="hw-ledger-toolbar glass">
+                            <div class="hw-ledger-search-box">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="hw-ledger-search" placeholder="Search by component, borrower name, roll number, admin supervisor, or purpose...">
+                            </div>
+
+                            <div class="hw-ledger-filters">
+                                <button type="button" class="hw-filter-btn active" data-filter="all" id="hw-filter-all">
+                                    <span>All Events</span>
+                                </button>
+                                <button type="button" class="hw-filter-btn" data-filter="borrowed" id="hw-filter-borrowed">
+                                    <span class="status-indicator-dot dot-yellow"></span>
+                                    <span>Currently Issued</span>
+                                </button>
+                                <button type="button" class="hw-filter-btn" data-filter="returned" id="hw-filter-returned">
+                                    <span class="status-indicator-dot dot-green"></span>
+                                    <span>Returned</span>
+                                </button>
+                            </div>
+
+                            <div class="hw-ledger-actions">
+                                <button type="button" class="hw-toolbar-btn" id="hw-ledger-refresh-btn" title="Refresh Live Ledger">
+                                    <i data-lucide="refresh-cw"></i>
+                                    <span>Sync</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tabular Form Container -->
+                        <div class="hw-ledger-table-card glass">
+                            <div class="hw-table-scroll-wrap">
+                                <table class="hw-ledger-table" id="hw-ledger-table">
+                                    <thead>
+                                        <tr>
+                                            <th>COMPONENT</th>
+                                            <th>BORROWER</th>
+                                            <th>APPROVED BY (ADMIN)</th>
+                                            <th>EVENT TYPE</th>
+                                            <th>QTY</th>
+                                            <th>DATE</th>
+                                            <th>TIME</th>
+                                            <th>PURPOSE / REASON</th>
+                                            <th>STATUS / RETURN LOG</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="hw-ledger-table-body">
+                                        <!-- Injected dynamically via HardwareLedgerManager -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="hw-table-footer" id="hw-table-footer">
+                                <span id="hw-table-count-label">Showing 0 log entries</span>
                             </div>
                         </div>
                     </div>
@@ -1403,6 +1797,119 @@
                 <button type="submit" class="btn btn-primary btn-block btn-cyber-pulse" id="btn-submit-reset-direct">
                     <i data-lucide="shield-check"></i> Authenticate & Update Password
                 </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal (Synchronized with Backend & Institutional Security Policy) -->
+    <div class="modal-overlay" id="edit-profile-modal">
+        <div class="modal-content glass reset-password-card">
+            <button type="button" class="close-modal" id="close-edit-profile-modal" onclick="window.closeProfileEditModal && window.closeProfileEditModal()"><i data-lucide="x"></i></button>
+
+            <div class="modal-header reset-header-cyber">
+                <div class="reset-cyber-badge">
+                    <i data-lucide="user-cog" class="text-cyan"></i>
+                    <span>OPERATOR IDENTITY MATRIX</span>
+                </div>
+                <h2><i data-lucide="user-check" class="text-cyan"></i> Edit Profile</h2>
+                <p>Update personal details & profile picture. Institutional records are locked.</p>
+            </div>
+
+            <form id="edit-profile-form" class="reset-cyber-form">
+                <!-- Avatar Upload Section -->
+                <div class="edit-avatar-container">
+                    <div class="edit-avatar-preview-wrap">
+                        <div class="edit-avatar-ring">
+                            <div class="edit-avatar-frame" id="edit-avatar-preview-frame">
+                                <span class="edit-avatar-initial" id="edit-avatar-initial-preview">U</span>
+                                <img id="edit-avatar-img-preview" class="edit-avatar-img" src="" alt="Avatar Preview" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="edit-avatar-controls">
+                        <label class="btn-avatar-upload" for="edit-avatar-file-input">
+                            <i data-lucide="upload"></i>
+                            <span>Upload Picture</span>
+                        </label>
+                        <input type="file" id="edit-avatar-file-input" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                        <button type="button" class="btn-avatar-remove" id="edit-avatar-remove-btn">
+                            <i data-lucide="trash-2"></i>
+                            <span>Reset to Initial</span>
+                        </button>
+                        <p class="edit-avatar-hint">PNG, JPG, or WEBP. Max 2MB.</p>
+                    </div>
+                </div>
+
+                <!-- Non-editable Institutional Locked Fields -->
+                <div class="form-grid-2col">
+                    <div class="form-group">
+                        <div class="label-row-cyber">
+                            <label for="edit-profile-email">Campus Email</label>
+                            <span class="cyber-badge-locked"><i data-lucide="lock"></i> LOCKED</span>
+                        </div>
+                        <div class="input-icon-wrapper input-locked">
+                            <i data-lucide="mail" class="input-icon"></i>
+                            <input type="text" id="edit-profile-email" readonly disabled value="student@mail.jiit.ac.in" tabindex="-1">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-row-cyber">
+                            <label for="edit-profile-roll">Enrollment / Roll No</label>
+                            <span class="cyber-badge-locked"><i data-lucide="lock"></i> LOCKED</span>
+                        </div>
+                        <div class="input-icon-wrapper input-locked">
+                            <i data-lucide="hash" class="input-icon"></i>
+                            <input type="text" id="edit-profile-roll" readonly disabled value="9922103xxx" tabindex="-1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editable Fields -->
+                <div class="form-group">
+                    <div class="label-row-cyber">
+                        <label for="edit-profile-name">Full Name *</label>
+                        <span class="cyber-badge-tag">DISPLAY IDENTITY</span>
+                    </div>
+                    <div class="input-icon-wrapper">
+                        <i data-lucide="user" class="input-icon text-cyan"></i>
+                        <input type="text" id="edit-profile-name" required placeholder="Your full name">
+                    </div>
+                </div>
+
+                <div class="form-grid-2col">
+                    <div class="form-group">
+                        <div class="label-row-cyber">
+                            <label for="edit-profile-username">Username Handle</label>
+                            <span class="cyber-badge-tag">UNIQUE HANDLE</span>
+                        </div>
+                        <div class="input-icon-wrapper">
+                            <i data-lucide="at-sign" class="input-icon"></i>
+                            <input type="text" id="edit-profile-username" placeholder="e.g. srvkiller09">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-row-cyber">
+                            <label for="edit-profile-batch">Academic Batch</label>
+                            <span class="cyber-badge-tag">YEAR</span>
+                        </div>
+                        <div class="input-icon-wrapper">
+                            <i data-lucide="calendar" class="input-icon"></i>
+                            <input type="text" id="edit-profile-batch" placeholder="e.g. 2022-2026">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="auth-error-msg" id="edit-profile-error" style="display: none;"></div>
+
+                <div class="modal-footer" id="edit-profile-modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-profile-btn" onclick="window.closeProfileEditModal && window.closeProfileEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-edit-profile-btn">
+                        <i data-lucide="check"></i>
+                        <span>Save & Sync</span>
+                    </button>
+                </div>
             </form>
         </div>
     </div>

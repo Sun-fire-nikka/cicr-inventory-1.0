@@ -5,6 +5,7 @@ import {
   verifyLoginOtp,
   resendLoginOtp,
   getProfile,
+  updateProfile,
   listUsersForAdmin,
   approveUser,
   rejectUser,
@@ -30,6 +31,8 @@ router.post('/resend-login-otp', otpLimiter, validate(resendOtpSchema), resendLo
 router.post('/send-otp', otpLimiter, sendOtp);
 router.post('/verify-otp', otpLimiter, validate(verifyOtpSchema), verifyOtp);
 router.get('/profile', authenticateToken, getProfile);
+router.put('/profile', authenticateToken, updateProfile);
+router.patch('/profile', authenticateToken, updateProfile);
 
 // Password recovery and update routes
 router.post('/forgot-password', authLimiter, forgotPassword);

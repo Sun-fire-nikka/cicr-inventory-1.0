@@ -45,6 +45,7 @@ export interface UserApprovalRecord {
   batch?: string | null;
   name?: string | null;
   roll_number?: string | null;
+  avatar_url?: string | null;
 }
 
 const resolveStoragePath = (fileName: string) => {
@@ -201,11 +202,26 @@ export const setUserApproval = (
     if (metadata.batch) current.batch = metadata.batch.trim();
     if (metadata.name) current.name = metadata.name.trim();
     if (metadata.roll_number) current.roll_number = metadata.roll_number.trim();
+    if ((metadata as any).avatar_url !== undefined) current.avatar_url = (metadata as any).avatar_url;
   }
 
   approvalState[normEmail] = current;
   saveState();
   return current;
+};
+
+export const updateUserMetadata = (
+  email: string,
+  metadata: { name?: string; username?: string; batch?: string; avatar_url?: string | null }
+): void => {
+  const normEmail = email.trim().toLowerCase();
+  if (approvalState[normEmail]) {
+    if (metadata.name !== undefined) approvalState[normEmail].name = metadata.name ? metadata.name.trim() : null;
+    if (metadata.username !== undefined) approvalState[normEmail].username = metadata.username ? metadata.username.trim() : null;
+    if (metadata.batch !== undefined) approvalState[normEmail].batch = metadata.batch ? metadata.batch.trim() : null;
+    if (metadata.avatar_url !== undefined) approvalState[normEmail].avatar_url = metadata.avatar_url;
+    saveState();
+  }
 };
 
 export const setUserRole = (
