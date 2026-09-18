@@ -6685,7 +6685,8 @@ class SakuraAnimation {
         if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
         this.resize();
-        this.initPetals(75);
+        const initialCount = typeof window !== 'undefined' && window.innerWidth < 768 ? 12 : 22;
+        this.initPetals(initialCount);
         this.setupEvents();
     }
 
@@ -6695,6 +6696,10 @@ class SakuraAnimation {
         this.height = window.innerHeight;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+        const targetCount = this.width < 768 ? 12 : 22;
+        if (this.petals.length !== targetCount) {
+            this.initPetals(targetCount);
+        }
     }
 
     private initPetals(count: number) {
@@ -6709,16 +6714,16 @@ class SakuraAnimation {
         return {
             x: Math.random() * this.width,
             y: randomY ? Math.random() * this.height : -20 - Math.random() * 40,
-            size: Math.random() * 9 + 8,
-            speedY: Math.random() * 1.2 + 0.8,
+            size: Math.random() * 6 + 7,
+            speedY: Math.random() * 0.9 + 0.6,
             swayFreq: Math.random() * 0.02 + 0.01,
-            swayAmp: Math.random() * 2.5 + 1.2,
+            swayAmp: Math.random() * 2.2 + 1.0,
             swayPhase: Math.random() * Math.PI * 2,
             rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.03,
+            rotationSpeed: (Math.random() - 0.5) * 0.025,
             flipAngle: Math.random() * Math.PI,
-            flipSpeed: Math.random() * 0.03 + 0.01,
-            opacity: Math.random() * 0.35 + 0.6,
+            flipSpeed: Math.random() * 0.025 + 0.01,
+            opacity: Math.random() * 0.3 + 0.4,
             colorStart: colorPair.start,
             colorEnd: colorPair.end,
         };
