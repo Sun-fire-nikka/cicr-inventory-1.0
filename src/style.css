@@ -7921,27 +7921,6 @@ body.theme-pink .theme-btn.active {
     border-color: rgba(244, 114, 182, 0.5) !important;
 }
 
-#sakura-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-    transform: translateZ(0);
-    will-change: transform;
-}
-
-body.theme-sakura #sakura-canvas,
-body.theme-pink #sakura-canvas,
-[data-theme="sakura"] #sakura-canvas,
-[data-theme="pink"] #sakura-canvas {
-    opacity: 1 !important;
-    display: block !important;
-}
 
 /* ==========================================
    Cherry Blossom (Sakura) Theme Styling

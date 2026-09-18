@@ -414,30 +414,17 @@ class Background3D {
         if (this.particles && !isScrolling) {
             const positions = this.particles.geometry.attributes.position.array as Float32Array;
             const particleCount = positions.length / 3;
-            const time = Date.now() * 0.001;
 
             for (let i = 0; i < particleCount; i++) {
-                if (this.currentTheme === 'sakura' || this.currentTheme === 'pink') {
-                    // Gentle falling & swaying Sakura Cherry Blossom petals
-                    positions[i * 3 + 1] -= 0.035;
-                    positions[i * 3] += Math.sin(time * 1.5 + this.particlePhases[i]) * 0.025;
-                    positions[i * 3 + 2] += Math.cos(time * 1.0 + this.particlePhases[i]) * 0.015;
+                positions[i * 3 + 1] += 0.015;
+                positions[i * 3 + 2] += 0.03;
 
-                    if (positions[i * 3 + 1] < -10) {
-                        positions[i * 3 + 1] = 30;
-                        positions[i * 3] = (Math.random() - 0.5) * 120;
-                    }
-                } else {
-                    positions[i * 3 + 1] += 0.015;
-                    positions[i * 3 + 2] += 0.03;
-
-                    if (positions[i * 3 + 1] > 30) {
-                        positions[i * 3 + 1] = -5;
-                    }
-                    if (positions[i * 3 + 2] > 20) {
-                        positions[i * 3 + 2] = -120;
-                        positions[i * 3] = (Math.random() - 0.5) * 120;
-                    }
+                if (positions[i * 3 + 1] > 30) {
+                    positions[i * 3 + 1] = -5;
+                }
+                if (positions[i * 3 + 2] > 20) {
+                    positions[i * 3 + 2] = -120;
+                    positions[i * 3] = (Math.random() - 0.5) * 120;
                 }
             }
             this.particles.geometry.attributes.position.needsUpdate = true;
@@ -7086,169 +7073,6 @@ class TerminalSimulator {
 
 
 
-// ==========================================
-// Cherry Blossom (Sakura) Falling Leaves Engine
-// ==========================================
-interface SakuraPetal {
-    x: number;
-    y: number;
-    size: number;
-    speedY: number;
-    swayFreq: number;
-    swayAmp: number;
-    swayPhase: number;
-    rotation: number;
-    rotationSpeed: number;
-    flipAngle: number;
-    flipSpeed: number;
-    opacity: number;
-    colorStart: string;
-    colorEnd: string;
-}
-
-class SakuraAnimation {
-    private canvas: HTMLCanvasElement | null = null;
-    private ctx: CanvasRenderingContext2D | null = null;
-    private petals: SakuraPetal[] = [];
-    private animationFrameId: number | null = null;
-    private isRunning = false;
-    private width = window.innerWidth;
-    private height = window.innerHeight;
-
-    private colors = [
-        { start: '#ffd1e8', end: '#ec4899' },
-        { start: '#fce7f3', end: '#f43f5e' },
-        { start: '#fbcfe8', end: '#fda4af' },
-        { start: '#f472b6', end: '#db2777' },
-    ];
-
-    constructor() {
-        this.canvas = document.getElementById('sakura-canvas') as HTMLCanvasElement;
-        if (!this.canvas) return;
-        this.ctx = this.canvas.getContext('2d');
-        this.resize();
-        const initialCount = typeof window !== 'undefined' && window.innerWidth < 768 ? 12 : 22;
-        this.initPetals(initialCount);
-        this.setupEvents();
-    }
-
-    private resize() {
-        if (!this.canvas) return;
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
-        const targetCount = this.width < 768 ? 12 : 22;
-        if (this.petals.length !== targetCount) {
-            this.initPetals(targetCount);
-        }
-    }
-
-    private initPetals(count: number) {
-        this.petals = [];
-        for (let i = 0; i < count; i++) {
-            this.petals.push(this.createPetal(true));
-        }
-    }
-
-    private createPetal(randomY = false): SakuraPetal {
-        const colorPair = this.colors[Math.floor(Math.random() * this.colors.length)];
-        return {
-            x: Math.random() * this.width,
-            y: randomY ? Math.random() * this.height : -20 - Math.random() * 40,
-            size: Math.random() * 6 + 7,
-            speedY: Math.random() * 0.9 + 0.6,
-            swayFreq: Math.random() * 0.02 + 0.01,
-            swayAmp: Math.random() * 2.2 + 1.0,
-            swayPhase: Math.random() * Math.PI * 2,
-            rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.025,
-            flipAngle: Math.random() * Math.PI,
-            flipSpeed: Math.random() * 0.025 + 0.01,
-            opacity: Math.random() * 0.3 + 0.4,
-            colorStart: colorPair.start,
-            colorEnd: colorPair.end,
-        };
-    }
-
-    private setupEvents() {
-        window.addEventListener('resize', () => this.resize());
-    }
-
-    public start() {
-        if (this.isRunning) return;
-        this.resize();
-        this.isRunning = true;
-        this.loop();
-    }
-
-    public stop() {
-        this.isRunning = false;
-        if (this.animationFrameId !== null) {
-            cancelAnimationFrame(this.animationFrameId);
-            this.animationFrameId = null;
-        }
-        if (this.ctx && this.canvas) {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        }
-    }
-
-    private drawPetal(petal: SakuraPetal) {
-        if (!this.ctx) return;
-        const { x, y, size, rotation, flipAngle, opacity, colorStart, colorEnd } = petal;
-
-        this.ctx.save();
-        this.ctx.translate(x, y);
-        this.ctx.rotate(rotation);
-
-        const scaleX = Math.cos(flipAngle);
-        this.ctx.scale(scaleX, 1);
-
-        this.ctx.globalAlpha = opacity;
-
-        const grad = this.ctx.createLinearGradient(0, -size, 0, size);
-        grad.addColorStop(0, colorStart);
-        grad.addColorStop(1, colorEnd);
-        this.ctx.fillStyle = grad;
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -size);
-        this.ctx.bezierCurveTo(size * 0.75, -size * 0.75, size * 0.9, size * 0.4, 0, size);
-        this.ctx.bezierCurveTo(-size * 0.9, size * 0.4, -size * 0.75, -size * 0.75, 0, -size);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        this.ctx.strokeStyle = 'rgba(236, 72, 153, 0.25)';
-        this.ctx.lineWidth = 0.8;
-        this.ctx.stroke();
-
-        this.ctx.restore();
-    }
-
-    private loop() {
-        if (!this.isRunning || !this.ctx || !this.canvas) return;
-
-        this.ctx.clearRect(0, 0, this.width, this.height);
-
-        for (let i = 0; i < this.petals.length; i++) {
-            const p = this.petals[i];
-
-            p.y += p.speedY;
-            p.swayPhase += p.swayFreq;
-            p.x += Math.sin(p.swayPhase) * p.swayAmp;
-            p.rotation += p.rotationSpeed;
-            p.flipAngle += p.flipSpeed;
-
-            if (p.y > this.height + 30 || p.x < -40 || p.x > this.width + 40) {
-                this.petals[i] = this.createPetal(false);
-            }
-
-            this.drawPetal(p);
-        }
-
-        this.animationFrameId = requestAnimationFrame(() => this.loop());
-    }
-}
 
 // Extend global window interface for development debugging & admin actions
 declare global {
@@ -8798,10 +8622,8 @@ class ThemeManager {
     private static themeSelectEl: HTMLSelectElement | null = null;
     private static navThemeSelectEl: HTMLSelectElement | null = null;
     private static headerThemeSelectEl: HTMLSelectElement | null = null;
-    private static sakuraAnim: SakuraAnimation | null = null;
 
     public static init() {
-        this.sakuraAnim = new SakuraAnimation();
 
         this.themeSelectEl = document.getElementById('theme-select') as HTMLSelectElement;
         this.navThemeSelectEl = document.getElementById('nav-theme-select') as HTMLSelectElement;
@@ -8913,12 +8735,6 @@ class ThemeManager {
 
         if (window.bg3D) {
             window.bg3D.updateThemeColors(theme);
-        }
-
-        if (theme === 'sakura' || theme === 'pink') {
-            this.sakuraAnim?.start();
-        } else {
-            this.sakuraAnim?.stop();
         }
 
         // Force browser to commit style changes synchronously without animation
