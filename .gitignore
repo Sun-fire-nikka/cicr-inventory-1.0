@@ -30,8 +30,10 @@ backend/.env
 # Temporary Test Files (OpenCode & Nodemailer tests)
 _mailtest.cjs
 *.tmp
-backend/src/scripts/send-*.js
-backend/src/scripts/send-*.ts
+*.py
+backend/scripts/
+backend/src/scripts/send-*
+backend/src/scripts/*credentials*
 
 # Editor & System Files
 .vscode/*

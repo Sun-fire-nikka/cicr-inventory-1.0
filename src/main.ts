@@ -329,7 +329,7 @@ class Background3D {
         const count = colors.length / 3;
 
         let c1: THREE.Color, c2: THREE.Color;
-        if (theme === 'sakura') {
+        if (theme === 'sakura' || theme === 'pink') {
             c1 = new THREE.Color(0xff75a0); // Vibrant cherry pink
             c2 = new THREE.Color(0xffb7c5); // Soft blossom petal
         } else if (theme === 'light') {
@@ -417,7 +417,7 @@ class Background3D {
             const time = Date.now() * 0.001;
 
             for (let i = 0; i < particleCount; i++) {
-                if (this.currentTheme === 'sakura') {
+                if (this.currentTheme === 'sakura' || this.currentTheme === 'pink') {
                     // Gentle falling & swaying Sakura Cherry Blossom petals
                     positions[i * 3 + 1] -= 0.035;
                     positions[i * 3] += Math.sin(time * 1.5 + this.particlePhases[i]) * 0.025;
@@ -6730,6 +6730,7 @@ class SakuraAnimation {
 
     public start() {
         if (this.isRunning) return;
+        this.resize();
         this.isRunning = true;
         this.loop();
     }

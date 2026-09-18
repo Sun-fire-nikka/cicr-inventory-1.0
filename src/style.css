@@ -82,8 +82,12 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html {
     background-color: #06060e;
+}
+
+body {
+    background-color: transparent;
     color: var(--text-main);
     overflow-x: hidden;
     min-height: 100vh;
@@ -4869,10 +4873,14 @@ body.theme-cyberpunk {
     --glow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-html[data-theme="cyberpunk"],
+html[data-theme="cyberpunk"] {
+    background-color: #06060e !important;
+}
+
 [data-theme="cyberpunk"] body,
 body.theme-cyberpunk {
-    background-color: #06060e !important;
+    background-color: transparent !important;
+    background: transparent !important;
     color: var(--text-main);
 }
 
@@ -4939,10 +4947,14 @@ body.theme-light {
     --glow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-html[data-theme="light"],
+html[data-theme="light"] {
+    background-color: #f1f5f9 !important;
+}
+
 [data-theme="light"] body,
 body.theme-light {
-    background-color: #f1f5f9 !important;
+    background-color: transparent !important;
+    background: transparent !important;
     color: #0f172a !important;
 }
 
@@ -7089,10 +7101,12 @@ body.theme-light .no-results p,
     color: #475569;
 }
 
+body.theme-sakura .theme-buttons-row,
 body.theme-pink .theme-buttons-row {
     background: rgba(244, 114, 182, 0.08);
 }
 
+body.theme-sakura .theme-btn.active,
 body.theme-pink .theme-btn.active {
     background: linear-gradient(135deg, rgba(251, 207, 232, 0.5), rgba(244, 114, 182, 0.35)) !important;
     color: #4c0519 !important;
@@ -7106,14 +7120,17 @@ body.theme-pink .theme-btn.active {
     width: 100vw;
     height: 100vh;
     pointer-events: none;
-    z-index: -1;
+    z-index: 2;
     opacity: 0;
     transition: opacity 0.8s ease;
 }
 
 body.theme-sakura #sakura-canvas,
-[data-theme="sakura"] #sakura-canvas {
-    opacity: 1;
+body.theme-pink #sakura-canvas,
+[data-theme="sakura"] #sakura-canvas,
+[data-theme="pink"] #sakura-canvas {
+    opacity: 1 !important;
+    display: block !important;
 }
 
 /* ==========================================
@@ -7154,27 +7171,42 @@ body.theme-sakura {
 }
 
 html[data-theme="sakura"],
-html[data-theme="pink"],
+html[data-theme="pink"] {
+    background-color: #fce2ed !important;
+}
+
 [data-theme="sakura"] body,
 [data-theme="pink"] body,
 body.theme-sakura,
 body.theme-pink {
-    background-color: #fce2ed !important;
+    background-color: transparent !important;
+    background: transparent !important;
     color: #4c0519 !important;
 }
 
+html[data-theme="sakura"] body::after,
+html[data-theme="pink"] body::after,
 [data-theme="sakura"] body::after,
 [data-theme="pink"] body::after,
 body.theme-sakura::after,
 body.theme-pink::after {
+    content: '' !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -4 !important;
     background-color: #fce2ed !important;
     background-image:
-        linear-gradient(rgba(252, 226, 237, 0.35), rgba(252, 226, 237, 0.60)),
-        radial-gradient(circle at 50% 30%, rgba(255, 240, 248, 0.35) 0%, rgba(244, 114, 182, 0.15) 100%),
+        linear-gradient(rgba(255, 240, 248, 0.22), rgba(252, 226, 237, 0.48)),
+        radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.28) 0%, rgba(244, 114, 182, 0.12) 100%),
         url('/backgrounds/sakura.jpg') !important;
     background-size: cover !important;
-    background-position: center top !important;
+    background-position: center center !important;
     background-repeat: no-repeat !important;
+    pointer-events: none !important;
+    transform: translateZ(0) !important;
+    will-change: transform !important;
+    opacity: 1 !important;
+    display: block !important;
 }
 
 [data-theme="sakura"] body::before,
@@ -7185,10 +7217,20 @@ body.theme-pink::before {
 }
 
 body.theme-sakura #canvas-3d,
-[data-theme="sakura"] #canvas-3d,
 body.theme-pink #canvas-3d,
+[data-theme="sakura"] #canvas-3d,
 [data-theme="pink"] #canvas-3d {
-    opacity: 0.04 !important;
+    opacity: 0.20 !important;
+    display: block !important;
+}
+
+body.theme-sakura .auth-overlay,
+body.theme-pink .auth-overlay,
+[data-theme="sakura"] .auth-overlay,
+[data-theme="pink"] .auth-overlay {
+    background: rgba(252, 226, 237, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 body.theme-sakura .app-sidebar,
