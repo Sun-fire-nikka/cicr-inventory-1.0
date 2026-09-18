@@ -6737,15 +6737,37 @@ body.theme-pink .sidebar-profile-box {
     height: 26px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    line-height: 1 !important;
     font-weight: 700;
-    font-size: 10.5px;
+    font-size: 11px;
     color: #ffffff;
     font-family: 'Orbitron', sans-serif;
     box-shadow: 0 0 6px rgba(0, 240, 255, 0.1);
     flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+}
+
+#sidebar-avatar-initial-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    color: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    transform: translateY(-0.5px);
 }
 
 body.theme-pink .profile-avatar {
@@ -6837,13 +6859,8 @@ body.theme-sakura .viewport-header::after,
 body.theme-pink .viewport-header::after,
 [data-theme="sakura"] .viewport-header::after,
 [data-theme="pink"] .viewport-header::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -10px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.45), rgba(251, 191, 219, 0.2), transparent);
+    content: none !important;
+    display: none !important;
 }
 
 .header-left {
@@ -19884,4 +19901,19 @@ body.theme-pink .hw-admin-role-tag,
     height: 14px;
     color: #f87171;
     flex-shrink: 0;
+}
+
+/* Edit Profile Security Card Theme Adaptations */
+body.theme-sakura .edit-profile-security-card,
+body.theme-pink .edit-profile-security-card,
+[data-theme="sakura"] .edit-profile-security-card,
+[data-theme="pink"] .edit-profile-security-card {
+    background: rgba(244, 114, 182, 0.08) !important;
+    border-color: rgba(244, 114, 182, 0.25) !important;
+}
+
+body.theme-light .edit-profile-security-card,
+[data-theme="light"] .edit-profile-security-card {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
 }

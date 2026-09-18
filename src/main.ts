@@ -4597,11 +4597,24 @@ class AuthManager {
                 profileAvatarInitial.style.display = 'none';
             } else {
                 sidebarAvatarImg.style.display = 'none';
-                profileAvatarInitial.style.display = 'inline-block';
-                profileAvatarInitial.innerText = username.charAt(0).toUpperCase();
+                profileAvatarInitial.style.display = 'flex';
+                const initialTextEl = document.getElementById('sidebar-avatar-initial-text');
+                if (initialTextEl) {
+                    initialTextEl.textContent = (username.charAt(0) || 'U').toUpperCase();
+                    initialTextEl.style.display = 'flex';
+                } else {
+                    profileAvatarInitial.textContent = (username.charAt(0) || 'U').toUpperCase();
+                }
             }
         } else if (profileAvatarInitial) {
-            profileAvatarInitial.innerText = username.charAt(0).toUpperCase();
+            profileAvatarInitial.style.display = 'flex';
+            const initialTextEl = document.getElementById('sidebar-avatar-initial-text');
+            if (initialTextEl) {
+                initialTextEl.textContent = (username.charAt(0) || 'U').toUpperCase();
+                initialTextEl.style.display = 'flex';
+            } else {
+                profileAvatarInitial.textContent = (username.charAt(0) || 'U').toUpperCase();
+            }
         }
         if (profileRoleDisplay) {
             profileRoleDisplay.innerText = effectiveRole;
@@ -7538,8 +7551,38 @@ class ProfileViewManager {
         }
     }
 
-    public static render() {
+    public static async syncFromBackend() {
+        const token = localStorage.getItem('cicr_token');
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/auth/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success' && json.data) {
+                    let user: any = {};
+                    try {
+                        user = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+                    } catch { }
+                    const merged = { ...user, ...json.data };
+                    localStorage.setItem('cicr_user', JSON.stringify(merged));
+                    if (json.data.username) {
+                        localStorage.setItem('cicr_auth', json.data.username);
+                    }
+                    this.render(false);
+                }
+            }
+        } catch (e) {
+            console.warn('[ProfileView] Backend profile fetch notice:', e);
+        }
+    }
+
+    public static render(triggerSync: boolean = true) {
         this.init();
+        if (triggerSync) {
+            this.syncFromBackend();
+        }
 
         let user: any = {};
         try {
@@ -7584,11 +7627,24 @@ class ProfileViewManager {
                 sidebarInitial.style.display = 'none';
             } else {
                 sidebarAvatarImg.style.display = 'none';
-                sidebarInitial.style.display = 'inline-block';
-                sidebarInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+                sidebarInitial.style.display = 'flex';
+                const initialTextEl = document.getElementById('sidebar-avatar-initial-text');
+                if (initialTextEl) {
+                    initialTextEl.textContent = (name.charAt(0) || 'U').toUpperCase();
+                    initialTextEl.style.display = 'flex';
+                } else {
+                    sidebarInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+                }
             }
         } else if (sidebarInitial) {
-            sidebarInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+            sidebarInitial.style.display = 'flex';
+            const initialTextEl = document.getElementById('sidebar-avatar-initial-text');
+            if (initialTextEl) {
+                initialTextEl.textContent = (name.charAt(0) || 'U').toUpperCase();
+                initialTextEl.style.display = 'flex';
+            } else {
+                sidebarInitial.textContent = (name.charAt(0) || 'U').toUpperCase();
+            }
         }
 
         const heroName = document.getElementById('profile-hero-display-name');
@@ -7854,9 +7910,25 @@ class ProfileEditManager {
         const form = document.getElementById('edit-profile-form') as HTMLFormElement;
         const fileInput = document.getElementById('edit-avatar-file-input') as HTMLInputElement;
         const resetAvatarBtn = document.getElementById('edit-avatar-remove-btn');
+        const modalSecurityBtn = document.getElementById('edit-profile-security-btn');
 
         if (closeBtn) closeBtn.addEventListener('click', () => this.close());
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.close());
+
+        if (modalSecurityBtn) {
+            modalSecurityBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.close();
+                if (typeof PasswordResetManager !== 'undefined' && typeof PasswordResetManager.open === 'function') {
+                    PasswordResetManager.open();
+                } else if ((window as any).openPasswordResetModal) {
+                    (window as any).openPasswordResetModal();
+                } else {
+                    const resetModal = document.getElementById('reset-password-modal');
+                    if (resetModal) resetModal.classList.add('active');
+                }
+            });
+        }
 
         if (modal) {
             modal.addEventListener('click', (e) => {

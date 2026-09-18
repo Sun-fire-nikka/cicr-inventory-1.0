@@ -800,16 +800,6 @@
                                     <i data-lucide="user-cog"></i>
                                     <span>Edit Profile</span>
                                 </button>
-                                <button type="button" class="btn btn-secondary profile-action-btn" id="profile-edit-btn"
-                                    title="Change Password & Security">
-                                    <i data-lucide="key-round"></i>
-                                    <span>Security</span>
-                                </button>
-                                <button type="button" class="btn btn-danger profile-action-btn" id="profile-logout-btn"
-                                    title="Sign out of CICR">
-                                    <i data-lucide="log-out"></i>
-                                    <span>Sign Out</span>
-                                </button>
                             </div>
                         </div>
 
@@ -1831,6 +1821,25 @@
                             <input type="text" id="edit-profile-batch" placeholder="e.g. 2022-2026">
                         </div>
                     </div>
+                </div>
+
+                <!-- Security & Password Reset Action Section (Integrated directly into Edit Profile) -->
+                <div class="edit-profile-security-card" style="margin-top: 14px; margin-bottom: 6px; padding: 12px 14px; background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.14); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 240, 255, 0.12); display: flex; align-items: center; justify-content: center; color: var(--neon-cyan); flex-shrink: 0;">
+                            <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+                        </div>
+                        <div style="min-width: 0;">
+                            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); font-family: 'Orbitron', sans-serif;">Account Security</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Change your portal password & verify security</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="edit-profile-security-btn"
+                        style="padding: 7px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap;"
+                        title="Change Password & Security">
+                        <i data-lucide="key-round" style="width: 13px; height: 13px;"></i>
+                        <span>Security</span>
+                    </button>
                 </div>
 
                 <div class="auth-error-msg" id="edit-profile-error" style="display: none;"></div>
