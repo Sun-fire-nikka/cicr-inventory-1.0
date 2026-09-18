@@ -1260,6 +1260,7 @@ class DashboardManager {
             }
 
             closeMobileSidebar();
+            (window as any).syncFixedSidebarPosition?.();
         };
 
         (this as any).switchSection = switchSection;
@@ -9031,5 +9032,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     revealElements.forEach(el => observer.observe(el));
 
+    // Real-Time Sidebar Alignment Sync (Desktop Viewport-Fixed Positioning)
+    const syncFixedSidebarPosition = () => {
+        const container = document.getElementById('app-container');
+        const sidebar = document.getElementById('app-sidebar');
+        if (!container || !sidebar || window.innerWidth <= 1100) {
+            document.documentElement.style.removeProperty('--sidebar-fixed-left');
+            return;
+        }
+        const containerRect = container.getBoundingClientRect();
+        // 20px aligns precisely with container's horizontal padding
+        const targetLeft = Math.round(containerRect.left + 20);
+        document.documentElement.style.setProperty('--sidebar-fixed-left', `${targetLeft}px`);
+    };
 
+    (window as any).syncFixedSidebarPosition = syncFixedSidebarPosition;
+    window.addEventListener('resize', syncFixedSidebarPosition, { passive: true });
+    window.addEventListener('orientationchange', syncFixedSidebarPosition, { passive: true });
+    syncFixedSidebarPosition();
+
+    if (typeof ResizeObserver !== 'undefined') {
+        const container = document.getElementById('app-container');
+        if (container) {
+            const ro = new ResizeObserver(() => syncFixedSidebarPosition());
+            ro.observe(container);
+        }
+    }
 });
