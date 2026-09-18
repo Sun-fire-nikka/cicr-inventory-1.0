@@ -5857,6 +5857,53 @@ class AdminManager {
                 localStorage.setItem('cicr_requests', JSON.stringify(filtered));
             } catch { }
         }
+        // Record approver on local item borrow records
+        const currentAdminName = (() => {
+            try {
+                const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+                return u.name || u.username || 'Lab Administrator';
+            } catch { return 'Lab Administrator'; }
+        })();
+
+        if (reqSnapshot) {
+            const targetItem = inventory.find(i => String(i.id) === String(reqSnapshot.itemId));
+            if (targetItem) {
+                if (!targetItem.borrowedBy) targetItem.borrowedBy = [];
+                if (isReturnReq) {
+                    const bRec = targetItem.borrowedBy.find((b: any) =>
+                        (reqSnapshot.borrowId && (b.id === reqSnapshot.borrowId || b._id === reqSnapshot.borrowId)) ||
+                        (!b.returned && (b.userName === reqSnapshot.borrowerName || b.name === reqSnapshot.borrowerName || b.email === reqSnapshot.borrowerEmail))
+                    );
+                    if (bRec) {
+                        bRec.returned = true;
+                        bRec.status = 'RETURNED';
+                        bRec.returnDate = new Date().toISOString();
+                        bRec.adminApprovedBy = `${currentAdminName} (Admin)`;
+                        bRec.approvedBy = currentAdminName;
+                    }
+                } else {
+                    targetItem.borrowedBy.push({
+                        id: reqSnapshot.id || `borrow-${Date.now()}`,
+                        name: reqSnapshot.borrowerName,
+                        userName: reqSnapshot.borrowerName,
+                        borrowerName: reqSnapshot.borrowerName,
+                        roll: reqSnapshot.rollNumber,
+                        userRoll: reqSnapshot.rollNumber,
+                        email: reqSnapshot.borrowerEmail,
+                        userEmail: reqSnapshot.borrowerEmail,
+                        qty: reqSnapshot.quantity,
+                        purpose: reqSnapshot.purpose,
+                        date: new Date().toISOString(),
+                        dueDate: reqSnapshot.dueDate || null,
+                        adminApprovedBy: `${currentAdminName} (Admin)`,
+                        approvedBy: currentAdminName,
+                        reviewedBy: currentAdminName,
+                        status: 'BORROWED'
+                    });
+                }
+            }
+        }
+
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
 
@@ -5865,7 +5912,7 @@ class AdminManager {
             `${isReturnReq ? 'Return' : 'Component issue'} for "${reqSnapshot?.itemName || 'Hardware'}" approved.`,
             'success'
         );
-        DatabaseManager.addLog('approve', `Admin authorized ${isReturnReq ? 'return' : 'hardware issue'} for "${reqSnapshot?.itemName || 'Hardware'}"`);
+        DatabaseManager.addLog('approve', `Admin ${currentAdminName} authorized ${isReturnReq ? 'return' : 'hardware issue'} for "${reqSnapshot?.itemName || 'Hardware'}"`);
 
         // 2. Perform background sync to server
         try {
@@ -8204,6 +8251,14 @@ class HardwareLedgerManager {
                 console.warn('Backend /borrow/ledger unreachable, aggregating from inventory...', err);
             }
 
+            // Determine active administrator identity
+            const activeAdminName = (() => {
+                try {
+                    const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+                    return u.name || u.username || null;
+                } catch { return null; }
+            })();
+
             // Fallback / merge with local inventory records
             const localRecords: LedgerEntry[] = [];
             if (Array.isArray(inventory)) {
@@ -8211,7 +8266,10 @@ class HardwareLedgerManager {
                     (item.borrowedBy || []).forEach((b: any, idx: number) => {
                         const isReturned = b.returned || b.status === 'RETURNED';
                         const borrower = b.userName || b.borrowerName || b.name || 'Student Borrower';
-                        const adminApprover = b.adminApprovedBy || b.approvedBy || b.reviewedBy || 'SRVKILLER09 (Admin)';
+                        let adminApprover = b.adminApprovedBy || b.approvedBy || b.reviewedBy || '';
+                        if (!adminApprover || adminApprover.includes('SRVKILLER09')) {
+                            adminApprover = activeAdminName ? `${activeAdminName} (Admin)` : 'Lab Administrator';
+                        }
                         localRecords.push({
                             id: b.id || `local-${item.id}-${idx}`,
                             component_id: item.id,
@@ -8239,7 +8297,10 @@ class HardwareLedgerManager {
             const mergedMap = new Map<string, LedgerEntry>();
             fetchedData.forEach((r: any) => {
                 const borrower = r.borrower_name || r.users?.name || r.userName || 'Student Borrower';
-                const adminApprover = r.admin_approved_by || r.reviewed_by || r.adminName || r.operator_name || (r.users?.role === 'ADMIN' ? r.users.name : 'Lab Administrator');
+                let adminApprover = r.admin_approved_by || r.reviewed_by || r.adminName || r.operator_name || '';
+                if (!adminApprover || adminApprover.includes('SRVKILLER09')) {
+                    adminApprover = (r.users?.role === 'ADMIN' ? r.users.name : (activeAdminName ? `${activeAdminName} (Admin)` : 'Lab Administrator'));
+                }
                 mergedMap.set(String(r.id), {
                     ...r,
                     borrower_name: borrower,

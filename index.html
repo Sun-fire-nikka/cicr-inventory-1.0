@@ -219,9 +219,15 @@
                 <a class="nav-link" id="nav-inventory"><i data-lucide="layers"></i> Inventory</a>
                 <a class="nav-link" id="nav-add-item"><i data-lucide="plus-circle"></i> Add Component</a>
                 <a class="nav-link" id="nav-about"><i data-lucide="info"></i> About</a>
-                <a class="nav-link" id="nav-hardware-logs" style="display: none !important;" onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')"><i data-lucide="clipboard-list"></i> Component Logs</a>
-                <a class="nav-link" id="nav-developers" onclick="event.preventDefault(); window.switchSection && window.switchSection('developers-view')"><i data-lucide="terminal"></i> Developers</a>
-                <a class="nav-link" id="nav-profile" onclick="event.preventDefault(); window.switchSection && window.switchSection('profile-view')"><i data-lucide="user"></i> Profile</a>
+                <a class="nav-link" id="nav-hardware-logs" style="display: none !important;"
+                    onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')"><i
+                        data-lucide="clipboard-list"></i> Component Logs</a>
+                <a class="nav-link" id="nav-developers"
+                    onclick="event.preventDefault(); window.switchSection && window.switchSection('developers-view')"><i
+                        data-lucide="terminal"></i> Developers</a>
+                <a class="nav-link" id="nav-profile"
+                    onclick="event.preventDefault(); window.switchSection && window.switchSection('profile-view')"><i
+                        data-lucide="user"></i> Profile</a>
                 <a class="nav-link" id="nav-logs-bell" style="position: relative;">
                     <i data-lucide="bell"></i> History
                     <span class="notification-badge" id="nav-bell-badge"></span>
@@ -299,8 +305,9 @@
                             <span class="badge" id="admin-pending-badge"
                                 style="display: none; background: #ff007a; color: #ffffff; margin-left: auto; font-size: 7.5px; padding: 1px 5px; border-radius: 9999px; font-weight: 800;">0</span>
                         </a>
-                        <a href="#" class="sidebar-nav-link" id="side-nav-hardware-logs" data-target="hardware-logs-view"
-                            style="display: none !important;" onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')">
+                        <a href="#" class="sidebar-nav-link" id="side-nav-hardware-logs"
+                            data-target="hardware-logs-view" style="display: none !important;"
+                            onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')">
                             <i data-lucide="clipboard-check"></i>
                             <span>Component Logs</span>
                             <span class="badge" id="hw-logs-count-badge"
@@ -349,11 +356,13 @@
                         <i data-lucide="chevron-down" class="section-arrow"></i>
                     </div>
                     <div class="sidebar-nav-links">
-                        <a href="#" class="sidebar-nav-link" id="side-nav-developers" data-target="developers-view" onclick="event.preventDefault(); window.switchSection && window.switchSection('developers-view')">
+                        <a href="#" class="sidebar-nav-link" id="side-nav-developers" data-target="developers-view"
+                            onclick="event.preventDefault(); window.switchSection && window.switchSection('developers-view')">
                             <i data-lucide="code-2"></i>
                             <span>Meet The Developers</span>
                         </a>
-                        <a href="#" class="sidebar-nav-link" id="side-nav-profile" data-target="profile-view" onclick="event.preventDefault(); window.switchSection && window.switchSection('profile-view')">
+                        <a href="#" class="sidebar-nav-link" id="side-nav-profile" data-target="profile-view"
+                            onclick="event.preventDefault(); window.switchSection && window.switchSection('profile-view')">
                             <i data-lucide="user"></i>
                             <span>My Profile</span>
                         </a>
@@ -366,12 +375,12 @@
             <!-- Profile widget section at bottom -->
             <div class="sidebar-profile-box" id="sidebar-profile-widget">
                 <div class="profile-avatar" id="profile-avatar-initial">
-                    <span id="sidebar-avatar-initial-text">S</span>
+                    <span id="sidebar-avatar-initial-text">U</span>
                     <img id="sidebar-avatar-img" class="sidebar-avatar-img" src="" alt="Avatar" style="display: none;">
                 </div>
                 <div class="profile-info">
-                    <span class="profile-name" id="profile-username-display">SRVKILLER09</span>
-                    <span class="profile-role">ADMIN</span>
+                    <span class="profile-name" id="profile-username-display">User</span>
+                    <span class="profile-role">MEMBER</span>
                 </div>
                 <button type="button" class="profile-key-btn" id="sidebar-reset-pass-btn"
                     title="Reset / Change Password"
@@ -472,7 +481,9 @@
                             </div>
                         </div>
 
-                        <div class="dash-card card-yellow" id="dash-card-hardware-logs" style="display: none !important;" onclick="window.switchSection && window.switchSection('hardware-logs-view')">
+                        <div class="dash-card card-yellow" id="dash-card-hardware-logs"
+                            style="display: none !important;"
+                            onclick="window.switchSection && window.switchSection('hardware-logs-view')">
                             <div class="dash-card-header">
                                 <div class="dash-card-icon-wrapper">
                                     <i data-lucide="clipboard-check"></i>
@@ -481,14 +492,16 @@
                             </div>
                             <div class="dash-card-body">
                                 <h3 class="dash-card-title">Component Issue & Return Logs</h3>
-                                <p class="dash-card-desc">Detailed tabular ledger of who has issued and returned components, exact timestamps, and declared purposes.</p>
+                                <p class="dash-card-desc">Detailed tabular ledger of who has issued and returned
+                                    components, exact timestamps, and declared purposes.</p>
                             </div>
                             <div class="dash-card-footer">
                                 <i data-lucide="arrow-right"></i>
                             </div>
                         </div>
 
-                        <div class="dash-card card-cyan" id="dash-card-devs" onclick="window.switchSection && window.switchSection('developers-view')">
+                        <div class="dash-card card-cyan" id="dash-card-devs"
+                            onclick="window.switchSection && window.switchSection('developers-view')">
                             <div class="dash-card-header">
                                 <div class="dash-card-icon-wrapper">
                                     <i data-lucide="code-2"></i>
@@ -505,7 +518,8 @@
                             </div>
                         </div>
 
-                        <div class="dash-card card-purple" id="dash-card-profile" onclick="window.switchSection && window.switchSection('profile-view')">
+                        <div class="dash-card card-purple" id="dash-card-profile"
+                            onclick="window.switchSection && window.switchSection('profile-view')">
                             <div class="dash-card-header">
                                 <div class="dash-card-icon-wrapper">
                                     <i data-lucide="user-check"></i>
@@ -514,7 +528,8 @@
                             </div>
                             <div class="dash-card-body">
                                 <h3 class="dash-card-title">My Profile</h3>
-                                <p class="dash-card-desc">Inspect credentials, verified student tier, active hardware checkouts, and security controls.</p>
+                                <p class="dash-card-desc">Inspect credentials, verified student tier, active hardware
+                                    checkouts, and security controls.</p>
                             </div>
                             <div class="dash-card-footer">
                                 <i data-lucide="arrow-right"></i>
@@ -581,7 +596,8 @@
                                 <div class="stat-bubble-new" id="stat-filter-available" data-stock-filter="available"
                                     title="Click to show only available hardware">
                                     <div class="stat-bubble-header">
-                                        <span class="bubble-label"><i data-lucide="check-circle-2"></i> Vaults Available</span>
+                                        <span class="bubble-label"><i data-lucide="check-circle-2"></i> Vaults
+                                            Available</span>
                                         <span class="stat-click-hint">FILTER</span>
                                     </div>
                                     <span class="bubble-value text-cyan" id="stat-available">0</span>
@@ -736,10 +752,13 @@
                                     <div class="profile-hero-avatar-ring">
                                         <div class="profile-hero-avatar-frame" id="profile-hero-avatar-frame">
                                             <span class="profile-hero-avatar-initial" id="profile-hero-initial">U</span>
-                                            <img id="profile-hero-avatar-img" class="profile-hero-avatar-img" src="" alt="Profile Picture" style="display: none;">
+                                            <img id="profile-hero-avatar-img" class="profile-hero-avatar-img" src=""
+                                                alt="Profile Picture" style="display: none;">
                                         </div>
                                     </div>
-                                    <button type="button" class="profile-avatar-edit-badge" id="profile-avatar-edit-trigger" title="Change Profile Picture" onclick="window.openProfileEditModal && window.openProfileEditModal()">
+                                    <button type="button" class="profile-avatar-edit-badge"
+                                        id="profile-avatar-edit-trigger" title="Change Profile Picture"
+                                        onclick="window.openProfileEditModal && window.openProfileEditModal()">
                                         <i data-lucide="camera"></i>
                                     </button>
                                     <div class="profile-status-indicator" title="Active Session">
@@ -759,7 +778,8 @@
                                     <div class="profile-hero-sub-row">
                                         <span class="profile-hero-handle" id="profile-hero-handle">@username</span>
                                         <span class="profile-dot-sep">•</span>
-                                        <span class="profile-hero-email" id="profile-hero-email">student@mail.jiit.ac.in</span>
+                                        <span class="profile-hero-email"
+                                            id="profile-hero-email">student@mail.jiit.ac.in</span>
                                     </div>
                                     <div class="profile-hero-tags-row">
                                         <span class="profile-tag-pill" id="profile-hero-roll-tag">
@@ -775,8 +795,9 @@
                             </div>
 
                             <div class="profile-hero-actions">
-                                <button type="button" class="btn btn-primary profile-action-btn" id="profile-open-edit-btn"
-                                    title="Edit Profile Information & Picture" onclick="window.openProfileEditModal && window.openProfileEditModal()">
+                                <button type="button" class="btn btn-primary profile-action-btn"
+                                    id="profile-open-edit-btn" title="Edit Profile Information & Picture"
+                                    onclick="window.openProfileEditModal && window.openProfileEditModal()">
                                     <i data-lucide="user-cog"></i>
                                     <span>Edit Profile</span>
                                 </button>
@@ -804,7 +825,8 @@
                                         </div>
                                         <div>
                                             <h3 class="profile-card-heading">Member Details</h3>
-                                            <p class="profile-card-subheading">Verified student credentials & lab authorization</p>
+                                            <p class="profile-card-subheading">Verified student credentials & lab
+                                                authorization</p>
                                         </div>
                                     </div>
                                 </div>
@@ -815,7 +837,8 @@
                                         <span class="detail-val" id="cred-full-name">—</span>
                                     </div>
                                     <div class="profile-detail-row">
-                                        <span class="detail-label"><i data-lucide="hash"></i> Enrollment / Roll No.</span>
+                                        <span class="detail-label"><i data-lucide="hash"></i> Enrollment / Roll
+                                            No.</span>
                                         <span class="detail-val highlight-cyan font-mono" id="cred-roll-no">—</span>
                                     </div>
                                     <div class="profile-detail-row">
@@ -823,11 +846,11 @@
                                         <span class="detail-val font-mono" id="cred-username">—</span>
                                     </div>
                                     <div class="profile-detail-row">
-                                        <span class="detail-label"><i data-lucide="mail"></i> Campus Email</span>
+                                        <span class="detail-label"><i data-lucide="mail"></i> Email</span>
                                         <span class="detail-val font-mono" id="cred-email">—</span>
                                     </div>
                                     <div class="profile-detail-row">
-                                        <span class="detail-label"><i data-lucide="calendar"></i> Academic Batch</span>
+                                        <span class="detail-label"><i data-lucide="calendar"></i> Batch</span>
                                         <span class="detail-val highlight-purple" id="cred-batch">—</span>
                                     </div>
                                     <div class="profile-detail-row">
@@ -846,7 +869,8 @@
                                         </div>
                                         <div>
                                             <h3 class="profile-card-heading">Borrowed Components</h3>
-                                            <p class="profile-card-subheading">Hardware currently issued under your name</p>
+                                            <p class="profile-card-subheading">Hardware currently issued under your name
+                                            </p>
                                         </div>
                                     </div>
                                     <span class="profile-badge-counter" id="profile-active-loans-badge">0 Active</span>
@@ -1011,7 +1035,8 @@
                                                 LIVE 7D LEDGER
                                             </span>
                                         </div>
-                                        <p class="audit-hud-subtitle">Comprehensive operational audit stream stored in backend for 7 days with automated retention & live sync.</p>
+                                        <p class="audit-hud-subtitle">Comprehensive operational audit stream stored in
+                                            backend for 7 days with automated retention & live sync.</p>
                                     </div>
                                 </div>
                                 <div class="admin-audit-hud-right">
@@ -1019,16 +1044,20 @@
                                         <span class="audit-stat-pill-num" id="admin-audit-count-tag">0</span>
                                         <span class="audit-stat-pill-lbl">7D EVENTS</span>
                                     </div>
-                                    <button class="btn btn-primary btn-sm admin-btn-action btn-show-7days" id="admin-audit-show-7days-btn" title="Show complete logs of all 7 days">
+                                    <button class="btn btn-primary btn-sm admin-btn-action btn-show-7days"
+                                        id="admin-audit-show-7days-btn" title="Show complete logs of all 7 days">
                                         <i data-lucide="calendar-range"></i> Show Last 7 Days Logs
                                     </button>
-                                    <button class="btn btn-secondary btn-sm admin-btn-action" id="admin-audit-export-btn" title="Export 7-Day Audit Log to CSV">
+                                    <button class="btn btn-secondary btn-sm admin-btn-action"
+                                        id="admin-audit-export-btn" title="Export 7-Day Audit Log to CSV">
                                         <i data-lucide="download"></i> Export CSV
                                     </button>
-                                    <button class="btn btn-secondary btn-sm admin-btn-action" id="admin-audit-cleanup-btn" title="Enforce 7-Day Backend Retention Purge">
+                                    <button class="btn btn-secondary btn-sm admin-btn-action"
+                                        id="admin-audit-cleanup-btn" title="Enforce 7-Day Backend Retention Purge">
                                         <i data-lucide="shield-alert"></i> Retention Sync
                                     </button>
-                                    <button class="btn btn-secondary btn-sm admin-btn-action" id="admin-audit-refresh-btn" title="Refresh 7-Day Audit Logs">
+                                    <button class="btn btn-secondary btn-sm admin-btn-action"
+                                        id="admin-audit-refresh-btn" title="Refresh 7-Day Audit Logs">
                                         <i data-lucide="refresh-cw"></i> Refresh
                                     </button>
                                 </div>
@@ -1036,36 +1065,48 @@
 
                             <!-- Filter & Search Toolbar (Primary Time Window & Query) -->
                             <div class="admin-audit-toolbar">
-                                <div class="admin-audit-range-pills" id="admin-audit-range-pills" role="tablist" aria-label="Audit Log Time Window">
-                                    <button class="audit-range-pill active" data-range-days="7" id="range-pill-7d" title="Show complete 7-day activity window" role="tab" aria-selected="true">
+                                <div class="admin-audit-range-pills" id="admin-audit-range-pills" role="tablist"
+                                    aria-label="Audit Log Time Window">
+                                    <button class="audit-range-pill active" data-range-days="7" id="range-pill-7d"
+                                        title="Show complete 7-day activity window" role="tab" aria-selected="true">
                                         <i data-lucide="calendar"></i>
                                         <span>7 Days (All)</span>
                                     </button>
-                                    <button class="audit-range-pill" data-range-days="3" id="range-pill-3d" title="Show last 3 days activity" role="tab" aria-selected="false">
+                                    <button class="audit-range-pill" data-range-days="3" id="range-pill-3d"
+                                        title="Show last 3 days activity" role="tab" aria-selected="false">
                                         <i data-lucide="clock"></i>
                                         <span>Last 3 Days</span>
                                     </button>
-                                    <button class="audit-range-pill" data-range-days="1" id="range-pill-1d" title="Show today's 24h activity" role="tab" aria-selected="false">
+                                    <button class="audit-range-pill" data-range-days="1" id="range-pill-1d"
+                                        title="Show today's 24h activity" role="tab" aria-selected="false">
                                         <i data-lucide="zap"></i>
                                         <span>Today (24h)</span>
                                     </button>
                                 </div>
                                 <div class="admin-search-wrapper admin-audit-search-wrap">
                                     <i data-lucide="search"></i>
-                                    <input type="text" id="admin-audit-search" placeholder="Search by action, description, actor, or item...">
-                                    <button class="audit-search-clear" id="admin-audit-search-clear" style="display:none;" title="Clear search"><i data-lucide="x"></i></button>
+                                    <input type="text" id="admin-audit-search"
+                                        placeholder="Search by action, description, actor, or item...">
+                                    <button class="audit-search-clear" id="admin-audit-search-clear"
+                                        style="display:none;" title="Clear search"><i data-lucide="x"></i></button>
                                 </div>
                             </div>
 
                             <!-- Audit Category Filter Row -->
                             <div class="admin-audit-categories-row">
                                 <div class="admin-audit-filter-pills" id="admin-audit-pills">
-                                    <button class="audit-pill active" data-audit-cat="all">ALL <span class="pill-cnt" id="cat-cnt-all">0</span></button>
-                                    <button class="audit-pill" data-audit-cat="auth">AUTH & SECURITY <span class="pill-cnt" id="cat-cnt-auth">0</span></button>
-                                    <button class="audit-pill" data-audit-cat="inventory">INVENTORY <span class="pill-cnt" id="cat-cnt-inventory">0</span></button>
-                                    <button class="audit-pill" data-audit-cat="hardware">HARDWARE <span class="pill-cnt" id="cat-cnt-hardware">0</span></button>
-                                    <button class="audit-pill" data-audit-cat="loans">LOANS & RETURNS <span class="pill-cnt" id="cat-cnt-loans">0</span></button>
-                                    <button class="audit-pill" data-audit-cat="system">SYSTEM <span class="pill-cnt" id="cat-cnt-system">0</span></button>
+                                    <button class="audit-pill active" data-audit-cat="all">ALL <span class="pill-cnt"
+                                            id="cat-cnt-all">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="auth">AUTH & SECURITY <span
+                                            class="pill-cnt" id="cat-cnt-auth">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="inventory">INVENTORY <span
+                                            class="pill-cnt" id="cat-cnt-inventory">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="hardware">HARDWARE <span class="pill-cnt"
+                                            id="cat-cnt-hardware">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="loans">LOANS & RETURNS <span
+                                            class="pill-cnt" id="cat-cnt-loans">0</span></button>
+                                    <button class="audit-pill" data-audit-cat="system">SYSTEM <span class="pill-cnt"
+                                            id="cat-cnt-system">0</span></button>
                                 </div>
                             </div>
 
@@ -1097,7 +1138,9 @@
                                 <div>
                                     <span class="hw-ledger-tag">ADMIN AUDIT REGISTRY</span>
                                     <h1 class="hw-ledger-title">Component Issue & Return Ledger</h1>
-                                    <p class="hw-ledger-desc">Official administrative registry tracking component checkouts, verified borrower credentials, authorizing administrator, timestamps, and return verification.</p>
+                                    <p class="hw-ledger-desc">Official administrative registry tracking component
+                                        checkouts, verified borrower credentials, authorizing administrator, timestamps,
+                                        and return verification.</p>
                                 </div>
                             </div>
                             <div class="hw-ledger-stats-bar">
@@ -1120,25 +1163,29 @@
                         <div class="hw-ledger-toolbar glass">
                             <div class="hw-ledger-search-box">
                                 <i data-lucide="search"></i>
-                                <input type="text" id="hw-ledger-search" placeholder="Search by component, borrower name, roll number, admin supervisor, or purpose...">
+                                <input type="text" id="hw-ledger-search"
+                                    placeholder="Search by component, borrower name, roll number, admin supervisor, or purpose...">
                             </div>
 
                             <div class="hw-ledger-filters">
                                 <button type="button" class="hw-filter-btn active" data-filter="all" id="hw-filter-all">
                                     <span>All Events</span>
                                 </button>
-                                <button type="button" class="hw-filter-btn" data-filter="borrowed" id="hw-filter-borrowed">
+                                <button type="button" class="hw-filter-btn" data-filter="borrowed"
+                                    id="hw-filter-borrowed">
                                     <span class="status-indicator-dot dot-yellow"></span>
                                     <span>Currently Issued</span>
                                 </button>
-                                <button type="button" class="hw-filter-btn" data-filter="returned" id="hw-filter-returned">
+                                <button type="button" class="hw-filter-btn" data-filter="returned"
+                                    id="hw-filter-returned">
                                     <span class="status-indicator-dot dot-green"></span>
                                     <span>Returned</span>
                                 </button>
                             </div>
 
                             <div class="hw-ledger-actions">
-                                <button type="button" class="hw-toolbar-btn" id="hw-ledger-refresh-btn" title="Refresh Live Ledger">
+                                <button type="button" class="hw-toolbar-btn" id="hw-ledger-refresh-btn"
+                                    title="Refresh Live Ledger">
                                     <i data-lucide="refresh-cw"></i>
                                     <span>Sync</span>
                                 </button>
@@ -1226,7 +1273,8 @@
                 <div class="audit-json-box">
                     <div class="audit-json-header">
                         <span><i data-lucide="code"></i> RAW TELEMETRY PAYLOAD</span>
-                        <button class="btn btn-secondary btn-xs" id="audit-copy-json-btn"><i data-lucide="copy"></i> Copy JSON</button>
+                        <button class="btn btn-secondary btn-xs" id="audit-copy-json-btn"><i data-lucide="copy"></i>
+                            Copy JSON</button>
                     </div>
                     <pre class="audit-json-pre" id="audit-modal-json">{}</pre>
                 </div>
@@ -1282,7 +1330,8 @@
                 <button class="btn btn-secondary btn-return" id="btn-return" style="display: none;">
                     <i data-lucide="corner-up-left"></i> Return Item
                 </button>
-                <button class="btn btn-secondary btn-bulk-return-trigger" id="btn-modal-bulk-return" style="display: none;" title="Return all components issued to you in 1 go">
+                <button class="btn btn-secondary btn-bulk-return-trigger" id="btn-modal-bulk-return"
+                    style="display: none;" title="Return all components issued to you in 1 go">
                     <i data-lucide="layers"></i> Return in 1 Go
                 </button>
                 <button class="btn btn-primary btn-borrow" id="btn-borrow">
@@ -1310,10 +1359,9 @@
                         <i data-lucide="alert-triangle"></i>
                     </div>
                     <div class="delete-warning-text">
-                        <strong id="delete-item-target-name"
-                            style="font-size: 14px; display: block;">Component Name</strong>
-                        <span
-                            style="font-size: 12px; line-height: 1.4; display: block; margin-top: 4px;">The
+                        <strong id="delete-item-target-name" style="font-size: 14px; display: block;">Component
+                            Name</strong>
+                        <span style="font-size: 12px; line-height: 1.4; display: block; margin-top: 4px;">The
                             item record will be deleted from the database. A telemetry alert will be dispatched to
                             superadmins.</span>
                     </div>
@@ -1410,7 +1458,8 @@
                             <i data-lucide="calendar"></i>
                         </div>
                         <input type="date" id="borrow-due-date" class="aesthetic-date-input" required>
-                        <button type="button" class="btn-calendar-trigger" id="btn-calendar-picker" title="Open Interactive Calendar" aria-label="Open Calendar Picker">
+                        <button type="button" class="btn-calendar-trigger" id="btn-calendar-picker"
+                            title="Open Interactive Calendar" aria-label="Open Calendar Picker">
                             <i data-lucide="calendar-days"></i>
                             <span class="calendar-btn-label">Pick Date</span>
                         </button>
@@ -1681,7 +1730,9 @@
     <!-- Edit Profile Modal (Synchronized with Backend & Institutional Security Policy) -->
     <div class="modal-overlay" id="edit-profile-modal">
         <div class="modal-content glass reset-password-card">
-            <button type="button" class="close-modal" id="close-edit-profile-modal" onclick="window.closeProfileEditModal && window.closeProfileEditModal()"><i data-lucide="x"></i></button>
+            <button type="button" class="close-modal" id="close-edit-profile-modal"
+                onclick="window.closeProfileEditModal && window.closeProfileEditModal()"><i
+                    data-lucide="x"></i></button>
 
             <div class="modal-header reset-header-cyber">
                 <div class="reset-cyber-badge">
@@ -1699,7 +1750,8 @@
                         <div class="edit-avatar-ring">
                             <div class="edit-avatar-frame" id="edit-avatar-preview-frame">
                                 <span class="edit-avatar-initial" id="edit-avatar-initial-preview">U</span>
-                                <img id="edit-avatar-img-preview" class="edit-avatar-img" src="" alt="Avatar Preview" style="display: none;">
+                                <img id="edit-avatar-img-preview" class="edit-avatar-img" src="" alt="Avatar Preview"
+                                    style="display: none;">
                             </div>
                         </div>
                     </div>
@@ -1708,7 +1760,8 @@
                             <i data-lucide="upload"></i>
                             <span>Upload Picture</span>
                         </label>
-                        <input type="file" id="edit-avatar-file-input" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                        <input type="file" id="edit-avatar-file-input" accept="image/png, image/jpeg, image/webp"
+                            style="display: none;">
                         <button type="button" class="btn-avatar-remove" id="edit-avatar-remove-btn">
                             <i data-lucide="trash-2"></i>
                             <span>Reset to Initial</span>
@@ -1721,12 +1774,13 @@
                 <div class="form-grid-2col">
                     <div class="form-group">
                         <div class="label-row-cyber">
-                            <label for="edit-profile-email">Campus Email</label>
+                            <label for="edit-profile-email">Email</label>
                             <span class="cyber-badge-locked"><i data-lucide="lock"></i> LOCKED</span>
                         </div>
                         <div class="input-icon-wrapper input-locked">
                             <i data-lucide="mail" class="input-icon"></i>
-                            <input type="text" id="edit-profile-email" readonly disabled value="student@mail.jiit.ac.in" tabindex="-1">
+                            <input type="text" id="edit-profile-email" readonly disabled value="student@mail.jiit.ac.in"
+                                tabindex="-1">
                         </div>
                     </div>
 
@@ -1737,7 +1791,8 @@
                         </div>
                         <div class="input-icon-wrapper input-locked">
                             <i data-lucide="hash" class="input-icon"></i>
-                            <input type="text" id="edit-profile-roll" readonly disabled value="9922103xxx" tabindex="-1">
+                            <input type="text" id="edit-profile-roll" readonly disabled value="9922103xxx"
+                                tabindex="-1">
                         </div>
                     </div>
                 </div>
@@ -1762,7 +1817,7 @@
                         </div>
                         <div class="input-icon-wrapper">
                             <i data-lucide="at-sign" class="input-icon"></i>
-                            <input type="text" id="edit-profile-username" placeholder="e.g. srvkiller09">
+                            <input type="text" id="edit-profile-username" placeholder="e.g. alex_rover">
                         </div>
                     </div>
 
@@ -1781,7 +1836,8 @@
                 <div class="auth-error-msg" id="edit-profile-error" style="display: none;"></div>
 
                 <div class="modal-footer" id="edit-profile-modal-footer">
-                    <button type="button" class="btn btn-secondary" id="cancel-edit-profile-btn" onclick="window.closeProfileEditModal && window.closeProfileEditModal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-profile-btn"
+                        onclick="window.closeProfileEditModal && window.closeProfileEditModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="save-edit-profile-btn">
                         <i data-lucide="check"></i>
                         <span>Save & Sync</span>
@@ -1863,7 +1919,7 @@
     <div class="modal-overlay" id="bulk-return-modal">
         <div class="modal-content glass bulk-return-modal-card" style="max-width: 620px; width: 95%;">
             <button type="button" class="close-modal" id="close-bulk-return-modal"><i data-lucide="x"></i></button>
-            
+
             <div class="modal-header">
                 <div class="bulk-return-badge">
                     <span class="pulse-beacon-dot"></span>
@@ -1871,7 +1927,8 @@
                     <span>CONSOLIDATED HARDWARE RETURN MANIFEST</span>
                 </div>
                 <h2>Return Everything in 1 Go</h2>
-                <p>Review all components currently issued to you and select return quantities in a single unified dispatch.</p>
+                <p>Review all components currently issued to you and select return quantities in a single unified
+                    dispatch.</p>
             </div>
 
             <!-- Borrower Summary Card -->
@@ -1891,10 +1948,12 @@
             <div class="bulk-return-toolbar">
                 <span class="bulk-toolbar-title"><i data-lucide="clipboard-list"></i> ACTIVE COMPONENT LOANS</span>
                 <div class="bulk-toolbar-actions">
-                    <button type="button" class="btn-bulk-shortcut" id="btn-bulk-return-all-100" title="Set all return quantities to 100%">
+                    <button type="button" class="btn-bulk-shortcut" id="btn-bulk-return-all-100"
+                        title="Set all return quantities to 100%">
                         <i data-lucide="check-check"></i> Return All (100%)
                     </button>
-                    <button type="button" class="btn-bulk-shortcut" id="btn-bulk-reset-zero" title="Reset return quantities to 0">
+                    <button type="button" class="btn-bulk-shortcut" id="btn-bulk-reset-zero"
+                        title="Reset return quantities to 0">
                         <i data-lucide="rotate-ccw"></i> Reset
                     </button>
                 </div>
@@ -1917,13 +1976,16 @@
                 </div>
                 <div class="bulk-summary-notice">
                     <i data-lucide="shield-alert"></i>
-                    <span><strong>Physical Verification Notice:</strong> Your return request will dispatch immediately to the Admin Portal. An administrator will physically inspect the hardware at the CICR Lab to check items back into stock.</span>
+                    <span><strong>Physical Verification Notice:</strong> Your return request will dispatch immediately
+                        to the Admin Portal. An administrator will physically inspect the hardware at the CICR Lab to
+                        check items back into stock.</span>
                 </div>
             </div>
 
             <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 10px; justify-content: flex-end;">
                 <button type="button" class="btn btn-secondary" id="btn-cancel-bulk-return">Cancel</button>
-                <button type="button" class="btn btn-primary btn-cyber-pulse" id="btn-submit-bulk-return" style="display: inline-flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn btn-primary btn-cyber-pulse" id="btn-submit-bulk-return"
+                    style="display: inline-flex; align-items: center; gap: 8px;">
                     <i data-lucide="corner-up-left"></i> Submit Return to Admin
                 </button>
             </div>

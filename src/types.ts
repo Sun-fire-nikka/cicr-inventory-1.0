@@ -1,13 +1,23 @@
 export interface BorrowRecord {
     id?: string;
     name: string;
+    userName?: string;
+    borrowerName?: string;
     roll: string;
+    userRoll?: string;
+    email?: string;
+    userEmail?: string;
     qty: number;
     purpose: string;
     date: string;
     dueDate?: string;
     returned?: boolean;
     returnedAt?: string;
+    returnDate?: string;
+    status?: string;
+    adminApprovedBy?: string;
+    approvedBy?: string;
+    reviewedBy?: string;
 }
 
 export interface RequestRecord {
