@@ -4222,8 +4222,101 @@ class AuthManager {
 
         this.updateAdminVisibility(ModalManager.getCurrentRole());
         PasswordResetManager.init();
+        this.setupInactivityTracker();
         this.setupEventListeners();
         this.checkAuth();
+    }
+
+    // Inactivity Tracking Configuration: 15-minute persistence and timeout rule
+    private static readonly INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutes (900,000 ms)
+    private static lastActivityRecordedAt = 0;
+    private static inactivityTimer: any = null;
+
+    private static recordActivity(immediate: boolean = false) {
+        const now = Date.now();
+        // Throttle updates unless immediate (e.g. login, unload, tab switch)
+        if (immediate || now - this.lastActivityRecordedAt > 5000) {
+            this.lastActivityRecordedAt = now;
+            try {
+                localStorage.setItem('cicr_last_active', now.toString());
+            } catch { }
+        }
+    }
+
+    private static checkInactivityExpired(): boolean {
+        const token = localStorage.getItem('cicr_token');
+        if (!token) return false;
+
+        const lastActiveStr = localStorage.getItem('cicr_last_active');
+        if (!lastActiveStr) {
+            // First time or legacy session with token: initialize activity timestamp now
+            this.recordActivity(true);
+            return false;
+        }
+
+        const lastActive = parseInt(lastActiveStr, 10);
+        if (isNaN(lastActive) || lastActive <= 0) return false;
+
+        const elapsed = Date.now() - lastActive;
+        return elapsed > this.INACTIVITY_LIMIT_MS;
+    }
+
+    private static handleInactivityTimeout() {
+        console.warn('Session expired due to 15 minutes of inactivity.');
+        this.handleLogout(true);
+    }
+
+    private static setupInactivityTracker() {
+        const onUserActivity = () => {
+            if (localStorage.getItem('cicr_token')) {
+                this.recordActivity(false);
+            }
+        };
+
+        // Window & document activity triggers
+        window.addEventListener('pointerdown', onUserActivity, { passive: true });
+        window.addEventListener('keydown', onUserActivity, { passive: true });
+        window.addEventListener('scroll', onUserActivity, { passive: true });
+        window.addEventListener('touchstart', onUserActivity, { passive: true });
+
+        // Record timestamp when page unloads or is hidden (closing browser or switching tabs)
+        window.addEventListener('beforeunload', () => {
+            if (localStorage.getItem('cicr_token')) {
+                this.recordActivity(true);
+            }
+        });
+        window.addEventListener('pagehide', () => {
+            if (localStorage.getItem('cicr_token')) {
+                this.recordActivity(true);
+            }
+        });
+
+        // Check timeout when user returns to this tab
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                if (localStorage.getItem('cicr_token')) {
+                    if (this.checkInactivityExpired()) {
+                        this.handleInactivityTimeout();
+                    } else {
+                        this.recordActivity(true);
+                    }
+                }
+            } else if (document.visibilityState === 'hidden') {
+                if (localStorage.getItem('cicr_token')) {
+                    this.recordActivity(true);
+                }
+            }
+        });
+
+        // Background interval check every 15 seconds while tab is open
+        if (this.inactivityTimer) clearInterval(this.inactivityTimer);
+        this.inactivityTimer = setInterval(() => {
+            if (localStorage.getItem('cicr_token')) {
+                if (this.checkInactivityExpired()) {
+                    this.handleInactivityTimeout();
+                }
+            }
+        }, 15000);
     }
 
     private static setupEventListeners() {
@@ -4340,6 +4433,15 @@ class AuthManager {
             this.showLoginOverlay();
             return;
         }
+
+        // Check if user session has been inactive or away for more than 15 minutes
+        if (this.checkInactivityExpired()) {
+            this.handleInactivityTimeout();
+            return;
+        }
+
+        // Within 15 minutes: active session preserved, refresh activity timestamp
+        this.recordActivity(true);
 
         // Optimistic instant session activation: eliminates auth modal flash on page reload
         const cachedUserStr = localStorage.getItem('cicr_user');
@@ -4473,6 +4575,7 @@ class AuthManager {
     }
 
     private static loginSuccess(username: string, role: string = 'MEMBER', _userObj?: any) {
+        this.recordActivity(true);
         let effectiveRole: 'ADMIN' | 'MEMBER' = 'MEMBER';
         const normEmail = (_userObj?.email || '').toLowerCase().trim();
 
@@ -4805,11 +4908,12 @@ class AuthManager {
         }
     }
 
-    private static handleLogout() {
+    private static handleLogout(isTimeout: boolean = false) {
         localStorage.removeItem('cicr_auth');
         localStorage.removeItem('cicr_role');
         localStorage.removeItem('cicr_token');
         localStorage.removeItem('cicr_user');
+        localStorage.removeItem('cicr_last_active');
         sessionStorage.clear();
 
         this.updateAdminVisibility('MEMBER');
@@ -4830,6 +4934,14 @@ class AuthManager {
 
         this.loginForm.reset();
         this.loginErr.style.display = 'none';
+
+        if (isTimeout) {
+            setTimeout(() => {
+                if (typeof ToastManager !== 'undefined' && ToastManager.show) {
+                    ToastManager.show('Session Expired', 'You were away or inactive for more than 15 minutes. Please sign in again.', 'warning');
+                }
+            }, 120);
+        }
     }
 }
 
@@ -7434,6 +7546,16 @@ class ProfileViewManager {
         const heroEmail = document.getElementById('profile-hero-email');
         if (heroEmail) {
             heroEmail.textContent = email;
+        }
+
+        const heroRollTag = document.getElementById('profile-hero-roll-text');
+        if (heroRollTag) {
+            heroRollTag.textContent = roll ? `Roll No: ${roll}` : 'Roll: JIIT Member';
+        }
+
+        const heroBatchTag = document.getElementById('profile-hero-batch-text');
+        if (heroBatchTag) {
+            heroBatchTag.textContent = batch ? `Batch: ${batch}` : 'Batch: Active';
         }
 
         // Role & Status Badges
