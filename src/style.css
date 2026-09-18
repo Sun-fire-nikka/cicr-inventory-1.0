@@ -7123,6 +7123,8 @@ body.theme-pink .theme-btn.active {
     z-index: 2;
     opacity: 0;
     transition: opacity 0.8s ease;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 body.theme-sakura #sakura-canvas,
