@@ -410,8 +410,13 @@ class Background3D {
         requestAnimationFrame(() => this.animate());
         if (typeof document !== 'undefined' && document.hidden) return;
 
-        const isScrolling = typeof document !== 'undefined' && document.body.classList.contains('is-scrolling');
-        if (this.particles && !isScrolling) {
+        const isScrolling = !!(window as any).isUserScrolling;
+        if (isScrolling) {
+            // Pause 3D particle updates and scene re-renders during active scrolling to keep 60fps buttery smooth
+            return;
+        }
+
+        if (this.particles) {
             const positions = this.particles.geometry.attributes.position.array as Float32Array;
             const particleCount = positions.length / 3;
 
@@ -666,7 +671,11 @@ class DatabaseManager {
 
             if (window.dashboard && dbItems.length > 0) {
                 window.dashboard.renderStats();
-                window.dashboard.renderInventory();
+                if ((window as any).isUserScrolling) {
+                    (window as any)._pendingDashboardRender = true;
+                } else {
+                    window.dashboard.renderInventory();
+                }
             }
         } catch (err) {
             console.error('Realtime Supabase sync failed:', err);
@@ -837,14 +846,15 @@ class DatabaseManager {
 
     private static isSyncInProgress = false;
 
-    static startAutoSync(intervalMs = 8000) {
+    static startAutoSync(intervalMs = 45000) {
         if ((window as any)._cicrAutoSyncTimer) {
             clearInterval((window as any)._cicrAutoSyncTimer);
         }
         (window as any)._cicrAutoSyncTimer = setInterval(async () => {
-            // Do not consume bandwidth or hammer backend when browser tab is hidden/minimized
+            // Do not hammer backend when tab is hidden or user is actively scrolling
             if (typeof document !== 'undefined' && document.hidden) return;
             if (this.isSyncInProgress) return;
+            if ((window as any).isUserScrolling) return;
 
             this.isSyncInProgress = true;
             try {
@@ -7597,7 +7607,19 @@ class ProfileViewManager {
         const role = (user.role || localStorage.getItem('cicr_user_role') || 'MEMBER').toUpperCase();
         const roll = (user.roll_number || user.roll || '').trim();
         const email = (user.email || (roll ? `${roll}@mail.jiit.ac.in` : '')).trim() || 'operator@mail.jiit.ac.in';
-        const batch = (user.batch || (roll && roll.length >= 2 ? `20${roll.substring(0, 2)}-20${parseInt(roll.substring(0, 2), 10) + 4}` : '2023-2027')).trim();
+        const extractSafeBatch = (rollVal: string, existingBatch?: string): string => {
+            if (existingBatch && existingBatch.trim() && !existingBatch.includes('NaN')) {
+                return existingBatch.trim();
+            }
+            const clean = (rollVal || '').trim();
+            const digits = clean.replace(/\D/g, '');
+            if (digits.length >= 2) {
+                const yr = parseInt(digits.substring(0, 2), 10);
+                if (yr >= 18 && yr <= 32) return `20${yr}-20${yr + 4}`;
+            }
+            return '2023-2027';
+        };
+        const batch = extractSafeBatch(roll, user.batch);
         const userId = user.id ? `#${String(user.id).substring(0, 8)}` : `#${roll || 'JIIT-09'}`;
 
         // Hero initials & avatar image sync
@@ -8059,7 +8081,19 @@ class ProfileEditManager {
         const username = (user.username || (authName ? authName.toLowerCase() : '')).trim();
         const roll = (user.roll_number || user.roll || '').trim();
         const email = (user.email || (roll ? `${roll}@mail.jiit.ac.in` : '')).trim();
-        const batch = (user.batch || (roll && roll.length >= 2 ? `20${roll.substring(0, 2)}-20${parseInt(roll.substring(0, 2), 10) + 4}` : '2023-2027')).trim();
+        const extractSafeBatch = (rollVal: string, existingBatch?: string): string => {
+            if (existingBatch && existingBatch.trim() && !existingBatch.includes('NaN')) {
+                return existingBatch.trim();
+            }
+            const clean = (rollVal || '').trim();
+            const digits = clean.replace(/\D/g, '');
+            if (digits.length >= 2) {
+                const yr = parseInt(digits.substring(0, 2), 10);
+                if (yr >= 18 && yr <= 32) return `20${yr}-20${yr + 4}`;
+            }
+            return '2023-2027';
+        };
+        const batch = extractSafeBatch(roll, user.batch);
 
         if (nameInput) nameInput.value = name;
         if (usernameInput) usernameInput.value = username;
@@ -8842,7 +8876,7 @@ document.addEventListener('DOMContentLoaded', () => {
     AdminManager.init();
     AdminManager.loadHardwareRequests(true);
     DatabaseManager.updateNotificationBadges();
-    DatabaseManager.startAutoSync(8000);
+    DatabaseManager.startAutoSync(45000);
     lucide.createIcons();
 
     // Global mouse-coordinate spotlight tracker for interactive cyber gridlines (requestAnimationFrame throttled)
@@ -8891,18 +8925,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // Throttled high-performance scroll state manager to eliminate scroll jank & hover hit-tests
+    // High-performance scroll state manager without DOM class thrashing
     let scrollDebounceTimer: number | undefined;
     window.addEventListener('scroll', () => {
-        if (!document.body.classList.contains('is-scrolling')) {
-            document.body.classList.add('is-scrolling');
-        }
+        (window as any).isUserScrolling = true;
         if (scrollDebounceTimer !== undefined) {
             clearTimeout(scrollDebounceTimer);
         }
         scrollDebounceTimer = window.setTimeout(() => {
-            document.body.classList.remove('is-scrolling');
-        }, 120);
+            (window as any).isUserScrolling = false;
+            if ((window as any)._pendingDashboardRender && window.dashboard) {
+                (window as any)._pendingDashboardRender = false;
+                window.dashboard.renderStats();
+                window.dashboard.renderInventory();
+            }
+        }, 150);
     }, { passive: true });
 
     // IntersectionObserver scroll reveal triggers matching Pinterest visual transition
