@@ -6555,26 +6555,75 @@ body.theme-pink .app-sidebar::before {
     flex-shrink: 0;
 }
 
+.sidebar-action-btn.notif-sidebar-btn {
+    min-height: 46px;
+    height: auto;
+    padding: 6px 12px;
+}
+
+.sidebar-action-btn .btn-text-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1px;
+    min-width: 0;
+    line-height: 1.15;
+}
+
 .sidebar-action-btn .btn-text {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.6px;
-    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-main);
     white-space: nowrap;
-    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: color 0.2s ease;
 }
 
 .sidebar-action-btn .btn-text-main {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.6px;
-    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-main);
     white-space: nowrap;
-    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: color 0.2s ease;
+}
+
+.sidebar-action-btn .btn-subtext {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+}
+
+.sidebar-action-btn .btn-subtext.subtext-pending {
+    color: #f59e0b !important;
+}
+
+.sidebar-action-btn .btn-subtext.subtext-approved {
+    color: #10b981 !important;
+}
+
+.sidebar-action-btn .btn-subtext.subtext-rejected {
+    color: #ef4444 !important;
+}
+
+.sidebar-action-btn .btn-subtext.subtext-active {
+    color: #00f0ff !important;
+}
+
+.sidebar-action-btn .btn-subtext.subtext-neutral {
+    color: var(--text-muted) !important;
 }
 
 .sidebar-action-btn:hover .btn-icon,
@@ -15400,12 +15449,36 @@ body:not(.user-is-admin) #btn-modal-delete-item {
     background: linear-gradient(90deg, rgba(168, 85, 247, 0.06) 0%, rgba(15, 23, 42, 0.65) 100%);
 }
 
+.notif-card.card-request-pending {
+    border-left: 3px solid #f59e0b;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.65) 100%);
+}
+
 .notif-card.card-request-approved {
-    border-left-color: #10b981;
+    border-left: 3px solid #10b981;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.65) 100%);
 }
 
 .notif-card.card-request-rejected {
-    border-left-color: #ef4444;
+    border-left: 3px solid #ef4444;
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.65) 100%);
+}
+
+.card-request-admin-note {
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.4;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
+.card-request-admin-note.note-approved {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #6ee7b7;
 }
 
 .notif-card-header {
@@ -17217,6 +17290,36 @@ body.theme-sakura .sidebar-action-btn .btn-text-main,
     font-weight: 700 !important;
 }
 
+body.theme-sakura .sidebar-action-btn .btn-subtext.subtext-pending,
+[data-theme="sakura"] .sidebar-action-btn .btn-subtext.subtext-pending {
+    color: #b45309 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-sakura .sidebar-action-btn .btn-subtext.subtext-approved,
+[data-theme="sakura"] .sidebar-action-btn .btn-subtext.subtext-approved {
+    color: #047857 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-sakura .sidebar-action-btn .btn-subtext.subtext-rejected,
+[data-theme="sakura"] .sidebar-action-btn .btn-subtext.subtext-rejected {
+    color: #b91c1c !important;
+    font-weight: 700 !important;
+}
+
+body.theme-sakura .sidebar-action-btn .btn-subtext.subtext-active,
+[data-theme="sakura"] .sidebar-action-btn .btn-subtext.subtext-active {
+    color: #be185d !important;
+    font-weight: 700 !important;
+}
+
+body.theme-sakura .sidebar-action-btn .btn-subtext.subtext-neutral,
+[data-theme="sakura"] .sidebar-action-btn .btn-subtext.subtext-neutral {
+    color: #831843 !important;
+    font-weight: 600 !important;
+}
+
 body.theme-sakura .sidebar-action-btn .btn-icon,
 [data-theme="sakura"] .sidebar-action-btn .btn-icon {
     color: #be185d !important;
@@ -17243,6 +17346,36 @@ body.theme-light .sidebar-action-btn .btn-text-main,
     font-weight: 700 !important;
 }
 
+body.theme-light .sidebar-action-btn .btn-subtext.subtext-pending,
+[data-theme="light"] .sidebar-action-btn .btn-subtext.subtext-pending {
+    color: #d97706 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-light .sidebar-action-btn .btn-subtext.subtext-approved,
+[data-theme="light"] .sidebar-action-btn .btn-subtext.subtext-approved {
+    color: #059669 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-light .sidebar-action-btn .btn-subtext.subtext-rejected,
+[data-theme="light"] .sidebar-action-btn .btn-subtext.subtext-rejected {
+    color: #dc2626 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-light .sidebar-action-btn .btn-subtext.subtext-active,
+[data-theme="light"] .sidebar-action-btn .btn-subtext.subtext-active {
+    color: #0284c7 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-light .sidebar-action-btn .btn-subtext.subtext-neutral,
+[data-theme="light"] .sidebar-action-btn .btn-subtext.subtext-neutral {
+    color: #64748b !important;
+    font-weight: 600 !important;
+}
+
 body.theme-light .sidebar-action-btn .btn-icon,
 [data-theme="light"] .sidebar-action-btn .btn-icon {
     color: #0284c7 !important;
@@ -17253,6 +17386,77 @@ body.theme-light .sidebar-action-btn .badge,
     background: #e0f2fe !important;
     color: #0284c7 !important;
     border-color: #bae6fd !important;
+}
+
+/* Light & Sakura Drawer Card Overrides for High Contrast */
+body.theme-light .notif-card.card-request-approved,
+[data-theme="light"] .notif-card.card-request-approved {
+    background: #f0fdf4 !important;
+    border-left: 3px solid #16a34a !important;
+    border-color: #bbf7d0 !important;
+}
+
+body.theme-light .notif-card.card-request-rejected,
+[data-theme="light"] .notif-card.card-request-rejected {
+    background: #fef2f2 !important;
+    border-left: 3px solid #dc2626 !important;
+    border-color: #fecaca !important;
+}
+
+body.theme-light .notif-card.card-request-pending,
+[data-theme="light"] .notif-card.card-request-pending {
+    background: #fffbeb !important;
+    border-left: 3px solid #d97706 !important;
+    border-color: #fde68a !important;
+}
+
+body.theme-light .card-request-admin-note,
+[data-theme="light"] .card-request-admin-note {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    color: #991b1b !important;
+}
+
+body.theme-light .card-request-admin-note.note-approved,
+[data-theme="light"] .card-request-admin-note.note-approved {
+    background: #dcfce7 !important;
+    border-color: #86efac !important;
+    color: #166534 !important;
+}
+
+body.theme-sakura .notif-card.card-request-approved,
+[data-theme="sakura"] .notif-card.card-request-approved {
+    background: #f0fdf4 !important;
+    border-left: 3px solid #059669 !important;
+    border-color: #a7f3d0 !important;
+}
+
+body.theme-sakura .notif-card.card-request-rejected,
+[data-theme="sakura"] .notif-card.card-request-rejected {
+    background: #fff1f2 !important;
+    border-left: 3px solid #e11d48 !important;
+    border-color: #fecdd3 !important;
+}
+
+body.theme-sakura .notif-card.card-request-pending,
+[data-theme="sakura"] .notif-card.card-request-pending {
+    background: #fffbeb !important;
+    border-left: 3px solid #d97706 !important;
+    border-color: #fde68a !important;
+}
+
+body.theme-sakura .card-request-admin-note,
+[data-theme="sakura"] .card-request-admin-note {
+    background: #ffe4e6 !important;
+    border-color: #fda4af !important;
+    color: #9f1239 !important;
+}
+
+body.theme-sakura .card-request-admin-note.note-approved,
+[data-theme="sakura"] .card-request-admin-note.note-approved {
+    background: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+    color: #065f46 !important;
 }
 
 /* 3. High-Contrast Stock Availability Colors */

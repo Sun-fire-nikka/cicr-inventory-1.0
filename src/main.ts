@@ -798,6 +798,8 @@ class DatabaseManager {
             pendingUsersCount = AdminManager.users.filter(u => u.status === 'PENDING').length;
         }
 
+        const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
+
         const isCleared = this.isNotificationsCleared || localStorage.getItem('cicr_notifs_cleared') === 'true';
         let totalAlerts = 0;
         if (isCleared) {
@@ -805,12 +807,83 @@ class DatabaseManager {
         } else if (isAdmin) {
             totalAlerts = overdueCount + pendingHwCount + pendingUsersCount;
         } else {
-            totalAlerts = overdueCount + activeLoansCount + pendingHwCount;
+            // For member: pending requests + overdue + active loans
+            let myPending = 0;
+            if (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.userHardwareRequests)) {
+                myPending = AdminManager.userHardwareRequests.filter(r => r.status === 'PENDING' && isUserRequest(r)).length;
+            }
+            if (myPending === 0) {
+                myPending = allPendingHwRequests.filter(r => isUserRequest(r)).length;
+            }
+            totalAlerts = overdueCount + myPending;
+            if (totalAlerts === 0 && activeLoansCount > 0) {
+                totalAlerts = activeLoansCount;
+            }
         }
 
         const sidebarBadge = document.getElementById('sidebar-notif-badge');
         const sidebarBeacon = document.getElementById('sidebar-notif-beacon') || (document.querySelector('.notif-radar-beacon') as HTMLElement | null);
         const navBadge = document.getElementById('nav-bell-badge');
+
+        const sidebarTitle = document.getElementById('sidebar-notif-title');
+        const sidebarSubtext = document.getElementById('sidebar-notif-subtext');
+
+        if (!isLoggedIn) {
+            if (sidebarTitle) sidebarTitle.innerText = 'REQUEST TRACKER';
+            if (sidebarSubtext) {
+                sidebarSubtext.innerText = 'Sign in to track';
+                sidebarSubtext.className = 'btn-subtext subtext-neutral';
+            }
+        } else if (isAdmin) {
+            if (sidebarTitle) sidebarTitle.innerText = 'APPROVAL REQUESTS';
+            if (sidebarSubtext) {
+                if (pendingHwCount > 0) {
+                    sidebarSubtext.innerText = `⚡ ${pendingHwCount} Awaiting Review`;
+                    sidebarSubtext.className = 'btn-subtext subtext-pending';
+                } else {
+                    sidebarSubtext.innerText = 'All Requests Reviewed';
+                    sidebarSubtext.className = 'btn-subtext subtext-neutral';
+                }
+            }
+        } else {
+            if (sidebarTitle) sidebarTitle.innerText = 'MY REQUESTS & STATUS';
+            if (sidebarSubtext) {
+                const myReqs: any[] = [];
+                if (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.userHardwareRequests)) {
+                    AdminManager.userHardwareRequests.forEach(r => {
+                        if (r && isUserRequest(r)) myReqs.push(r);
+                    });
+                }
+                allPendingHwRequests.forEach(r => {
+                    if (r && isUserRequest(r) && !myReqs.some(m => m.id === r.id)) {
+                        myReqs.push(r);
+                    }
+                });
+                const myPending = myReqs.filter(r => r.status === 'PENDING').length;
+                const myApproved = myReqs.filter(r => r.status === 'APPROVED').length;
+                const myRejected = myReqs.filter(r => r.status === 'REJECTED').length;
+
+                if (myPending > 0 && myApproved > 0) {
+                    sidebarSubtext.innerText = `⏳ ${myPending} Pend • ✅ ${myApproved} Acc`;
+                    sidebarSubtext.className = 'btn-subtext subtext-pending';
+                } else if (myPending > 0) {
+                    sidebarSubtext.innerText = `⏳ ${myPending} Pending Approval`;
+                    sidebarSubtext.className = 'btn-subtext subtext-pending';
+                } else if (myApproved > 0) {
+                    sidebarSubtext.innerText = `✅ ${myApproved} Accepted & Issued`;
+                    sidebarSubtext.className = 'btn-subtext subtext-approved';
+                } else if (myRejected > 0) {
+                    sidebarSubtext.innerText = `❌ ${myRejected} Declined`;
+                    sidebarSubtext.className = 'btn-subtext subtext-rejected';
+                } else if (activeLoansCount > 0) {
+                    sidebarSubtext.innerText = `📦 ${activeLoansCount} Active Loan${activeLoansCount > 1 ? 's' : ''}`;
+                    sidebarSubtext.className = 'btn-subtext subtext-active';
+                } else {
+                    sidebarSubtext.innerText = 'No Active Requests';
+                    sidebarSubtext.className = 'btn-subtext subtext-neutral';
+                }
+            }
+        }
 
         const alertStr = String(totalAlerts);
         if (totalAlerts > 0) {
@@ -1388,6 +1461,21 @@ class DashboardManager {
         if (notifBtn) {
             notifBtn.addEventListener('click', () => {
                 closeMobileSidebar();
+                const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
+                if (!isLoggedIn) {
+                    const authOverlay = document.getElementById('auth-overlay');
+                    if (authOverlay) {
+                        authOverlay.style.display = 'flex';
+                        authOverlay.classList.remove('hidden');
+                        document.getElementById('tab-login-btn')?.click();
+                        ToastManager.show('Authentication Required', 'Please sign in to view your hardware requests and approval status.', 'info');
+                    }
+                    return;
+                }
+                const role = ModalManager.getCurrentRole();
+                if (role !== 'ADMIN') {
+                    ModalManager.activeNotifTab = 'requests';
+                }
                 ModalManager.openLogsDrawer();
             });
         }
@@ -2703,8 +2791,10 @@ class ModalManager {
         const roleDotEl = document.getElementById('notif-role-dot');
         const roleTextEl = document.getElementById('notif-role-text');
         const subtitleEl = document.getElementById('notif-drawer-subtitle');
+        const titleEl = document.getElementById('notif-drawer-title');
 
         if (isAdmin) {
+            if (titleEl) titleEl.innerText = 'Notifications & Telemetry';
             if (roleBadgeEl) {
                 roleBadgeEl.classList.remove('role-badge-member');
                 roleBadgeEl.classList.add('role-badge-admin');
@@ -2716,6 +2806,7 @@ class ModalManager {
             if (roleTextEl) roleTextEl.innerText = 'ADMIN TELEMETRY';
             if (subtitleEl) subtitleEl.innerText = 'Operational alerts, loan schedules & system updates';
         } else {
+            if (titleEl) titleEl.innerText = 'Requests & Approval Tracker';
             if (roleBadgeEl) {
                 roleBadgeEl.classList.remove('role-badge-admin');
                 roleBadgeEl.classList.add('role-badge-member');
@@ -2725,18 +2816,52 @@ class ModalManager {
                 roleDotEl.classList.add('dot-member');
             }
             if (roleTextEl) roleTextEl.innerText = 'MEMBER ACCESS';
-            if (subtitleEl) subtitleEl.innerText = 'Your active loans, request status & lab updates';
+            if (subtitleEl) subtitleEl.innerText = 'Track real-time status of your requisitions, admin approvals & active loans';
         }
 
-        // Segmented Category Tabs setup: stock tab is admin-only
-        const stockTabBtn = document.getElementById('notif-tab-stock');
-        if (stockTabBtn) {
-            stockTabBtn.style.display = isAdmin ? 'inline-flex' : 'none';
-        }
+        // Segmented Category Tabs setup based on role
+        const tabIssues = document.getElementById('notif-tab-issues');
+        const tabRequests = document.getElementById('notif-tab-requests');
+        const tabPending = document.getElementById('notif-tab-pending');
+        const tabApproved = document.getElementById('notif-tab-approved');
+        const tabRejected = document.getElementById('notif-tab-rejected');
+        const tabReturns = document.getElementById('notif-tab-returns');
+        const tabStock = document.getElementById('notif-tab-stock');
+        const tabSystem = document.getElementById('notif-tab-system');
 
-        // If regular member is on 'stock' tab or invalid tab, redirect to 'issues'
-        if ((!isAdmin && this.activeNotifTab === 'stock') || !['issues', 'requests', 'returns', 'stock', 'system'].includes(this.activeNotifTab)) {
-            this.activeNotifTab = 'issues';
+        const labelRequests = document.getElementById('notif-label-requests');
+        const labelReturns = document.getElementById('notif-label-returns');
+
+        if (isAdmin) {
+            if (tabIssues) tabIssues.style.display = 'inline-flex';
+            if (tabRequests) tabRequests.style.display = 'inline-flex';
+            if (labelRequests) labelRequests.innerText = 'Requests';
+            if (tabPending) tabPending.style.display = 'none';
+            if (tabApproved) tabApproved.style.display = 'none';
+            if (tabRejected) tabRejected.style.display = 'none';
+            if (tabReturns) tabReturns.style.display = 'inline-flex';
+            if (labelReturns) labelReturns.innerText = 'Returns';
+            if (tabStock) tabStock.style.display = 'inline-flex';
+            if (tabSystem) tabSystem.style.display = 'inline-flex';
+
+            if (!['issues', 'requests', 'returns', 'stock', 'system'].includes(this.activeNotifTab)) {
+                this.activeNotifTab = 'issues';
+            }
+        } else {
+            if (tabIssues) tabIssues.style.display = 'none';
+            if (tabRequests) tabRequests.style.display = 'inline-flex';
+            if (labelRequests) labelRequests.innerText = 'All Requests';
+            if (tabPending) tabPending.style.display = 'inline-flex';
+            if (tabApproved) tabApproved.style.display = 'inline-flex';
+            if (tabRejected) tabRejected.style.display = 'inline-flex';
+            if (tabReturns) tabReturns.style.display = 'inline-flex';
+            if (labelReturns) labelReturns.innerText = 'Active Loans';
+            if (tabStock) tabStock.style.display = 'none';
+            if (tabSystem) tabSystem.style.display = 'none';
+
+            if (!['requests', 'pending', 'approved', 'rejected', 'returns'].includes(this.activeNotifTab)) {
+                this.activeNotifTab = 'requests';
+            }
         }
 
         // Setup tab click listeners once
@@ -2851,10 +2976,24 @@ class ModalManager {
             return false;
         };
 
+        // For non-admin, use AdminManager.userHardwareRequests first (keeps PENDING, APPROVED, REJECTED)
+        if (!isAdmin && typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.userHardwareRequests) && AdminManager.userHardwareRequests.length > 0) {
+            AdminManager.userHardwareRequests.forEach(r => {
+                if (r) {
+                    const key = getDrawerKey(r) + '__' + (r.status || 'PENDING');
+                    if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
+                        seenDrawerReqKeys.add(key);
+                        seenDrawerReqKeys.add(r.id);
+                        combinedRequests.push(r);
+                    }
+                }
+            });
+        }
+
         if (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.hardwareRequests)) {
             AdminManager.hardwareRequests.forEach(r => {
-                if (r && !isDrawerItemDismissed(r)) {
-                    const key = getDrawerKey(r);
+                if (r && (!isAdmin || !isDrawerItemDismissed(r))) {
+                    const key = getDrawerKey(r) + '__' + (r.status || 'PENDING');
                     if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
                         seenDrawerReqKeys.add(key);
                         seenDrawerReqKeys.add(r.id);
@@ -2865,8 +3004,8 @@ class ModalManager {
         }
 
         (requests || []).forEach(r => {
-            if (r && !isDrawerItemDismissed(r)) {
-                const key = getDrawerKey(r);
+            if (r && (!isAdmin || !isDrawerItemDismissed(r))) {
+                const key = getDrawerKey(r) + '__' + (r.status || 'PENDING');
                 if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
                     seenDrawerReqKeys.add(key);
                     seenDrawerReqKeys.add(r.id);
@@ -2887,6 +3026,9 @@ class ModalManager {
             : combinedRequests.filter(r => isUserRequest(r));
         visibleRequests.sort((a, b) => new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime());
 
+        const pendingRequests = visibleRequests.filter(r => r.status === 'PENDING');
+        const approvedRequests = visibleRequests.filter(r => r.status === 'APPROVED');
+        const rejectedRequests = visibleRequests.filter(r => r.status === 'REJECTED');
         const issueRequests = visibleRequests.filter(r => !isReturnReqRecord(r));
         const returnRequests = visibleRequests.filter(r => isReturnReqRecord(r));
 
@@ -2904,12 +3046,18 @@ class ModalManager {
 
         const countIssues = document.getElementById('notif-count-issues');
         const countRequests = document.getElementById('notif-count-requests');
+        const countPending = document.getElementById('notif-count-pending');
+        const countApproved = document.getElementById('notif-count-approved');
+        const countRejected = document.getElementById('notif-count-rejected');
         const countReturns = document.getElementById('notif-count-returns') || document.getElementById('notif-count-return');
         const countStock = document.getElementById('notif-count-stock');
         const countSystem = document.getElementById('notif-count-system');
 
         if (countIssues) countIssues.innerText = String(totalIssuesCount);
         if (countRequests) countRequests.innerText = String(totalRequestsCount);
+        if (countPending) countPending.innerText = String(pendingRequests.length);
+        if (countApproved) countApproved.innerText = String(approvedRequests.length);
+        if (countRejected) countRejected.innerText = String(rejectedRequests.length);
         if (countReturns) countReturns.innerText = String(totalReturnsCount);
         if (countStock) countStock.innerText = String(totalStockCount);
         if (countSystem) countSystem.innerText = String(totalSystemCount);
@@ -3143,21 +3291,22 @@ class ModalManager {
             });
         };
 
-        // Card rendering helper - NO #IDs anywhere
+        // Card rendering helper
         const createRequestCard = (req: any, isReturnCard: boolean = false): HTMLElement => {
             const el = document.createElement('div');
-            el.className = `notif-card card-request card-request-${(req.status || 'PENDING').toLowerCase()}`;
+            const status = (req.status || 'PENDING').toUpperCase();
+            el.className = `notif-card card-request card-request-${status.toLowerCase()}`;
 
             let statusBadge = '';
-            if (req.status === 'APPROVED') {
-                statusBadge = `<span class="notif-status-badge badge-green"><i data-lucide="check-circle-2"></i> APPROVED</span>`;
-            } else if (req.status === 'REJECTED') {
-                statusBadge = `<span class="notif-status-badge badge-red"><i data-lucide="x-circle"></i> REJECTED</span>`;
+            if (status === 'APPROVED') {
+                statusBadge = `<span class="notif-status-badge badge-green"><i data-lucide="check-circle-2"></i> ACCEPTED & ISSUED</span>`;
+            } else if (status === 'REJECTED') {
+                statusBadge = `<span class="notif-status-badge badge-red"><i data-lucide="x-circle"></i> DECLINED</span>`;
             } else {
-                statusBadge = `<span class="notif-status-badge badge-yellow"><i data-lucide="clock"></i> PENDING REVIEW</span>`;
+                statusBadge = `<span class="notif-status-badge badge-yellow"><i data-lucide="clock"></i> PENDING APPROVAL</span>`;
             }
 
-            const actionsHtml = (isAdmin && req.status === 'PENDING') ? `
+            const actionsHtml = (isAdmin && status === 'PENDING') ? `
                 <div class="notif-card-actions">
                     <button class="notif-action-btn notif-btn-approve" data-req-id="${req.id}" data-is-return="${isReturnCard ? 'true' : 'false'}">
                         <i data-lucide="check"></i> Approve
@@ -3171,9 +3320,12 @@ class ModalManager {
             const bName = req.borrowerName || req.name || 'Member';
             const bRoll = req.rollNumber || req.roll || 'Student';
             const bQty = Number(req.quantity || req.qty || req.returnQuantity) || 1;
-            const tagIcon = isReturnCard ? 'rotate-ccw' : 'send';
-            const tagColor = isReturnCard ? 'tag-cyan' : 'tag-purple';
-            const tagTitle = isReturnCard ? 'RETURN REQUEST' : 'ISSUE REQUEST';
+            const tagIcon = isReturnCard ? 'rotate-ccw' : (status === 'APPROVED' ? 'check-circle' : (status === 'REJECTED' ? 'x-circle' : 'send'));
+            const tagColor = isReturnCard ? 'tag-cyan' : (status === 'APPROVED' ? 'tag-green' : (status === 'REJECTED' ? 'tag-red' : 'tag-purple'));
+            const tagTitle = isReturnCard ? 'RETURN REQUEST' : (status === 'APPROVED' ? 'HARDWARE ISSUED' : (status === 'REJECTED' ? 'REQUEST DECLINED' : 'ISSUE REQUEST'));
+
+            const reviewer = req.reviewedBy || req.admin_approved_by || req.reviewer || 'Administrator';
+            const reviewNote = req.reviewNote || req.reason || '';
 
             el.innerHTML = `
                 <div class="notif-card-header">
@@ -3185,12 +3337,31 @@ class ModalManager {
                 </div>
                 <div class="notif-card-body">
                     <p class="notif-card-main-text">
-                        <strong>${bQty}x ${req.itemName}</strong> ${isReturnCard ? 'return requested by' : 'requested by'} <span class="notif-user-pill">${bName}</span> (${bRoll})
+                        <strong>${bQty}x ${req.itemName}</strong> ${isReturnCard ? 'return requested by' : (status === 'APPROVED' ? 'approved & issued to' : (status === 'REJECTED' ? 'request from' : 'requested by'))} <span class="notif-user-pill">${bName}</span> (${bRoll})
                     </p>
                     <p class="notif-card-sub-text">
-                        Purpose: ${req.purpose || (isReturnCard ? 'Return of hardware' : 'Lab Project')} &bull; Requested on: ${req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : 'Recent'}
-                        ${req.dueDate ? ` &bull; Expected Return: ${req.dueDate}` : ''}
+                        Purpose: ${req.purpose || (isReturnCard ? 'Return of hardware' : 'Lab Project')} &bull; Requested: ${req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : 'Recent'}
+                        ${req.dueDate ? ` &bull; Due Date: <strong>${req.dueDate}</strong>` : ''}
                     </p>
+                    ${status === 'APPROVED' ? `
+                        <div class="card-request-admin-note note-approved">
+                            <i data-lucide="shield-check" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>
+                            Approved by: <strong>${reviewer}</strong>${req.reviewedAt ? ` &bull; on ${new Date(req.reviewedAt).toLocaleDateString()}` : ''}
+                        </div>
+                    ` : ''}
+                    ${status === 'REJECTED' ? `
+                        <div class="card-request-admin-note">
+                            <i data-lucide="alert-circle" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>
+                            Declined by: <strong>${reviewer}</strong>${req.reviewedAt ? ` &bull; on ${new Date(req.reviewedAt).toLocaleDateString()}` : ''}
+                            ${reviewNote ? `<br>Reason: "${reviewNote}"` : ''}
+                        </div>
+                    ` : ''}
+                    ${status === 'PENDING' ? `
+                        <div class="card-request-admin-note" style="background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); color:#fcd34d;">
+                            <i data-lucide="clock" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>
+                            Awaiting Admin Approval & OTP Verification. You will be notified via email when reviewed.
+                        </div>
+                    ` : ''}
                 </div>
                 ${actionsHtml}
             `;
@@ -3326,41 +3497,108 @@ class ModalManager {
         // --- RENDER SECTION: REQUESTS TAB ---
         const renderRequestsSection = (container: HTMLElement) => {
             if (visibleRequests.length === 0) {
-                container.appendChild(ModalManager.createEmptyNotifCard('inbox', 'No Active Requests', isAdmin ? 'All member hardware requisitions have been processed.' : 'You have not submitted any hardware requisitions yet.'));
+                container.appendChild(ModalManager.createEmptyNotifCard('inbox', 'No Hardware Requests', isAdmin ? 'All member hardware requisitions have been processed.' : 'You have not submitted any hardware requisitions yet. Click "Borrow" on any inventory item to request components.'));
                 return;
             }
 
-            if (issueRequests.length > 0) {
+            if (pendingRequests.length > 0) {
                 const secHeader = document.createElement('div');
                 secHeader.className = 'notif-section-header header-requests';
-                const pendingCount = issueRequests.filter(r => r.status === 'PENDING').length;
                 secHeader.innerHTML = `
                     <div class="sec-header-left">
-                        <i data-lucide="send"></i>
-                        <span>HARDWARE ISSUE REQUESTS</span>
+                        <i data-lucide="clock"></i>
+                        <span>PENDING APPROVAL</span>
                     </div>
-                    <span class="sec-header-badge ${pendingCount > 0 ? 'badge-yellow' : 'badge-cyan'}">${pendingCount > 0 ? `${pendingCount} PENDING` : `${issueRequests.length} TOTAL`}</span>
+                    <span class="sec-header-badge badge-yellow">${pendingRequests.length} PENDING</span>
                 `;
                 container.appendChild(secHeader);
-                issueRequests.forEach(req => container.appendChild(createRequestCard(req, false)));
+                pendingRequests.forEach(req => container.appendChild(createRequestCard(req, isReturnReqRecord(req))));
             }
 
-            if (returnRequests.length > 0) {
+            if (approvedRequests.length > 0) {
                 const secHeader = document.createElement('div');
-                secHeader.className = 'notif-section-header header-return';
-                const pendingCount = returnRequests.filter(r => r.status === 'PENDING').length;
+                secHeader.className = 'notif-section-header header-loans';
                 secHeader.innerHTML = `
                     <div class="sec-header-left">
-                        <i data-lucide="rotate-ccw"></i>
-                        <span>HARDWARE RETURN REQUESTS</span>
+                        <i data-lucide="check-circle-2"></i>
+                        <span>ACCEPTED & APPROVED</span>
                     </div>
-                    <span class="sec-header-badge ${pendingCount > 0 ? 'badge-yellow' : 'badge-cyan'}">${pendingCount > 0 ? `${pendingCount} PENDING` : `${returnRequests.length} TOTAL`}</span>
+                    <span class="sec-header-badge badge-green">${approvedRequests.length} ACCEPTED</span>
                 `;
                 container.appendChild(secHeader);
-                returnRequests.forEach(req => container.appendChild(createRequestCard(req, true)));
+                approvedRequests.forEach(req => container.appendChild(createRequestCard(req, isReturnReqRecord(req))));
+            }
+
+            if (rejectedRequests.length > 0) {
+                const secHeader = document.createElement('div');
+                secHeader.className = 'notif-section-header header-return';
+                secHeader.innerHTML = `
+                    <div class="sec-header-left">
+                        <i data-lucide="x-circle"></i>
+                        <span>DECLINED / REJECTED</span>
+                    </div>
+                    <span class="sec-header-badge badge-red">${rejectedRequests.length} DECLINED</span>
+                `;
+                container.appendChild(secHeader);
+                rejectedRequests.forEach(req => container.appendChild(createRequestCard(req, isReturnReqRecord(req))));
             }
 
             bindAdminCardActions(container);
+        };
+
+        const renderPendingSection = (container: HTMLElement) => {
+            if (pendingRequests.length === 0) {
+                container.appendChild(ModalManager.createEmptyNotifCard('clock', 'No Pending Requests', 'You have no hardware requests awaiting admin review.'));
+                return;
+            }
+            const secHeader = document.createElement('div');
+            secHeader.className = 'notif-section-header header-requests';
+            secHeader.innerHTML = `
+                <div class="sec-header-left">
+                    <i data-lucide="clock"></i>
+                    <span>PENDING ADMIN APPROVAL</span>
+                </div>
+                <span class="sec-header-badge badge-yellow">${pendingRequests.length} PENDING</span>
+            `;
+            container.appendChild(secHeader);
+            pendingRequests.forEach(req => container.appendChild(createRequestCard(req, isReturnReqRecord(req))));
+            bindAdminCardActions(container);
+        };
+
+        const renderApprovedSection = (container: HTMLElement) => {
+            if (approvedRequests.length === 0) {
+                container.appendChild(ModalManager.createEmptyNotifCard('check-circle', 'No Accepted Requests', 'None of your hardware requests have been accepted yet.'));
+                return;
+            }
+            const secHeader = document.createElement('div');
+            secHeader.className = 'notif-section-header header-loans';
+            secHeader.innerHTML = `
+                <div class="sec-header-left">
+                    <i data-lucide="check-circle-2"></i>
+                    <span>ACCEPTED & APPROVED HARDWARE</span>
+                </div>
+                <span class="sec-header-badge badge-green">${approvedRequests.length} ACCEPTED</span>
+            `;
+            container.appendChild(secHeader);
+            approvedRequests.forEach(req => container.appendChild(createRequestCard(req, isReturnReqRecord(req))));
+        };
+
+        const renderRejectedSection = (container: HTMLElement) => {
+            if (rejectedRequests.length === 0) {
+                container.appendChild(ModalManager.createEmptyNotifCard('shield-check', 'No Declined Requests', 'None of your hardware requests have been declined.'));
+                return;
+            }
+            const secHeader = document.createElement('div');
+            secHeader.className = 'notif-section-header header-return';
+            secHeader.innerHTML = `
+                <div class="sec-header-left">
+                    <i data-lucide="x-circle"></i>
+                    <span>DECLINED HARDWARE REQUESTS</span>
+                </div>
+                <span class="sec-header-badge badge-red">${rejectedRequests.length} DECLINED</span>
+            `;
+            container.appendChild(secHeader);
+            rejectedRequests.forEach(req => container.appendChild(createRequestCard(req, isReturnReqRecord(req))));
         };
 
         const renderSystemSection = (container: HTMLElement) => {
@@ -3471,6 +3709,12 @@ class ModalManager {
             renderIssuesSection(logsList);
         } else if (currentCategory === 'requests') {
             renderRequestsSection(logsList);
+        } else if (currentCategory === 'pending') {
+            renderPendingSection(logsList);
+        } else if (currentCategory === 'approved') {
+            renderApprovedSection(logsList);
+        } else if (currentCategory === 'rejected') {
+            renderRejectedSection(logsList);
         } else if (currentCategory === 'returns' || currentCategory === 'return') {
             renderReturnsSection(logsList);
         } else if (currentCategory === 'stock') {
@@ -3478,7 +3722,7 @@ class ModalManager {
         } else if (currentCategory === 'system') {
             renderSystemSection(logsList);
         } else {
-            renderIssuesSection(logsList);
+            renderRequestsSection(logsList);
         }
     }
 
@@ -5302,6 +5546,7 @@ interface AdminHardwareRequest {
 class AdminManager {
     public static users: AdminUserRecord[] = [];
     public static hardwareRequests: AdminHardwareRequest[] = [];
+    public static userHardwareRequests: AdminHardwareRequest[] = [];
     public static auditLogs: any[] = [];
     private static activeAuditCategory = 'all';
     private static auditSearchTerm = '';
@@ -5734,34 +5979,51 @@ class AdminManager {
             return false;
         };
 
-        const canonicalQueue = new Map<string, AdminHardwareRequest>();
+        const role = ModalManager.getCurrentRole();
+        const isAdmin = role === 'ADMIN';
 
-        // 1. Process server list first (canonical source of truth)
-        for (const item of serverList) {
-            if (!item || item.status !== 'PENDING') continue;
-            if (isItemDismissed(item)) continue;
-            const key = this.getRequestCanonicalKey(item) || item.id;
-            if (!canonicalQueue.has(key)) {
-                canonicalQueue.set(key, item);
+        if (!isAdmin) {
+            // Member: Store all returned requests across all statuses (PENDING, APPROVED, REJECTED)
+            this.userHardwareRequests = serverList.slice().sort((a, b) => {
+                return new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime();
+            });
+            // Also keep local pending submissions if any
+            for (const lp of localPending) {
+                if (!this.userHardwareRequests.some(r => r.id === lp.id || (r.borrowId && r.borrowId === lp.borrowId))) {
+                    this.userHardwareRequests.unshift(lp);
+                }
             }
-        }
+            this.hardwareRequests = this.userHardwareRequests;
+        } else {
+            const canonicalQueue = new Map<string, AdminHardwareRequest>();
 
-        // 2. Add localPending items ONLY if server request failed OR item is a recent in-flight submission (< 60s)
-        const now = Date.now();
-        for (const item of localPending) {
-            if (!item || item.status !== 'PENDING') continue;
-            if (isItemDismissed(item)) continue;
-            const isRecent = item.requestedAt ? (now - new Date(item.requestedAt).getTime() < 60000) : false;
-            if (!isRecent && serverList.length >= 0) continue;
-            const key = this.getRequestCanonicalKey(item) || item.id;
-            if (!canonicalQueue.has(key)) {
-                canonicalQueue.set(key, item);
+            // 1. Process server list first (canonical source of truth for admin)
+            for (const item of serverList) {
+                if (!item || item.status !== 'PENDING') continue;
+                if (isItemDismissed(item)) continue;
+                const key = this.getRequestCanonicalKey(item) || item.id;
+                if (!canonicalQueue.has(key)) {
+                    canonicalQueue.set(key, item);
+                }
             }
-        }
 
-        this.hardwareRequests = Array.from(canonicalQueue.values()).sort((a, b) => {
-            return new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime();
-        });
+            // 2. Add localPending items ONLY if server request failed OR item is a recent in-flight submission (< 60s)
+            const now = Date.now();
+            for (const item of localPending) {
+                if (!item || item.status !== 'PENDING') continue;
+                if (isItemDismissed(item)) continue;
+                const isRecent = item.requestedAt ? (now - new Date(item.requestedAt).getTime() < 60000) : false;
+                if (!isRecent && serverList.length >= 0) continue;
+                const key = this.getRequestCanonicalKey(item) || item.id;
+                if (!canonicalQueue.has(key)) {
+                    canonicalQueue.set(key, item);
+                }
+            }
+
+            this.hardwareRequests = Array.from(canonicalQueue.values()).sort((a, b) => {
+                return new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime();
+            });
+        }
         this.updateStats();
         this.renderHardwareQueue(force);
         DatabaseManager.updateNotificationBadges();

@@ -264,11 +264,11 @@
             </div>
 
             <div class="sidebar-scroll-content">
-                <!-- Notifications Button -->
+                <!-- Notifications & Requests Button -->
                 <button class="sidebar-action-btn notif-sidebar-btn" id="sidebar-notifications-btn"
-                    title="Audit Telemetry & System Alerts">
+                    title="Hardware Requests, Approvals & System Alerts">
                     <div class="btn-left-content">
-                        <div class="notif-icon-frame">
+                        <div class="notif-icon-frame" id="sidebar-notif-icon-frame">
                             <svg class="notif-bell-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -276,7 +276,10 @@
                             </svg>
                             <span class="notif-radar-beacon" id="sidebar-notif-beacon" style="display: none;"></span>
                         </div>
-                        <span class="btn-text">NOTIFICATIONS</span>
+                        <div class="btn-text-group">
+                            <span class="btn-text" id="sidebar-notif-title">REQUESTS & STATUS</span>
+                            <span class="btn-subtext subtext-neutral" id="sidebar-notif-subtext">Track Approvals</span>
+                        </div>
                     </div>
                     <span class="badge notif-hud-badge" id="sidebar-notif-badge" style="display: none;">0</span>
                 </button>
@@ -1601,12 +1604,27 @@
                 </button>
                 <button class="notif-tab-btn" data-category="requests" id="notif-tab-requests">
                     <i data-lucide="inbox"></i>
-                    <span>Requests</span>
+                    <span id="notif-label-requests">Requests</span>
                     <span class="notif-tab-count text-purple" id="notif-count-requests">0</span>
+                </button>
+                <button class="notif-tab-btn" data-category="pending" id="notif-tab-pending" style="display: none;">
+                    <i data-lucide="clock"></i>
+                    <span>Pending</span>
+                    <span class="notif-tab-count text-yellow" id="notif-count-pending">0</span>
+                </button>
+                <button class="notif-tab-btn" data-category="approved" id="notif-tab-approved" style="display: none;">
+                    <i data-lucide="check-circle-2"></i>
+                    <span>Accepted</span>
+                    <span class="notif-tab-count text-green" id="notif-count-approved">0</span>
+                </button>
+                <button class="notif-tab-btn" data-category="rejected" id="notif-tab-rejected" style="display: none;">
+                    <i data-lucide="x-circle"></i>
+                    <span>Rejected</span>
+                    <span class="notif-tab-count text-red" id="notif-count-rejected">0</span>
                 </button>
                 <button class="notif-tab-btn" data-category="returns" id="notif-tab-returns">
                     <i data-lucide="rotate-ccw"></i>
-                    <span>Returns</span>
+                    <span id="notif-label-returns">Returns</span>
                     <span class="notif-tab-count text-red" id="notif-count-returns">0</span>
                 </button>
                 <button class="notif-tab-btn" data-category="stock" id="notif-tab-stock">
