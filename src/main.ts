@@ -1275,6 +1275,27 @@ class DashboardManager {
             });
         });
 
+        // Interactive Breadcrumb Redirecting Buttons
+        const breadcrumbHome = document.getElementById('breadcrumb-home');
+        if (breadcrumbHome) {
+            breadcrumbHome.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchSection('dashboard-view');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+        if (breadcrumbActive) {
+            breadcrumbActive.addEventListener('click', (e) => {
+                e.preventDefault();
+                const activeSection = document.querySelector('#app-main-content > section.active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        }
+
         // Floating Navbar component logs, developers & profile links
         const navHwLogs = document.getElementById('nav-hardware-logs');
         if (navHwLogs) {

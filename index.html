@@ -406,9 +406,9 @@
                         <span>Menu</span>
                     </button>
                     <div class="breadcrumbs">
-                        <span class="breadcrumb-root">HOME</span>
+                        <button type="button" class="breadcrumb-root breadcrumb-btn" id="breadcrumb-home" title="Navigate to Dashboard">HOME</button>
                         <span class="breadcrumb-separator">/</span>
-                        <span class="breadcrumb-active" id="breadcrumb-current">DASHBOARD</span>
+                        <button type="button" class="breadcrumb-active breadcrumb-btn" id="breadcrumb-current" title="Current View">DASHBOARD</button>
                     </div>
                 </div>
 
@@ -1824,14 +1824,19 @@
                 </div>
 
                 <!-- Security & Password Reset Action Section (Integrated directly into Edit Profile) -->
-                <div class="edit-profile-security-card" style="margin-top: 14px; margin-bottom: 6px; padding: 12px 14px; background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.14); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div class="edit-profile-security-card"
+                    style="margin-top: 14px; margin-bottom: 6px; padding: 12px 14px; background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.14); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 240, 255, 0.12); display: flex; align-items: center; justify-content: center; color: var(--neon-cyan); flex-shrink: 0;">
+                        <div
+                            style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 240, 255, 0.12); display: flex; align-items: center; justify-content: center; color: var(--neon-cyan); flex-shrink: 0;">
                             <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
                         </div>
                         <div style="min-width: 0;">
-                            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); font-family: 'Orbitron', sans-serif;">Account Security</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Change your portal password & verify security</div>
+                            <div
+                                style="font-size: 13px; font-weight: 600; color: var(--text-main); font-family: 'Orbitron', sans-serif;">
+                                Account Security</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Change your portal password & verify
+                                security</div>
                         </div>
                     </div>
                     <button type="button" class="btn btn-secondary" id="edit-profile-security-btn"
@@ -2005,7 +2010,7 @@
     <div class="modal-overlay" id="admin-user-profile-modal" style="display: none;">
         <div class="modal-card modal-profile-inspector glass glow-border">
             <button class="modal-close-btn" id="close-user-profile-modal" title="Close Profile">&times;</button>
-            
+
             <div class="profile-inspector-header">
                 <div class="profile-inspector-avatar-wrap">
                     <div class="profile-inspector-avatar" id="inspector-user-avatar">U</div>
@@ -2017,9 +2022,12 @@
                         <span class="profile-status-pill approved" id="inspector-user-status">ACTIVE</span>
                     </div>
                     <div class="profile-inspector-meta-row">
-                        <span class="profile-meta-item" id="inspector-user-roll"><i data-lucide="hash"></i> <span>—</span></span>
-                        <span class="profile-meta-item" id="inspector-user-email"><i data-lucide="mail"></i> <span>student@mail.jiit.ac.in</span></span>
-                        <span class="profile-meta-item" id="inspector-user-batch"><i data-lucide="graduation-cap"></i> <span>JIIT Member</span></span>
+                        <span class="profile-meta-item" id="inspector-user-roll"><i data-lucide="hash"></i>
+                            <span>—</span></span>
+                        <span class="profile-meta-item" id="inspector-user-email"><i data-lucide="mail"></i>
+                            <span>student@mail.jiit.ac.in</span></span>
+                        <span class="profile-meta-item" id="inspector-user-batch"><i data-lucide="graduation-cap"></i>
+                            <span>JIIT Member</span></span>
                     </div>
                 </div>
             </div>
@@ -2057,7 +2065,8 @@
 
             <!-- Modal Footer Actions -->
             <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
-                <button type="button" class="btn btn-secondary" id="btn-inspector-filter-logs" style="display: inline-flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn btn-secondary" id="btn-inspector-filter-logs"
+                    style="display: inline-flex; align-items: center; gap: 8px;">
                     <i data-lucide="list-filter"></i> Filter In Component Logs
                 </button>
                 <button type="button" class="btn btn-primary" id="btn-close-user-profile-modal">
@@ -2088,7 +2097,8 @@
             </p>
             <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 10px; justify-content: flex-end;">
                 <button type="button" class="btn btn-secondary" id="btn-cancel-delete-ledger">Cancel</button>
-                <button type="button" class="btn btn-danger" id="btn-confirm-delete-ledger" style="background: #ef4444; border-color: #ef4444; color: white; display: inline-flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn btn-danger" id="btn-confirm-delete-ledger"
+                    style="background: #ef4444; border-color: #ef4444; color: white; display: inline-flex; align-items: center; gap: 8px;">
                     <i data-lucide="trash-2"></i> Delete Permanently
                 </button>
             </div>
