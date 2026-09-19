@@ -129,7 +129,7 @@ app.get('/api/smtp-debug', async (req: Request, res: Response) => {
       dns: addresses,
       tcp_587: tcp587,
       tcp_465: tcp465,
-      smtp_user: process.env.SMTP_USER || null,
+      smtp_user_set: Boolean(process.env.SMTP_USER),
       smtp_pass_set: Boolean(process.env.SMTP_PASS),
     });
   } catch (err: any) {

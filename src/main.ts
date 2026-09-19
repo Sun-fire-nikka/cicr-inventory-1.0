@@ -6293,6 +6293,9 @@ class AdminManager {
         // Non-blocking telemetry refresh in background
         this.loadAuditLogs();
         DatabaseManager.syncFromBackend();
+        if (typeof HardwareLedgerManager !== 'undefined') {
+            HardwareLedgerManager.fetchLedger(true).then(() => HardwareLedgerManager.renderTable()).catch(() => {});
+        }
     }
 
     static async rejectHardware(id: string) {
@@ -6390,6 +6393,9 @@ class AdminManager {
 
         this.loadAuditLogs();
         DatabaseManager.syncFromBackend();
+        if (typeof HardwareLedgerManager !== 'undefined') {
+            HardwareLedgerManager.fetchLedger(true).then(() => HardwareLedgerManager.renderTable()).catch(() => {});
+        }
     }
 
     private static renderPendingQueue(force = false) {
@@ -8649,6 +8655,25 @@ class HardwareLedgerManager {
             });
         }
 
+        // Realtime sync: periodic background polling when ledger view is open & on window focus
+        if (!HardwareLedgerManager.pollTimer) {
+            HardwareLedgerManager.pollTimer = window.setInterval(() => {
+                const view = document.getElementById('hardware-logs-view');
+                if (view && view.style.display !== 'none' && !document.hidden) {
+                    HardwareLedgerManager.fetchLedger(true).then(() => HardwareLedgerManager.renderTable());
+                }
+            }, 12000);
+
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    const view = document.getElementById('hardware-logs-view');
+                    if (view && view.style.display !== 'none') {
+                        HardwareLedgerManager.fetchLedger(true).then(() => HardwareLedgerManager.renderTable());
+                    }
+                }
+            });
+        }
+
         // Delete modal triggers
         const cancelDeleteBtn = document.getElementById('btn-cancel-delete-ledger');
         const closeDeleteX = document.getElementById('btn-close-delete-ledger-x');
@@ -8688,9 +8713,27 @@ class HardwareLedgerManager {
         }
     }
 
+    private static pollTimer: number | null = null;
+
+    private static parseDateSafe(d: any): Date | null {
+        if (!d) return null;
+        if (d instanceof Date && !isNaN(d.getTime())) return d;
+        if (typeof d === 'string') {
+            const trimmed = d.trim();
+            if (!trimmed || trimmed.toLowerCase().includes('day') || trimmed === '—' || trimmed.toLowerCase().includes('open')) return null;
+            const parsed = new Date(trimmed);
+            if (!isNaN(parsed.getTime())) return parsed;
+        }
+        if (typeof d === 'number') {
+            const parsed = new Date(d);
+            if (!isNaN(parsed.getTime())) return parsed;
+        }
+        return null;
+    }
+
     public static async render() {
         this.init();
-        await this.fetchLedger();
+        await this.fetchLedger(true);
         this.renderTable();
     }
 
@@ -8709,7 +8752,7 @@ class HardwareLedgerManager {
                 const headers: Record<string, string> = {};
                 if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                const res = await fetch(`${API_BASE}/borrow/ledger`, { headers });
+                const res = await fetch(`${API_BASE}/borrow/ledger?force=true&t=${Date.now()}`, { headers });
                 if (res.ok) {
                     const json = await res.json();
                     if (Array.isArray(json.data)) {
@@ -8731,8 +8774,8 @@ class HardwareLedgerManager {
                         if (adminApprover && adminApprover.includes('SRVKILLER09')) {
                             adminApprover = '';
                         }
-                        if (!adminApprover) {
-                            adminApprover = 'Admin Team';
+                        if (!adminApprover || adminApprover === 'Admin Team' || adminApprover === 'ADMIN' || adminApprover === 'Admin') {
+                            adminApprover = 'Vardaan Saxena';
                         } else if (!adminApprover.toLowerCase().includes('admin') && !adminApprover.toLowerCase().includes('awaiting')) {
                             adminApprover = `${adminApprover} (Admin)`;
                         }
@@ -8748,9 +8791,9 @@ class HardwareLedgerManager {
                             operator_name: adminApprover,
                             action_type: isReturned ? 'RETURNED' : 'ISSUED',
                             quantity: Number(b.qty) || Number(b.quantity) || 1,
-                            date: b.date || new Date().toISOString(),
+                            date: b.date || null,
                             due_date: b.dueDate || null,
-                            return_date: b.returnDate || (isReturned ? (b.date || new Date().toISOString()) : null),
+                            return_date: b.returnDate || (isReturned ? (b.date || null) : null),
                             purpose: b.purpose || b.reason || 'Hardware Prototyping & Research',
                             remarks: b.remarks || b.note || null,
                             status: isReturned ? 'RETURNED' : (b.status || 'APPROVED')
@@ -8786,7 +8829,7 @@ class HardwareLedgerManager {
                         operator_name: 'Awaiting Admin Review',
                         action_type: 'PENDING_APPROVAL',
                         quantity: Number(r.qty || r.quantity) || 1,
-                        date: r.requestedAt || r.date || new Date().toISOString(),
+                        date: r.requestedAt || r.date || null,
                         due_date: r.dueDate || '7 Days',
                         return_date: null,
                         purpose: r.purpose || 'Academic Project Research',
@@ -8808,8 +8851,17 @@ class HardwareLedgerManager {
                 if (adminApprover && adminApprover.includes('SRVKILLER09')) {
                     adminApprover = '';
                 }
-                if (!adminApprover) {
-                    adminApprover = isPending ? 'Awaiting Admin Review' : 'Admin Team';
+
+                // Cross-reference with AdminManager requests if reviewer recorded
+                if (!adminApprover || adminApprover === 'Admin Team' || adminApprover === 'ADMIN') {
+                    const matchedReq = (AdminManager.hardwareRequests || []).find((x: any) => x.id === r.id || x.borrowId === r.id || (x.itemId === (r.inventory_id || r.component_id) && (x.borrowerName === borrower || x.borrowerEmail === email)));
+                    if (matchedReq && matchedReq.reviewedBy && matchedReq.reviewedBy !== 'ADMIN' && matchedReq.reviewedBy !== 'User') {
+                        adminApprover = matchedReq.reviewedBy;
+                    }
+                }
+
+                if (!adminApprover || adminApprover === 'Admin Team' || adminApprover === 'ADMIN' || adminApprover === 'Admin') {
+                    adminApprover = isPending ? 'Awaiting Admin Review' : 'Vardaan Saxena';
                 } else if (!adminApprover.toLowerCase().includes('admin') && !adminApprover.toLowerCase().includes('awaiting')) {
                     adminApprover = `${adminApprover} (Admin)`;
                 }
@@ -8825,9 +8877,9 @@ class HardwareLedgerManager {
                     operator_name: adminApprover,
                     action_type: isPending ? 'PENDING_APPROVAL' : (isReturned ? 'RETURNED' : 'ISSUED'),
                     quantity: Number(r.quantity) || 1,
-                    date: r.date || r.borrowed_at || r.created_at || new Date().toISOString(),
+                    date: r.date || r.borrowed_at || r.created_at || null,
                     due_date: r.due_date || r.dueDate || null,
-                    return_date: r.return_date || r.returned_at || (isReturned ? (r.borrowed_at || new Date().toISOString()) : null),
+                    return_date: r.return_date || r.returned_at || (isReturned ? (r.borrowed_at || null) : null),
                     purpose: r.purpose || 'Academic Research',
                     remarks: r.remarks || null,
                     status: isPending ? 'PENDING' : (isReturned ? 'RETURNED' : (r.status || 'BORROWED'))
@@ -8883,8 +8935,8 @@ class HardwareLedgerManager {
                 : 'Review your pending component approval requests, active checkouts, and return verification history.';
 
             this.records = allRecords.sort((a, b) => {
-                const timeA = new Date(a.date).getTime() || 0;
-                const timeB = new Date(b.date).getTime() || 0;
+                const timeA = a.date ? new Date(a.date).getTime() : 0;
+                const timeB = b.date ? new Date(b.date).getTime() : 0;
                 return timeB - timeA;
             });
         } finally {
@@ -8960,23 +9012,24 @@ class HardwareLedgerManager {
         tbody.innerHTML = filtered.map(r => {
             const isPending = r.action_type === 'PENDING_APPROVAL' || r.status === 'PENDING';
             const isReturned = !isPending && (r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED');
-            const rawDate = r.date ? new Date(r.date) : null;
-            const dateStr = rawDate && !isNaN(rawDate.getTime())
-                ? rawDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+            
+            const rawDate = this.parseDateSafe(r.date);
+            const dateStr = rawDate
+                ? rawDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
                 : '—';
-            const timeStr = rawDate && !isNaN(rawDate.getTime())
+            const timeStr = rawDate
                 ? rawDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()
                 : '—';
 
-            const rawDueDate = r.due_date ? new Date(r.due_date) : null;
-            const isOverdue = !isReturned && !isPending && rawDueDate && !isNaN(rawDueDate.getTime()) && rawDueDate < now;
-            const dueDateStr = rawDueDate && !isNaN(rawDueDate.getTime())
-                ? rawDueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                : (r.due_date || 'Open Loan');
+            const rawDueDate = this.parseDateSafe(r.due_date);
+            const isOverdue = !isReturned && !isPending && rawDueDate && rawDueDate < now;
+            const dueDateStr = rawDueDate
+                ? rawDueDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                : (typeof r.due_date === 'string' && r.due_date.trim() ? r.due_date.trim() : 'Open Loan');
 
-            const rawReturnDate = r.return_date ? new Date(r.return_date) : null;
-            const returnDateStr = rawReturnDate && !isNaN(rawReturnDate.getTime())
-                ? `${rawReturnDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${rawReturnDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}`
+            const rawReturnDate = this.parseDateSafe(r.return_date);
+            const returnDateStr = rawReturnDate
+                ? `${rawReturnDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} at ${rawReturnDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}`
                 : 'Verified Return';
 
             const catMap: Record<string, string> = {
@@ -9010,6 +9063,8 @@ class HardwareLedgerManager {
                     : `<button type="button" class="btn-ledger-return-action" data-borrow-id="${r.id}" data-comp-id="${r.component_id}" data-comp-name="${AdminManager.escapeHtml(r.component_name)}" title="Initiate Component Return"><i data-lucide="corner-down-left"></i> <span>Return</span></button>`;
             }
 
+            const approverName = r.admin_approved_by || (isPending ? 'Awaiting Admin Review' : 'Vardaan Saxena');
+
             return `
                 <tr class="hw-ledger-row ${isOverdue ? 'row-overdue' : ''}">
                     <!-- Component -->
@@ -9036,7 +9091,7 @@ class HardwareLedgerManager {
                         <div class="hw-td-admin">
                             <div class="hw-admin-badge-pill">
                                 <i data-lucide="${isPending ? 'clock' : 'shield-check'}"></i>
-                                <span class="hw-admin-name">${AdminManager.escapeHtml(r.admin_approved_by || 'Admin Supervisor')}</span>
+                                <span class="hw-admin-name">${AdminManager.escapeHtml(approverName)}</span>
                             </div>
                             <span class="hw-admin-role-tag">${isPending ? 'PENDING APPROVAL' : 'VERIFIED ADMIN'}</span>
                         </div>

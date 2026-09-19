@@ -22,10 +22,16 @@ backend/dist/
 .env.*
 *.env
 backend/.env
+backend/.env.*
 !.env.example
+!backend/.env.example
 *.pem
 *.key
 *.cert
+credentials*.json
+*credentials*
+*.secret
+*.secret.*
 
 # Temporary Test Files (OpenCode & Nodemailer tests)
 _mailtest.cjs

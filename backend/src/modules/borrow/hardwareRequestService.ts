@@ -1048,6 +1048,19 @@ export const approveHardwareRequest = async (
     } catch {}
   }
 
+  // Log audit
+  try {
+    const isUuid = (str?: string | null) => Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str));
+    await supabase.from('audit_logs').insert([
+      {
+        action: 'Hardware Approved',
+        user_id: isUuid(req.userId) ? req.userId : null,
+        item_id: isUuid(req.itemId) ? req.itemId : null,
+        description: `Admin ${adminName || 'Vardaan Saxena'} approved hardware issue of ${req.quantity} units of "${item.name}" for ${req.borrowerName}.`
+      }
+    ]);
+  } catch {}
+
   // Re-resolve real borrower email for notification dispatch
   req.borrowerEmail = await resolveRealBorrowerEmail(req.userId, req.rollNumber, req.borrowerEmail);
 
