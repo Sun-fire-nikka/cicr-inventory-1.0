@@ -799,6 +799,30 @@ class DatabaseManager {
             } catch { }
         }
 
+        if (typeof HardwareLedgerManager !== 'undefined' && typeof HardwareLedgerManager.getRecords === 'function') {
+            const records = HardwareLedgerManager.getRecords();
+            if (Array.isArray(records)) {
+                records.forEach((rec: any) => {
+                    if (!rec) return;
+                    const isRet = rec.action_type === 'RETURNED' || Boolean(rec.return_date) || rec.status === 'RETURNED';
+                    const isPend = rec.action_type === 'PENDING_APPROVAL' || rec.status === 'PENDING';
+                    const statusVal = isPend ? 'PENDING' : (rec.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
+                    const mappedReq = {
+                        id: rec.id,
+                        type: isRet ? 'RETURN' : 'ISSUE',
+                        borrowId: isRet ? rec.id : undefined,
+                        itemId: rec.component_id,
+                        itemName: rec.component_name,
+                        borrowerName: rec.borrower_name,
+                        borrowerEmail: rec.borrower_email,
+                        rollNumber: rec.borrower_roll,
+                        status: statusVal
+                    };
+                    if (isAdmin || isUserRequest(mappedReq)) addReq(mappedReq);
+                });
+            }
+        }
+
         const pendingCount = allUserReqs.filter(r => r.status === 'PENDING').length;
 
         const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
@@ -2709,6 +2733,11 @@ class ModalManager {
     static activeNotifTab: string = 'issues';
 
     static openLogsDrawer() {
+        if (typeof HardwareLedgerManager !== 'undefined' && typeof HardwareLedgerManager.fetchLedger === 'function') {
+            HardwareLedgerManager.fetchLedger(true).then(() => {
+                ModalManager.renderLogsDrawer();
+            }).catch(() => {});
+        }
         if (typeof AdminManager !== 'undefined' && typeof AdminManager.loadHardwareRequests === 'function') {
             AdminManager.loadHardwareRequests(true).then(() => {
                 ModalManager.renderLogsDrawer();
@@ -2806,18 +2835,6 @@ class ModalManager {
             });
         }
 
-        // Setup Mark All Read button
-        const clearBtn = document.getElementById('notif-clear-all-btn');
-        if (clearBtn && !clearBtn.dataset.bound) {
-            clearBtn.dataset.bound = 'true';
-            clearBtn.addEventListener('click', () => {
-                DatabaseManager.isNotificationsCleared = true;
-                localStorage.setItem('cicr_notifs_cleared', 'true');
-                DatabaseManager.updateNotificationBadges();
-                ToastManager.show('Notifications Cleared', 'All current alerts marked as read.', 'info');
-            });
-        }
-
         // --- GATHER REQUESTS DATA ---
         const combinedRequests: (RequestRecord | AdminHardwareRequest)[] = [];
         const seenDrawerReqKeys = new Set<string>();
@@ -2888,6 +2905,49 @@ class ModalManager {
             }
         });
 
+        // Connect all historical & active checkout requests from backend Hardware Ledger
+        if (typeof HardwareLedgerManager !== 'undefined' && typeof HardwareLedgerManager.getRecords === 'function') {
+            const ledgerRecords = HardwareLedgerManager.getRecords();
+            if (Array.isArray(ledgerRecords)) {
+                ledgerRecords.forEach((rec: any) => {
+                    if (!rec) return;
+                    const isRet = rec.action_type === 'RETURNED' || Boolean(rec.return_date) || rec.status === 'RETURNED';
+                    const isPend = rec.action_type === 'PENDING_APPROVAL' || rec.status === 'PENDING';
+                    const statusVal: 'PENDING' | 'APPROVED' | 'REJECTED' = isPend ? 'PENDING' : (rec.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
+
+                    const mappedReq: any = {
+                        id: rec.id,
+                        type: isRet ? 'RETURN' : 'ISSUE',
+                        borrowId: isRet ? rec.id : undefined,
+                        returnQuantity: isRet ? rec.quantity : undefined,
+                        itemId: rec.component_id,
+                        itemName: rec.component_name,
+                        category: rec.category,
+                        borrowerName: rec.borrower_name,
+                        borrowerEmail: rec.borrower_email,
+                        rollNumber: rec.borrower_roll,
+                        quantity: rec.quantity,
+                        purpose: rec.purpose || (isRet ? 'Return of hardware' : 'Hardware Issue'),
+                        dueDate: rec.due_date,
+                        status: statusVal,
+                        requestedAt: rec.date || new Date().toISOString(),
+                        reviewedAt: rec.return_date || rec.date,
+                        reviewedBy: rec.admin_approved_by || 'Vardaan Saxena'
+                    };
+
+                    if (!isAdmin && isDrawerItemDismissed(mappedReq)) return;
+                    if (isAdmin && mappedReq.status === 'PENDING' && isDrawerItemDismissed(mappedReq)) return;
+
+                    const key = getDrawerKey(mappedReq) + '__' + statusVal;
+                    if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(mappedReq.id)) {
+                        seenDrawerReqKeys.add(key);
+                        seenDrawerReqKeys.add(mappedReq.id);
+                        combinedRequests.push(mappedReq);
+                    }
+                });
+            }
+        }
+
         const isReturnReqRecord = (r: any): boolean => {
             if (r.type === 'RETURN') return true;
             if (Boolean(r.borrowId)) return true;
@@ -2942,7 +3002,9 @@ class ModalManager {
 
             let statusBadge = '';
             if (status === 'APPROVED') {
-                statusBadge = `<span class="notif-status-badge badge-green"><i data-lucide="check-circle-2"></i> ACCEPTED & ISSUED</span>`;
+                statusBadge = isReturnCard
+                    ? `<span class="notif-status-badge badge-cyan"><i data-lucide="shield-check"></i> RETURN ACCEPTED</span>`
+                    : `<span class="notif-status-badge badge-green"><i data-lucide="check-circle-2"></i> ACCEPTED & ISSUED</span>`;
             } else if (status === 'REJECTED') {
                 statusBadge = `<span class="notif-status-badge badge-red"><i data-lucide="x-circle"></i> DECLINED</span>`;
             } else {
@@ -7983,6 +8045,10 @@ class HardwareLedgerManager {
     private static activeFilter: 'all' | 'borrowed' | 'returned' | 'requests' = 'all';
     private static searchQuery = '';
     private static isLoading = false;
+
+    public static getRecords(): LedgerEntry[] {
+        return this.records;
+    }
 
     public static init() {
         if (this.isInitialized) return;
