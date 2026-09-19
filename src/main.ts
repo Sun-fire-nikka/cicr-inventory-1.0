@@ -1193,6 +1193,17 @@ class DashboardManager {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeMobileSidebar();
+
+                // Close notification dropdown
+                const notifDropdown = document.getElementById('header-notif-dropdown');
+                if (notifDropdown && notifDropdown.style.display !== 'none') {
+                    notifDropdown.style.display = 'none';
+                    document.getElementById('header-notif-btn')?.setAttribute('aria-expanded', 'false');
+                }
+
+                // Close all active modals
+                ModalManager.closeAll();
+
                 const signoutModal = document.getElementById('signout-confirm-modal');
                 if (signoutModal && signoutModal.classList.contains('active')) {
                     signoutModal.style.opacity = '0';
@@ -1200,6 +1211,22 @@ class DashboardManager {
                         signoutModal.classList.remove('active');
                         signoutModal.style.display = 'none';
                     }, 250);
+                }
+            }
+
+            // Press '/' to search catalog when not typing in an input/textarea and no modal is active
+            if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+                const anyModalActive = document.querySelector('.modal-overlay.active');
+                if (!anyModalActive) {
+                    e.preventDefault();
+                    if ((window as any).switchSection) {
+                        (window as any).switchSection('inventory-view');
+                    }
+                    const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+                    if (searchInput) {
+                        searchInput.focus();
+                        searchInput.select();
+                    }
                 }
             }
         });
@@ -8728,6 +8755,14 @@ class NotificationCenterManager {
             // Dismiss when clicking outside
             document.addEventListener('click', (e) => {
                 if (!dropdown.contains(e.target as Node) && !notifBtn.contains(e.target as Node)) {
+                    dropdown.style.display = 'none';
+                    notifBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            // Dismiss when pressing Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && dropdown.style.display !== 'none') {
                     dropdown.style.display = 'none';
                     notifBtn.setAttribute('aria-expanded', 'false');
                 }

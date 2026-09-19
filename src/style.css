@@ -7250,7 +7250,7 @@ body.theme-sakura .header-notif-badge {
     top: calc(100% + 10px);
     right: 0;
     width: 360px;
-    max-width: 92vw;
+    max-width: min(360px, calc(100vw - 24px));
     border-radius: 16px;
     background: rgba(11, 15, 28, 0.96);
     backdrop-filter: blur(20px);
@@ -10535,6 +10535,12 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
         align-items: center !important;
         gap: 8px !important;
         flex-shrink: 0 !important;
+        position: relative !important;
+    }
+
+    .header-notif-dropdown {
+        right: -30px !important;
+        max-width: min(360px, calc(100vw - 32px)) !important;
     }
 
     .breadcrumbs {
@@ -10617,6 +10623,25 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     .header-theme-box select {
         font-size: 11px !important;
         max-width: 110px !important;
+    }
+
+    /* Header Notification Dropdown Mobile Viewport Centering & Safety */
+    .header-notif-dropdown {
+        position: fixed !important;
+        top: 58px !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: auto !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: calc(100dvh - 76px) !important;
+        margin: 0 !important;
+        transform: none !important;
+        z-index: 100000 !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 240, 255, 0.25) !important;
+    }
+
+    .notif-dropdown-list {
+        max-height: calc(100dvh - 190px) !important;
     }
 
     /* Dashboard Mobile */
@@ -10843,10 +10868,12 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     .modal-card {
         width: min(94vw, 480px) !important;
         max-width: min(94vw, 480px) !important;
-        max-height: 88vh !important;
+        max-height: min(90dvh, 90vh) !important;
         overflow-y: auto !important;
-        padding: 16px 14px !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 18px 16px !important;
         border-radius: 18px !important;
+        box-sizing: border-box !important;
     }
 
     .modal-header h2 {
@@ -10867,13 +10894,14 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
 
     .modal-footer {
         flex-direction: column-reverse !important;
-        gap: 8px !important;
+        gap: 10px !important;
     }
 
     .modal-footer button {
         width: 100% !important;
         justify-content: center !important;
-        min-height: 42px !important;
+        min-height: 44px !important;
+        font-size: 13px !important;
     }
 
     .modal-content.drawer.notif-drawer {
@@ -10885,7 +10913,37 @@ body.theme-pink .drawer-bulk-return-banner .banner-title {
     }
 }
 
-/* 5. Extra Compact Mobile Breakpoint (<= 380px) */
+/* 5. Compact Header & Screen Optimization (<= 480px) */
+@media (max-width: 480px) {
+    .header-notif-btn {
+        padding: 3px 8px 3px 6px !important;
+        gap: 4px !important;
+    }
+
+    .header-notif-text {
+        display: none !important;
+    }
+
+    .mobile-sidebar-toggle {
+        padding: 7px 9px !important;
+        gap: 0 !important;
+    }
+
+    .mobile-sidebar-toggle span {
+        display: none !important;
+    }
+
+    .header-theme-box {
+        padding: 3px 6px !important;
+    }
+
+    .header-theme-box select {
+        max-width: 95px !important;
+        font-size: 10.5px !important;
+    }
+}
+
+/* 6. Extra Compact Mobile Breakpoint (<= 380px) */
 @media (max-width: 380px) {
     .app-container {
         padding: 8px 6px 30px !important;
@@ -17341,55 +17399,106 @@ body.theme-light #detail-modal .btn-borrow,
 @media (max-width: 640px) {
     #detail-modal .modal-content {
         padding: 20px 16px !important;
-        width: 95% !important;
-        max-height: 92vh !important;
-        border-radius: 16px !important;
+        width: min(95vw, 480px) !important;
+        max-height: min(92dvh, 92vh) !important;
+        border-radius: 18px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    #detail-modal .modal-header {
+        flex-shrink: 0 !important;
+        margin-bottom: 12px !important;
+    }
+
+    #detail-modal .modal-body {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        min-height: 0 !important;
+        padding-right: 4px !important;
+        margin-bottom: 6px !important;
     }
 
     #detail-modal .modal-footer {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 8px !important;
-        margin-top: 14px !important;
+        flex-shrink: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-top: 10px !important;
         padding-top: 14px !important;
         width: 100% !important;
     }
 
-    #detail-modal .modal-footer .btn-borrow {
-        grid-column: span 2 !important;
-        order: -1 !important;
-        min-height: 46px !important;
+    #detail-modal .modal-footer button {
         width: 100% !important;
+        min-height: 46px !important;
         justify-content: center !important;
-        font-size: 13.5px !important;
+        white-space: normal !important;
+        text-align: center !important;
+        padding: 10px 16px !important;
+        box-sizing: border-box !important;
+        border-radius: 12px !important;
+        font-size: 13px !important;
     }
 
-    #detail-modal .modal-footer .btn-return,
+    #detail-modal .modal-footer .btn-borrow {
+        order: 1 !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        min-height: 48px !important;
+    }
+
+    #detail-modal .modal-footer .btn-return {
+        order: 2 !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.35 !important;
+    }
+
     #detail-modal .modal-footer .btn-bulk-return-trigger {
-        min-height: 42px !important;
-        justify-content: center !important;
-        font-size: 11.5px !important;
-        padding: 8px 10px !important;
-        width: 100% !important;
+        order: 3 !important;
+        font-size: 12.5px !important;
+        font-weight: 700 !important;
     }
 
     #detail-modal .modal-footer .btn-modal-delete {
-        grid-column: span 2 !important;
         order: 4 !important;
-        width: 100% !important;
-        justify-content: center !important;
-        min-height: 40px !important;
+        font-size: 12.5px !important;
     }
 
     .borrower-record {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        padding: 12px 14px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        min-width: 0 !important;
+    }
+
+    .borrower-info-main {
+        width: 100% !important;
+        min-width: 0 !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+
+    .borrower-name {
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        line-height: 1.4 !important;
     }
 
     .borrower-record > div:last-child {
-        width: 100%;
-        justify-content: space-between;
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
     }
 }
 
