@@ -53,9 +53,17 @@ const parseRentalDays = (value: any): number | null => {
 const daysErrorMessage = `duration_days must be an integer between ${MIN_RENTAL_DAYS} and ${MAX_RENTAL_DAYS}.`;
 
 export const finalizeBorrow = async (
-  payload: { userId: string; userName: string; itemId: string; quantity: number; purpose: string; durationDays: number }
+  payload: {
+    userId: string;
+    userName: string;
+    itemId: string;
+    quantity: number;
+    purpose: string;
+    durationDays: number;
+    dueDate?: string;
+  }
 ) => {
-  const { userId, userName, itemId, quantity, purpose, durationDays } = payload;
+  const { userId, userName, itemId, quantity, purpose, durationDays, dueDate: customDueDate } = payload;
 
   // 1. Fetch item details (name, category, etc.)
   const { data: initialItem, error: itemErr } = await dbRead
@@ -133,8 +141,19 @@ export const finalizeBorrow = async (
 
   // 3. Create the borrow record.
   const borrowedAt = new Date();
-  const dueDate = new Date(borrowedAt);
-  dueDate.setDate(dueDate.getDate() + durationDays);
+  let dueDate: Date;
+  if (customDueDate) {
+    const parsed = new Date(customDueDate);
+    if (!isNaN(parsed.getTime())) {
+      dueDate = parsed;
+    } else {
+      dueDate = new Date(borrowedAt);
+      dueDate.setDate(dueDate.getDate() + durationDays);
+    }
+  } else {
+    dueDate = new Date(borrowedAt);
+    dueDate.setDate(dueDate.getDate() + durationDays);
+  }
 
   const isUUID = (str?: string) => Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str));
   const safeUserId = isUUID(userId) ? userId : null;
@@ -207,7 +226,15 @@ export const borrowItem = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ status: 'error', message: daysErrorMessage });
     }
 
-    const result = await finalizeBorrow({ userId: userId || '', userName, itemId: inventory_id, quantity: qty, purpose, durationDays: days });
+    const result = await finalizeBorrow({
+      userId: userId || '',
+      userName,
+      itemId: inventory_id,
+      quantity: qty,
+      purpose,
+      durationDays: days,
+      dueDate: req.body.dueDate || req.body.due_date
+    });
     if (result.error) {
       return res.status(result.error.status).json({ status: 'error', message: result.error.message });
     }
@@ -593,9 +620,19 @@ export const getBorrowLedger = async (req: AuthRequest, res: Response) => {
     const userIds = [...new Set((records || []).map((r: any) => r.user_id).filter(Boolean))];
     const itemIds = [...new Set((records || []).map((r: any) => r.inventory_id).filter(Boolean))];
 
+    // Query audit logs to accurately determine the admin who authorized each issue / return
+    const { data: auditLogs } = await dbRead
+      .from('audit_logs')
+      .select('action, user_id, item_id, description, timestamp')
+      .in('action', ['Hardware Approved', 'Approved Return'])
+      .order('timestamp', { ascending: false });
+
+    const auditUserIds = [...new Set((auditLogs || []).map((a: any) => a.user_id).filter(Boolean))];
+    const allUserIds = [...new Set([...userIds, ...auditUserIds])];
+
     const [usersRes, itemsRes] = await Promise.all([
-      userIds.length
-        ? dbRead.from('users').select('id, name, email, roll_number').in('id', userIds)
+      allUserIds.length
+        ? dbRead.from('users').select('id, name, email, roll_number').in('id', allUserIds)
         : Promise.resolve({ data: [] }),
       itemIds.length
         ? dbRead.from('inventory').select('id, name, category, image').in('id', itemIds)
@@ -605,11 +642,46 @@ export const getBorrowLedger = async (req: AuthRequest, res: Response) => {
     const userMap = Object.fromEntries((usersRes.data || []).map((u: any) => [u.id, u]));
     const itemMap = Object.fromEntries((itemsRes.data || []).map((i: any) => [i.id, i]));
 
-    const ledger = (records || []).map((r: any) => ({
-      ...r,
-      users: userMap[r.user_id] || null,
-      inventory: itemMap[r.inventory_id] || null
-    }));
+    const { getRequestByBorrowIdOrItem } = await import('./hardwareRequestService');
+
+    const ledger = (records || []).map((r: any) => {
+      let adminApprover: string | null = null;
+      const borrowerEmail = userMap[r.user_id]?.email || (r.roll_number ? `${r.roll_number}@mail.jiit.ac.in` : undefined);
+      const matchedReq = getRequestByBorrowIdOrItem(r.id, r.inventory_id, r.borrower_name, borrowerEmail);
+
+      if (matchedReq?.reviewedBy && matchedReq.reviewedBy !== 'ADMIN' && matchedReq.reviewedBy !== 'SYSTEM_MASTER') {
+        adminApprover = matchedReq.reviewedBy;
+      }
+
+      if (!adminApprover && auditLogs) {
+        const matchingLog = auditLogs.find((al: any) => {
+          if (r.status === 'RETURNED' && al.action === 'Approved Return' && al.item_id === r.inventory_id) {
+            if (r.borrower_name && al.description?.includes(r.borrower_name)) return true;
+            return true;
+          }
+          if (al.action === 'Hardware Approved' && al.item_id === r.inventory_id) {
+            if (r.borrower_name && al.description?.includes(r.borrower_name)) return true;
+          }
+          return false;
+        });
+
+        if (matchingLog) {
+          const nameMatch = matchingLog.description?.match(/Admin\s+([^,]+?)\s+approved/i);
+          if (nameMatch && nameMatch[1]) {
+            adminApprover = nameMatch[1].trim();
+          } else if (matchingLog.user_id && userMap[matchingLog.user_id]?.name) {
+            adminApprover = userMap[matchingLog.user_id].name;
+          }
+        }
+      }
+
+      return {
+        ...r,
+        admin_approved_by: adminApprover,
+        users: userMap[r.user_id] || null,
+        inventory: itemMap[r.inventory_id] || null
+      };
+    });
 
     const payload = { status: 'success', count: ledger.length, data: ledger };
     await cacheSetJSON(cacheKey, payload, BORROW_HISTORY_CACHE_TTL);

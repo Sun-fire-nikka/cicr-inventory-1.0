@@ -615,6 +615,36 @@ export const getAllHardwareRequests = async (force = false): Promise<HardwareIss
   return sorted;
 };
 
+// Look up a hardware request by borrowId, itemId, or borrower details
+export const getRequestByBorrowIdOrItem = (
+  borrowId?: string,
+  itemId?: string,
+  borrowerName?: string,
+  borrowerEmail?: string
+): HardwareIssueRequest | null => {
+  // Ensure requestsState is loaded
+  try {
+    if (fs.existsSync(STORAGE_FILE) && Object.keys(requestsState).length === 0) {
+      const raw = fs.readFileSync(STORAGE_FILE, 'utf-8');
+      requestsState = JSON.parse(raw);
+    }
+  } catch {}
+
+  const norm = (s?: string) => (s || '').toLowerCase().trim();
+  const tName = norm(borrowerName);
+  const tEmail = norm(borrowerEmail);
+
+  for (const r of Object.values(requestsState)) {
+    if (!r) continue;
+    if (borrowId && (r.borrowId === borrowId || r.id === borrowId)) return r;
+    if (itemId && r.itemId === itemId) {
+      if (tName && norm(r.borrowerName) === tName) return r;
+      if (tEmail && norm(r.borrowerEmail) === tEmail) return r;
+    }
+  }
+  return null;
+};
+
 // Returns a single member's own requests across ALL statuses (PENDING,
 // APPROVED, REJECTED) so the member's client can show approval/rejection
 // feedback in the notifications drawer in addition to the transactional email.
@@ -981,7 +1011,8 @@ export const approveHardwareRequest = async (
     itemId: req.itemId,
     quantity: req.quantity,
     purpose: req.purpose,
-    durationDays: req.durationDays
+    durationDays: req.durationDays,
+    dueDate: req.dueDate
   });
 
   if (result.error) {

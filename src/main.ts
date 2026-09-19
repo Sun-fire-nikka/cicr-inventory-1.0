@@ -1978,8 +1978,8 @@ class ModalManager {
             }
         });
 
-        dueDateInput?.addEventListener('input', () => {
-            if (dueDateInput.value) {
+        const handleDueDateChange = () => {
+            if (dueDateInput?.value) {
                 updateDurationBadge(dueDateInput.value);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -1991,7 +1991,10 @@ class ModalManager {
                     pill.classList.toggle('active', pDays === diffDays);
                 });
             }
-        });
+        };
+
+        dueDateInput?.addEventListener('input', handleDueDateChange);
+        dueDateInput?.addEventListener('change', handleDueDateChange);
 
         presetPills.forEach(pill => {
             pill.addEventListener('click', (e) => {
@@ -3627,6 +3630,16 @@ class ModalManager {
         const defaultDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const dueDate = (dueDateInput && dueDateInput.value) ? dueDateInput.value : defaultDue;
 
+        let durationDays = 7;
+        if (dueDate) {
+            const t0 = new Date();
+            t0.setHours(0, 0, 0, 0);
+            const t1 = new Date(dueDate);
+            t1.setHours(0, 0, 0, 0);
+            const diff = Math.round((t1.getTime() - t0.getTime()) / (1000 * 60 * 60 * 24));
+            if (diff > 0) durationDays = diff;
+        }
+
         const token = localStorage.getItem('cicr_token');
         if (!token) {
             ToastManager.show('Login Required', 'Please log in to submit a component issue request.', 'error');
@@ -3667,8 +3680,10 @@ class ModalManager {
             itemName: selectedItem.name,
             quantity: qty,
             purpose: purpose,
-            duration_days: 7,
+            duration_days: durationDays,
+            durationDays: durationDays,
             dueDate: dueDate,
+            due_date: dueDate,
             borrowerName: borrowerName,
             borrower_name: borrowerName,
             borrowerEmail: userEmail,
@@ -5982,13 +5997,20 @@ class AdminManager {
 
         // 2. Perform background sync to server
         try {
+            const approvalPayload = {
+                ...(reqSnapshot || {}),
+                adminName: currentAdminName,
+                admin_name: currentAdminName,
+                admin_approved_by: `${currentAdminName} (Admin)`,
+                reviewedBy: currentAdminName
+            };
             const res = await fetch(`${API_BASE}/borrow/requests/${id}/approve`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(reqSnapshot || {})
+                body: JSON.stringify(approvalPayload)
             });
 
             if (!res.ok) {
@@ -5999,7 +6021,7 @@ class AdminManager {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ reason: 'Approved offline / unlisted inventory item.' })
+                    body: JSON.stringify({ reason: 'Approved offline / unlisted inventory item.', adminName: currentAdminName })
                 }).catch(() => { });
             }
         } catch (e) {
@@ -6049,24 +6071,38 @@ class AdminManager {
         this.updateStats();
         this.renderHardwareQueue(true);
 
-        // Persist updated status to localStorage
+        // Immediately update localStorage
         const localStoredRaw = localStorage.getItem('cicr_requests');
         if (localStoredRaw) {
             try {
                 const parsed = JSON.parse(localStoredRaw);
-                const updated = parsed.map((r: any) => matchesTarget(r) ? { ...r, status: 'REJECTED', reviewNote: 'Declined by Administrator.' } : r);
+                const updated = parsed.map((r: any) => {
+                    if (matchesTarget(r)) {
+                        return { ...r, status: 'REJECTED', reviewNote: 'Declined by Administrator.' };
+                    }
+                    return r;
+                });
                 localStorage.setItem('cicr_requests', JSON.stringify(updated));
             } catch { }
         }
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
 
+        const currentAdminName = (() => {
+            try {
+                const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+                return u.name || u.username || 'Lab Administrator';
+            } catch { return 'Lab Administrator'; }
+        })();
+
         ToastManager.show('Request Declined', `Hardware issue request for "${itemName}" declined.`, 'info');
-        DatabaseManager.addLog('reject', `Admin declined hardware issue request for "${itemName}"`);
+        DatabaseManager.addLog('reject', `Admin ${currentAdminName} declined hardware issue request for "${itemName}"`);
 
         // 2. Perform background notification to server with full borrower details guaranteed
         const reqPayload = targetReq ? {
             ...targetReq,
+            adminName: currentAdminName,
+            reviewedBy: currentAdminName,
             reason: 'Declined by Administrator.',
             borrowerEmail: targetReq.borrowerEmail,
             borrowerName: targetReq.borrowerName,
@@ -6075,7 +6111,7 @@ class AdminManager {
             purpose: targetReq.purpose,
             type: targetReq.type,
             borrowId: targetReq.borrowId
-        } : { reason: 'Declined by Administrator.' };
+        } : { adminName: currentAdminName, reviewedBy: currentAdminName, reason: 'Declined by Administrator.' };
 
         try {
             await fetch(`${API_BASE}/borrow/requests/${id}/reject`, {
@@ -8422,14 +8458,6 @@ class HardwareLedgerManager {
                 console.warn('Backend /borrow/ledger unreachable, aggregating from inventory...', err);
             }
 
-            // Determine active administrator identity
-            const activeAdminName = (() => {
-                try {
-                    const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
-                    return u.name || u.username || null;
-                } catch { return null; }
-            })();
-
             // Fallback / merge with local inventory records
             const localRecords: LedgerEntry[] = [];
             if (Array.isArray(inventory)) {
@@ -8438,8 +8466,13 @@ class HardwareLedgerManager {
                         const isReturned = b.returned || b.status === 'RETURNED';
                         const borrower = b.userName || b.borrowerName || b.name || 'Student Borrower';
                         let adminApprover = b.adminApprovedBy || b.approvedBy || b.reviewedBy || '';
-                        if (!adminApprover || adminApprover.includes('SRVKILLER09')) {
-                            adminApprover = activeAdminName ? `${activeAdminName} (Admin)` : 'Lab Administrator';
+                        if (adminApprover && adminApprover.includes('SRVKILLER09')) {
+                            adminApprover = '';
+                        }
+                        if (!adminApprover) {
+                            adminApprover = 'Admin Team';
+                        } else if (!adminApprover.toLowerCase().includes('admin') && !adminApprover.toLowerCase().includes('awaiting')) {
+                            adminApprover = `${adminApprover} (Admin)`;
                         }
                         localRecords.push({
                             id: b.id || `local-${item.id}-${idx}`,
@@ -8510,8 +8543,13 @@ class HardwareLedgerManager {
                 const roll = r.borrower_roll || r.roll_number || r.users?.roll_number || (r.borrower_email ? r.borrower_email.split('@')[0] : '—');
                 const email = r.borrower_email || r.users?.email || (roll && roll !== '—' ? `${roll}@mail.jiit.ac.in` : '');
                 let adminApprover = r.admin_approved_by || r.reviewed_by || r.adminName || r.operator_name || '';
-                if (!adminApprover || adminApprover.includes('SRVKILLER09')) {
-                    adminApprover = isPending ? 'Awaiting Admin Review' : (r.users?.role === 'ADMIN' ? r.users.name : (activeAdminName ? `${activeAdminName} (Admin)` : 'Lab Administrator'));
+                if (adminApprover && adminApprover.includes('SRVKILLER09')) {
+                    adminApprover = '';
+                }
+                if (!adminApprover) {
+                    adminApprover = isPending ? 'Awaiting Admin Review' : 'Admin Team';
+                } else if (!adminApprover.toLowerCase().includes('admin') && !adminApprover.toLowerCase().includes('awaiting')) {
+                    adminApprover = `${adminApprover} (Admin)`;
                 }
                 const normalized: LedgerEntry = {
                     id: String(r.id),
