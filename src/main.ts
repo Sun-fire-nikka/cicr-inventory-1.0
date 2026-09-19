@@ -800,8 +800,6 @@ class DatabaseManager {
         }
 
         const pendingCount = allUserReqs.filter(r => r.status === 'PENDING').length;
-        const approvedCount = allUserReqs.filter(r => r.status === 'APPROVED').length;
-        const rejectedCount = allUserReqs.filter(r => r.status === 'REJECTED').length;
 
         const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
 
@@ -816,42 +814,25 @@ class DatabaseManager {
         const sidebarSubtext = document.getElementById('sidebar-notif-subtext');
 
         if (!isLoggedIn) {
-            if (sidebarTitle) sidebarTitle.innerText = 'REQUEST TRACKER';
+            if (sidebarTitle) sidebarTitle.innerText = 'Review Request';
             if (sidebarSubtext) {
-                sidebarSubtext.innerText = 'Sign in to track';
+                sidebarSubtext.innerText = 'Track Requests';
+                sidebarSubtext.title = 'Track Requests';
                 sidebarSubtext.className = 'btn-subtext subtext-neutral';
             }
         } else if (isAdmin) {
-            const adminName = storedUser.name ? storedUser.name.split(' ')[0].toUpperCase() : 'USER';
-            if (sidebarTitle) sidebarTitle.innerText = `${adminName}'S REVIEW QUEUE`;
+            if (sidebarTitle) sidebarTitle.innerText = 'Review Request';
             if (sidebarSubtext) {
-                sidebarSubtext.innerText = `⏳ ${pendingCount} Pending · ✅ ${approvedCount} Accepted · ❌ ${rejectedCount} Rejected`;
-                sidebarSubtext.title = `Pending: ${pendingCount}, Accepted: ${approvedCount}, Rejected: ${rejectedCount}`;
-                if (pendingCount > 0) {
-                    sidebarSubtext.className = 'btn-subtext subtext-pending';
-                } else if (approvedCount > 0) {
-                    sidebarSubtext.className = 'btn-subtext subtext-approved';
-                } else if (rejectedCount > 0) {
-                    sidebarSubtext.className = 'btn-subtext subtext-rejected';
-                } else {
-                    sidebarSubtext.className = 'btn-subtext subtext-neutral';
-                }
+                sidebarSubtext.innerText = 'All User Requests';
+                sidebarSubtext.title = 'All User Requests';
+                sidebarSubtext.className = 'btn-subtext subtext-neutral';
             }
         } else {
-            const memberName = storedUser.name ? storedUser.name.split(' ')[0].toUpperCase() : 'MY';
-            if (sidebarTitle) sidebarTitle.innerText = `${memberName}'S REQUESTS`;
+            if (sidebarTitle) sidebarTitle.innerText = 'Review Request';
             if (sidebarSubtext) {
-                sidebarSubtext.innerText = `⏳ ${pendingCount} Pending · ✅ ${approvedCount} Accepted · ❌ ${rejectedCount} Rejected`;
-                sidebarSubtext.title = `Pending: ${pendingCount}, Accepted: ${approvedCount}, Rejected: ${rejectedCount}`;
-                if (pendingCount > 0) {
-                    sidebarSubtext.className = 'btn-subtext subtext-pending';
-                } else if (approvedCount > 0) {
-                    sidebarSubtext.className = 'btn-subtext subtext-approved';
-                } else if (rejectedCount > 0) {
-                    sidebarSubtext.className = 'btn-subtext subtext-rejected';
-                } else {
-                    sidebarSubtext.className = 'btn-subtext subtext-neutral';
-                }
+                sidebarSubtext.innerText = 'My Requests & Logs';
+                sidebarSubtext.title = 'My Requests & Logs';
+                sidebarSubtext.className = 'btn-subtext subtext-neutral';
             }
         }
 
@@ -2728,6 +2709,11 @@ class ModalManager {
     static activeNotifTab: string = 'issues';
 
     static openLogsDrawer() {
+        if (typeof AdminManager !== 'undefined' && typeof AdminManager.loadHardwareRequests === 'function') {
+            AdminManager.loadHardwareRequests(true).then(() => {
+                ModalManager.renderLogsDrawer();
+            }).catch(() => {});
+        }
         this.renderLogsDrawer();
         this.open('logs-drawer');
         lucide.createIcons();
@@ -2856,6 +2842,7 @@ class ModalManager {
 
         const isDrawerItemDismissed = (r: any): boolean => {
             if (!r) return true;
+            if (r.status !== 'PENDING') return false;
             if (handledIds.has(r.id)) return true;
             if (r.borrowId && handledIds.has(r.borrowId)) return true;
             const key = getDrawerKey(r);
@@ -5336,6 +5323,7 @@ class AdminManager {
 
         const isItemDismissed = (item: any): boolean => {
             if (!item) return true;
+            if (item.status !== 'PENDING') return false;
             if (handledIds.has(item.id)) return true;
             if (item.borrowId && handledIds.has(item.borrowId)) return true;
             const key = this.getRequestCanonicalKey(item);
@@ -5550,8 +5538,18 @@ class AdminManager {
         this.markRequestHandled(id, targetReq?.id, targetReq?.borrowId, targetKey);
 
         // 1. INSTANT 1-CLICK OPTIMISTIC UI UPDATE (Zero Latency)
-        this.hardwareRequests = this.hardwareRequests.filter(r => !matchesTarget(r));
-        requests = requests.filter(r => !matchesTarget(r));
+        this.hardwareRequests.forEach(r => {
+            if (matchesTarget(r)) {
+                r.status = 'APPROVED';
+                r.reviewedBy = currentAdminName;
+                r.reviewedAt = new Date().toISOString();
+            }
+        });
+        requests.forEach(r => {
+            if (matchesTarget(r)) {
+                r.status = 'APPROVED';
+            }
+        });
         this.updateStats();
         this.renderHardwareQueue(true);
 
@@ -5690,7 +5688,14 @@ class AdminManager {
         this.markRequestHandled(id, targetReq?.id, targetReq?.borrowId, targetKey);
 
         // 1. INSTANT 1-CLICK OPTIMISTIC UI UPDATE (Zero Latency)
-        this.hardwareRequests = this.hardwareRequests.filter(r => !matchesTarget(r));
+        this.hardwareRequests.forEach(r => {
+            if (matchesTarget(r)) {
+                r.status = 'REJECTED';
+                r.reviewNote = 'Declined by Administrator.';
+                r.reviewedBy = currentAdminName;
+                r.reviewedAt = new Date().toISOString();
+            }
+        });
         requests.forEach(r => {
             if (matchesTarget(r)) {
                 r.status = 'REJECTED';

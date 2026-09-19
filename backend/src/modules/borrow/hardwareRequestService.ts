@@ -556,17 +556,19 @@ export const getAllHardwareRequests = async (force = false): Promise<HardwareIss
     }
   }
 
-  // 1. Query pending and return-requested rows from Supabase borrow_records
+  // 1. Query all status rows from Supabase borrow_records
   try {
     const { data: dbRecords } = await dbRead
       .from('borrow_records')
       .select('*, inventory(name, category)')
-      .in('status', ['PENDING', 'RETURN_REQUESTED'])
+      .in('status', ['PENDING', 'RETURN_REQUESTED', 'BORROWED', 'RETURNED'])
       .order('borrowed_at', { ascending: false });
 
     if (dbRecords && dbRecords.length > 0) {
       for (const rec of dbRecords) {
-        const isReturn = rec.status === 'RETURN_REQUESTED';
+        const isReturn = rec.status === 'RETURN_REQUESTED' || rec.status === 'RETURNED';
+        const isApproved = rec.status === 'BORROWED' || rec.status === 'RETURNED';
+        const recStatus: 'PENDING' | 'APPROVED' | 'REJECTED' = isApproved ? 'APPROVED' : 'PENDING';
         const recEmail = rec.roll_number ? `${rec.roll_number}@mail.jiit.ac.in` : 'student@mail.jiit.ac.in';
         const recName = (rec.borrower_name || '').toLowerCase().trim();
         const reqTime = rec.borrowed_at ? new Date(rec.borrowed_at).getTime() : 0;
@@ -596,7 +598,7 @@ export const getAllHardwareRequests = async (force = false): Promise<HardwareIss
             purpose: rec.purpose || (isReturn ? `Return ${rec.quantity || 1} units` : 'Testing'),
             durationDays: 7,
             dueDate: rec.due_date ? rec.due_date.split('T')[0] : '',
-            status: 'PENDING',
+            status: recStatus,
             requestedAt: rec.borrowed_at || new Date().toISOString()
           };
           canonicalMap.set(key, newReq);
@@ -604,7 +606,7 @@ export const getAllHardwareRequests = async (force = false): Promise<HardwareIss
       }
     }
   } catch (err) {
-    console.warn('[HARDWARE REQUEST] Error reading pending records from Supabase:', err);
+    console.warn('[HARDWARE REQUEST] Error reading records from Supabase:', err);
   }
 
   const sorted = Array.from(canonicalMap.values()).sort((a, b) => {
@@ -682,7 +684,7 @@ export const getUserHardwareRequests = async (identity: {
     let query = dbRead
       .from('borrow_records')
       .select('*, inventory(name, category)')
-      .in('status', ['PENDING', 'RETURN_REQUESTED']);
+      .in('status', ['PENDING', 'RETURN_REQUESTED', 'BORROWED', 'RETURNED']);
 
     if (identity.userId && identity.rollNumber) {
       query = query.or(`user_id.eq.${identity.userId},roll_number.eq.${identity.rollNumber}`);
@@ -697,7 +699,9 @@ export const getUserHardwareRequests = async (identity: {
       for (const rec of dbOwn) {
         const alreadyIn = own.some(r => r.id === rec.id || r.borrowId === rec.id);
         if (!alreadyIn) {
-          const isRet = rec.status === 'RETURN_REQUESTED';
+          const isRet = rec.status === 'RETURN_REQUESTED' || rec.status === 'RETURNED';
+          const isApp = rec.status === 'BORROWED' || rec.status === 'RETURNED';
+          const statusVal: 'PENDING' | 'APPROVED' | 'REJECTED' = isApp ? 'APPROVED' : 'PENDING';
           own.push({
             id: rec.id,
             type: isRet ? 'RETURN' : 'ISSUE',
@@ -714,7 +718,7 @@ export const getUserHardwareRequests = async (identity: {
             purpose: rec.purpose || (isRet ? 'Return verification' : 'Issue request'),
             durationDays: 7,
             dueDate: rec.due_date ? rec.due_date.split('T')[0] : '',
-            status: 'PENDING',
+            status: statusVal,
             requestedAt: rec.borrowed_at || new Date().toISOString()
           });
         }
