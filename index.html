@@ -1579,14 +1579,14 @@
                         <span class="notif-header-beacon"></span>
                     </div>
                     <div>
-                        <h2>Notifications & Telemetry</h2>
-                        <p id="notif-drawer-subtitle">Operational alerts, loan schedules & system updates</p>
+                        <h2 id="notif-drawer-title">Component Requests</h2>
+                        <p id="notif-drawer-subtitle">Track pending, accepted & rejected component requests</p>
                     </div>
                 </div>
                 <div class="notif-header-actions-row">
                     <div class="notif-role-badge" id="notif-drawer-role-badge">
                         <span class="role-dot" id="notif-role-dot"></span>
-                        <span id="notif-role-text">ADMIN TELEMETRY</span>
+                        <span id="notif-role-text">MEMBER ACCESS</span>
                     </div>
                     <button class="notif-clear-btn" id="notif-clear-all-btn" title="Mark all alerts as viewed">
                         <i data-lucide="check-check"></i>
@@ -1595,47 +1595,22 @@
                 </div>
             </div>
 
-            <!-- Segmented Category Tabs -->
+            <!-- Segmented Category Tabs: Exclusively Pending, Accepted & Rejected -->
             <div class="notif-tabs-bar" id="notif-tabs-bar">
-                <button class="notif-tab-btn active" data-category="issues" id="notif-tab-issues">
-                    <i data-lucide="send"></i>
-                    <span>Issues</span>
-                    <span class="notif-tab-count text-cyan" id="notif-count-issues">0</span>
-                </button>
-                <button class="notif-tab-btn" data-category="requests" id="notif-tab-requests">
-                    <i data-lucide="inbox"></i>
-                    <span id="notif-label-requests">Requests</span>
-                    <span class="notif-tab-count text-purple" id="notif-count-requests">0</span>
-                </button>
-                <button class="notif-tab-btn" data-category="pending" id="notif-tab-pending" style="display: none;">
+                <button class="notif-tab-btn active" data-category="pending" id="notif-tab-pending">
                     <i data-lucide="clock"></i>
                     <span>Pending</span>
                     <span class="notif-tab-count text-yellow" id="notif-count-pending">0</span>
                 </button>
-                <button class="notif-tab-btn" data-category="approved" id="notif-tab-approved" style="display: none;">
+                <button class="notif-tab-btn" data-category="approved" id="notif-tab-approved">
                     <i data-lucide="check-circle-2"></i>
                     <span>Accepted</span>
                     <span class="notif-tab-count text-green" id="notif-count-approved">0</span>
                 </button>
-                <button class="notif-tab-btn" data-category="rejected" id="notif-tab-rejected" style="display: none;">
+                <button class="notif-tab-btn" data-category="rejected" id="notif-tab-rejected">
                     <i data-lucide="x-circle"></i>
                     <span>Rejected</span>
                     <span class="notif-tab-count text-red" id="notif-count-rejected">0</span>
-                </button>
-                <button class="notif-tab-btn" data-category="returns" id="notif-tab-returns">
-                    <i data-lucide="rotate-ccw"></i>
-                    <span id="notif-label-returns">Returns</span>
-                    <span class="notif-tab-count text-red" id="notif-count-returns">0</span>
-                </button>
-                <button class="notif-tab-btn" data-category="stock" id="notif-tab-stock">
-                    <i data-lucide="boxes"></i>
-                    <span>Stock</span>
-                    <span class="notif-tab-count text-yellow" id="notif-count-stock">0</span>
-                </button>
-                <button class="notif-tab-btn" data-category="system" id="notif-tab-system">
-                    <i data-lucide="terminal"></i>
-                    <span>System</span>
-                    <span class="notif-tab-count text-purple" id="notif-count-system">0</span>
                 </button>
             </div>
 

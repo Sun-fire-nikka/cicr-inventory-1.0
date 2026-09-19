@@ -15676,94 +15676,250 @@ body:not(.user-is-admin) #btn-modal-delete-item {
 }
 
 /* Light Theme Support */
-body.theme-light .modal-content.drawer.notif-drawer {
+body.theme-light .modal-content.drawer.notif-drawer,
+[data-theme="light"] .modal-content.drawer.notif-drawer {
     background: rgba(255, 255, 255, 0.98) !important;
-    border-left-color: rgba(0, 0, 0, 0.1) !important;
-    box-shadow: -10px 0 35px rgba(0, 0, 0, 0.1) !important;
+    border-left: 1px solid rgba(203, 213, 225, 0.8) !important;
+    box-shadow: -10px 0 35px rgba(15, 23, 42, 0.1) !important;
+    color: #0f172a !important;
 }
 
-body.theme-light .notif-drawer-header {
-    border-bottom-color: rgba(0, 0, 0, 0.08);
+body.theme-light .notif-drawer-header,
+[data-theme="light"] .notif-drawer-header {
+    border-bottom: 1px solid rgba(203, 213, 225, 0.7) !important;
 }
 
-body.theme-light .notif-drawer-header h2 {
-    color: #0f172a;
+body.theme-light .notif-drawer-header h2,
+[data-theme="light"] .notif-drawer-header h2 {
+    color: #0f172a !important;
 }
 
-body.theme-light .notif-drawer-header p {
-    color: #64748b;
+body.theme-light .notif-drawer-header p,
+[data-theme="light"] .notif-drawer-header p {
+    color: #64748b !important;
 }
 
-body.theme-light .notif-tabs-bar {
-    background: #f1f5f9;
-    border-color: #e2e8f0;
+body.theme-light .notif-tabs-bar,
+[data-theme="light"] .notif-tabs-bar {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
 }
 
-body.theme-light .notif-tab-btn {
-    color: #64748b;
+body.theme-light .notif-tab-btn,
+[data-theme="light"] .notif-tab-btn {
+    color: #64748b !important;
 }
 
-body.theme-light .notif-tab-btn.active {
-    background: #ffffff;
-    border-color: #00f0ff;
-    color: #0284c7;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+body.theme-light .notif-tab-btn.active,
+[data-theme="light"] .notif-tab-btn.active {
+    background: #ffffff !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
 }
 
-body.theme-light .notif-card {
-    background: #ffffff;
-    border-color: #e2e8f0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+body.theme-light .notif-card,
+[data-theme="light"] .notif-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
 }
 
-body.theme-light .notif-card-main-text {
-    color: #0f172a;
+body.theme-light .notif-card-main-text,
+[data-theme="light"] .notif-card-main-text {
+    color: #0f172a !important;
 }
 
-body.theme-light .notif-card-main-text strong {
-    color: #0284c7;
+body.theme-light .notif-card-main-text strong,
+[data-theme="light"] .notif-card-main-text strong {
+    color: #0284c7 !important;
 }
 
-body.theme-light .notif-card-sub-text {
-    color: #64748b;
+body.theme-light .notif-card-sub-text,
+[data-theme="light"] .notif-card-sub-text {
+    color: #64748b !important;
 }
 
-body.theme-light .notif-section-header {
-    border-bottom-color: #e2e8f0;
+body.theme-light .notif-user-pill,
+[data-theme="light"] .notif-user-pill {
+    background: rgba(2, 132, 199, 0.08) !important;
+    color: #0284c7 !important;
+    border: 1px solid rgba(2, 132, 199, 0.25) !important;
 }
 
-body.theme-light .notif-empty-state h4 {
-    color: #1e293b;
+body.theme-light .notif-empty-state h4,
+[data-theme="light"] .notif-empty-state h4 {
+    color: #1e293b !important;
 }
 
-/* Sakura / Pink Theme Support */
+body.theme-light .notif-empty-state p,
+[data-theme="light"] .notif-empty-state p {
+    color: #64748b !important;
+}
+
+/* Sakura & Pink Theme Support (Ultra-Crisp, High-Contrast Frosted Blush Glass) */
 body.theme-pink .modal-content.drawer.notif-drawer,
-body.theme-sakura .modal-content.drawer.notif-drawer {
-    background: rgba(22, 10, 20, 0.96) !important;
-    border-left-color: rgba(236, 72, 153, 0.35) !important;
-    box-shadow: -10px 0 40px rgba(236, 72, 153, 0.15) !important;
+body.theme-sakura .modal-content.drawer.notif-drawer,
+[data-theme="pink"] .modal-content.drawer.notif-drawer,
+[data-theme="sakura"] .modal-content.drawer.notif-drawer {
+    background: linear-gradient(180deg, rgba(255, 246, 251, 0.98) 0%, rgba(253, 232, 243, 0.98) 100%) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-left: 1px solid rgba(244, 114, 182, 0.45) !important;
+    box-shadow: -12px 0 50px rgba(236, 72, 153, 0.18), -2px 0 15px rgba(244, 114, 182, 0.12) !important;
+    color: #3b0714 !important;
+}
+
+body.theme-pink .notif-drawer-header,
+body.theme-sakura .notif-drawer-header,
+[data-theme="pink"] .notif-drawer-header,
+[data-theme="sakura"] .notif-drawer-header {
+    border-bottom: 1px solid rgba(244, 114, 182, 0.3) !important;
+}
+
+body.theme-pink .notif-drawer-header h2,
+body.theme-sakura .notif-drawer-header h2,
+[data-theme="pink"] .notif-drawer-header h2,
+[data-theme="sakura"] .notif-drawer-header h2 {
+    color: #881337 !important;
+    font-weight: 700 !important;
+}
+
+body.theme-pink .notif-drawer-header p,
+body.theme-sakura .notif-drawer-header p,
+[data-theme="pink"] .notif-drawer-header p,
+[data-theme="sakura"] .notif-drawer-header p {
+    color: #9f1239 !important;
+    font-weight: 500 !important;
+}
+
+body.theme-pink .notif-header-icon-box,
+body.theme-sakura .notif-header-icon-box,
+[data-theme="pink"] .notif-header-icon-box,
+[data-theme="sakura"] .notif-header-icon-box {
+    background: rgba(244, 114, 182, 0.18) !important;
+    border: 1px solid rgba(244, 114, 182, 0.5) !important;
+    box-shadow: 0 0 16px rgba(236, 72, 153, 0.2) !important;
 }
 
 body.theme-pink .notif-header-bell,
 body.theme-sakura .notif-header-bell,
+[data-theme="pink"] .notif-header-bell,
+[data-theme="sakura"] .notif-header-bell {
+    color: #be185d !important;
+}
+
 body.theme-pink .notif-header-beacon,
 body.theme-sakura .notif-header-beacon,
-body.theme-pink .notif-tab-btn.active,
-body.theme-sakura .notif-tab-btn.active {
-    color: #ec4899;
+[data-theme="pink"] .notif-header-beacon,
+[data-theme="sakura"] .notif-header-beacon {
+    background: #e11d48 !important;
+    box-shadow: 0 0 8px #e11d48 !important;
 }
 
-body.theme-pink .notif-header-icon-box,
-body.theme-sakura .notif-header-icon-box {
-    background: rgba(236, 72, 153, 0.12);
-    border-color: rgba(236, 72, 153, 0.35);
+body.theme-pink .notif-tabs-bar,
+body.theme-sakura .notif-tabs-bar,
+[data-theme="pink"] .notif-tabs-bar,
+[data-theme="sakura"] .notif-tabs-bar {
+    background: rgba(255, 235, 245, 0.95) !important;
+    border: 1px solid rgba(244, 114, 182, 0.35) !important;
+}
+
+body.theme-pink .notif-tab-btn,
+body.theme-sakura .notif-tab-btn,
+[data-theme="pink"] .notif-tab-btn,
+[data-theme="sakura"] .notif-tab-btn {
+    color: #831843 !important;
+    font-weight: 600 !important;
+}
+
+body.theme-pink .notif-tab-btn:hover,
+body.theme-sakura .notif-tab-btn:hover,
+[data-theme="pink"] .notif-tab-btn:hover,
+[data-theme="sakura"] .notif-tab-btn:hover {
+    background: rgba(244, 114, 182, 0.15) !important;
+    color: #881337 !important;
 }
 
 body.theme-pink .notif-tab-btn.active,
-body.theme-sakura .notif-tab-btn.active {
-    background: rgba(236, 72, 153, 0.15);
-    border-color: rgba(236, 72, 153, 0.4);
-    box-shadow: 0 0 12px rgba(236, 72, 153, 0.2);
+body.theme-sakura .notif-tab-btn.active,
+[data-theme="pink"] .notif-tab-btn.active,
+[data-theme="sakura"] .notif-tab-btn.active {
+    background: #ffffff !important;
+    color: #be185d !important;
+    border-color: #ec4899 !important;
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.2) !important;
+    font-weight: 700 !important;
+}
+
+body.theme-pink .notif-card,
+body.theme-sakura .notif-card,
+[data-theme="pink"] .notif-card,
+[data-theme="sakura"] .notif-card {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(244, 114, 182, 0.35) !important;
+    box-shadow: 0 4px 16px rgba(236, 72, 153, 0.08) !important;
+}
+
+body.theme-pink .notif-card:hover,
+body.theme-sakura .notif-card:hover,
+[data-theme="pink"] .notif-card:hover,
+[data-theme="sakura"] .notif-card:hover {
+    border-color: rgba(236, 72, 153, 0.6) !important;
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.16) !important;
+}
+
+body.theme-pink .notif-card-main-text,
+body.theme-sakura .notif-card-main-text,
+[data-theme="pink"] .notif-card-main-text,
+[data-theme="sakura"] .notif-card-main-text {
+    color: #3b0714 !important;
+}
+
+body.theme-pink .notif-card-main-text strong,
+body.theme-sakura .notif-card-main-text strong,
+[data-theme="pink"] .notif-card-main-text strong,
+[data-theme="sakura"] .notif-card-main-text strong {
+    color: #881337 !important;
+}
+
+body.theme-pink .notif-card-sub-text,
+body.theme-sakura .notif-card-sub-text,
+[data-theme="pink"] .notif-card-sub-text,
+[data-theme="sakura"] .notif-card-sub-text {
+    color: #831843 !important;
+}
+
+body.theme-pink .notif-user-pill,
+body.theme-sakura .notif-user-pill,
+[data-theme="pink"] .notif-user-pill,
+[data-theme="sakura"] .notif-user-pill {
+    background: rgba(244, 114, 182, 0.15) !important;
+    color: #881337 !important;
+    border: 1px solid rgba(244, 114, 182, 0.35) !important;
+}
+
+body.theme-pink .notif-empty-state .notif-empty-icon-box,
+body.theme-sakura .notif-empty-state .notif-empty-icon-box,
+[data-theme="pink"] .notif-empty-state .notif-empty-icon-box,
+[data-theme="sakura"] .notif-empty-state .notif-empty-icon-box {
+    background: rgba(244, 114, 182, 0.15) !important;
+    border: 1px solid rgba(244, 114, 182, 0.4) !important;
+    color: #be185d !important;
+}
+
+body.theme-pink .notif-empty-state h4,
+body.theme-sakura .notif-empty-state h4,
+[data-theme="pink"] .notif-empty-state h4,
+[data-theme="sakura"] .notif-empty-state h4 {
+    color: #881337 !important;
+}
+
+body.theme-pink .notif-empty-state p,
+body.theme-sakura .notif-empty-state p,
+[data-theme="pink"] .notif-empty-state p,
+[data-theme="sakura"] .notif-empty-state p {
+    color: #9f1239 !important;
 }
 
 @media (max-width: 600px) {

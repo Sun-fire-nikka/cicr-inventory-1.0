@@ -32,6 +32,9 @@ credentials*.json
 *credentials*
 *.secret
 *.secret.*
+session*.md
+*_data.json
+backend/*_data.json
 
 # Temporary Test Files (OpenCode & Nodemailer tests)
 _mailtest.cjs

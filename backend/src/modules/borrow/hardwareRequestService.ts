@@ -547,8 +547,9 @@ export const getAllHardwareRequests = async (force = false): Promise<HardwareIss
   };
 
   for (const r of Object.values(requestsState)) {
-    if (r && r.status === 'PENDING') {
-      const key = getCanonicalKey(r);
+    if (r) {
+      const status = r.status || 'PENDING';
+      const key = `${getCanonicalKey(r)}__${status}`;
       if (!canonicalMap.has(key) && !canonicalMap.has(r.id)) {
         canonicalMap.set(key, r);
       }
