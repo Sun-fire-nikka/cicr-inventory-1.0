@@ -167,10 +167,10 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="signup-batch">Batch / Lab Section</label>
+                        <label for="signup-batch">Academic Branch</label>
                         <div class="input-icon-wrapper">
-                            <i data-lucide="users" class="input-icon"></i>
-                            <input type="text" id="signup-batch" required placeholder="e.g. F1, F2, B3">
+                            <i data-lucide="git-branch" class="input-icon"></i>
+                            <input type="text" id="signup-batch" required placeholder="e.g. CSE / ECE / IT">
                         </div>
                     </div>
                     <div class="form-group">
@@ -305,10 +305,10 @@
                                 style="display: none; background: #ff007a; color: #ffffff; margin-left: auto; font-size: 7.5px; padding: 1px 5px; border-radius: 9999px; font-weight: 800;">0</span>
                         </a>
                         <a href="#" class="sidebar-nav-link" id="side-nav-hardware-logs"
-                            data-target="hardware-logs-view" style="display: none !important;"
+                            data-target="hardware-logs-view"
                             onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')">
-                            <i data-lucide="clipboard-check"></i>
-                            <span>Component Logs</span>
+                            <i data-lucide="clipboard-list"></i>
+                            <span>Logs</span>
                             <span class="badge" id="hw-logs-count-badge"
                                 style="display: none; background: var(--neon-cyan, #00f0ff); color: #000; margin-left: auto; font-size: 7.5px; padding: 1px 5px; border-radius: 9999px; font-weight: 800;">0</span>
                         </a>
@@ -413,6 +413,48 @@
                 </div>
 
                 <div class="header-right">
+                    <!-- Notification Button & Dropdown -->
+                    <div class="header-notif-wrapper">
+                        <button type="button" class="header-notif-btn" id="header-notif-btn" title="View Recent Notifications" aria-label="Notifications" aria-expanded="false">
+                            <div class="header-notif-icon-box">
+                                <i data-lucide="bell"></i>
+                                <span class="header-notif-dot" id="header-notif-dot" style="display: none;"></span>
+                            </div>
+                            <span class="header-notif-text">NOTIFICATIONS</span>
+                            <span class="header-notif-badge" id="header-notif-badge" style="display: none;">0</span>
+                        </button>
+
+                        <!-- Recent Notifications Popover -->
+                        <div class="header-notif-dropdown glass glow-border" id="header-notif-dropdown" style="display: none;">
+                            <div class="notif-dropdown-header">
+                                <div class="notif-dropdown-title-row">
+                                    <div class="notif-dropdown-icon-wrap">
+                                        <i data-lucide="bell-ring"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="notif-dropdown-title">Recent Notifications</h4>
+                                        <span class="notif-dropdown-sub" id="notif-dropdown-sub">Personal Activity & Updates</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-clear-notifs" id="btn-clear-notifs" title="Mark all as read">
+                                    <i data-lucide="check-check"></i>
+                                    <span>Mark Read</span>
+                                </button>
+                            </div>
+
+                            <div class="notif-dropdown-list" id="header-notif-list">
+                                <!-- Dynamic notifications injected here -->
+                            </div>
+
+                            <div class="notif-dropdown-footer">
+                                <button type="button" class="notif-view-all-btn" id="btn-notif-view-all-logs">
+                                    <span>View All in Logs</span>
+                                    <i data-lucide="arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="header-theme-box">
                         <i data-lucide="palette" class="header-theme-icon"></i>
                         <select id="header-theme-select" title="Switch Theme">
@@ -434,8 +476,6 @@
                         <div class="card-greetings-left">
                             <span class="dashboard-subtitle-accent" id="dashboard-subtitle-role">ADMIN DASHBOARD</span>
                             <h1 class="dashboard-greeting-title" id="dashboard-greeting">Good evening, Operator</h1>
-                            <p class="dashboard-greeting-desc">Here's what's happening across CICR Inventory right now.
-                            </p>
                         </div>
 
                         <div class="card-clock-right">
@@ -481,18 +521,16 @@
                         </div>
 
                         <div class="dash-card card-yellow" id="dash-card-hardware-logs"
-                            style="display: none !important;"
                             onclick="window.switchSection && window.switchSection('hardware-logs-view')">
                             <div class="dash-card-header">
                                 <div class="dash-card-icon-wrapper">
-                                    <i data-lucide="clipboard-check"></i>
+                                    <i data-lucide="clipboard-list"></i>
                                 </div>
-                                <span class="dash-card-tag">AUDIT REGISTRY</span>
+                                <span class="dash-card-tag" id="dash-card-hw-tag">ACTIVITY LOGS</span>
                             </div>
                             <div class="dash-card-body">
-                                <h3 class="dash-card-title">Component Issue & Return Logs</h3>
-                                <p class="dash-card-desc">Detailed tabular ledger of who has issued and returned
-                                    components, exact timestamps, and declared purposes.</p>
+                                <h3 class="dash-card-title" id="dash-card-hw-title">Logs & Issue History</h3>
+                                <p class="dash-card-desc" id="dash-card-hw-desc">Track your pending approval requests, active component checkouts, and return verification history.</p>
                             </div>
                             <div class="dash-card-footer">
                                 <i data-lucide="arrow-right"></i>
@@ -785,9 +823,9 @@
                                             <i data-lucide="hash"></i>
                                             <span id="profile-hero-roll-text">Roll No: —</span>
                                         </span>
-                                        <span class="profile-tag-pill" id="profile-hero-batch-tag">
-                                            <i data-lucide="calendar"></i>
-                                            <span id="profile-hero-batch-text">Batch: —</span>
+                                        <span class="profile-tag-pill" id="profile-hero-branch-tag">
+                                            <i data-lucide="git-branch"></i>
+                                            <span id="profile-hero-branch-text">Branch: —</span>
                                         </span>
                                     </div>
                                 </div>
@@ -818,35 +856,28 @@
                                                 authorization</p>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="profile-details-list">
+                                                            <div class="profile-details-list">
                                     <div class="profile-detail-row">
                                         <span class="detail-label"><i data-lucide="user"></i> Full Name</span>
                                         <span class="detail-val" id="cred-full-name">—</span>
                                     </div>
                                     <div class="profile-detail-row">
-                                        <span class="detail-label"><i data-lucide="hash"></i> Enrollment / Roll
-                                            No.</span>
-                                        <span class="detail-val highlight-cyan font-mono" id="cred-roll-no">—</span>
+                                        <span class="detail-label"><i data-lucide="git-branch"></i> Branch</span>
+                                        <span class="detail-val highlight-purple" id="cred-branch">—</span>
                                     </div>
                                     <div class="profile-detail-row">
-                                        <span class="detail-label"><i data-lucide="at-sign"></i> Username Handle</span>
-                                        <span class="detail-val font-mono" id="cred-username">—</span>
+                                        <span class="detail-label"><i data-lucide="hash"></i> Enrollment / Roll No.</span>
+                                        <span class="detail-val highlight-cyan font-mono" id="cred-roll-no">—</span>
                                     </div>
                                     <div class="profile-detail-row">
                                         <span class="detail-label"><i data-lucide="mail"></i> Email</span>
                                         <span class="detail-val font-mono" id="cred-email">—</span>
                                     </div>
                                     <div class="profile-detail-row">
-                                        <span class="detail-label"><i data-lucide="calendar"></i> Batch</span>
-                                        <span class="detail-val highlight-purple" id="cred-batch">—</span>
-                                    </div>
-                                    <div class="profile-detail-row">
                                         <span class="detail-label"><i data-lucide="shield"></i> Authorization</span>
                                         <span class="detail-val" id="cred-role">—</span>
                                     </div>
-                                </div>
+                                </div>                    </div>
                             </div>
 
                             <!-- Right: Borrowed Components Desk -->
@@ -1116,26 +1147,28 @@
                 </section>
 
                 <!-- Section: Component Issue & Return Ledger (Core Workspace - Just below Admin Portal - Admin Only) -->
-                <section class="hardware-logs-section reveal" id="hardware-logs-view" style="display: none !important;">
+                <section class="hardware-logs-section reveal" id="hardware-logs-view">
                     <div class="hw-ledger-container">
                         <!-- Top Banner Header -->
                         <div class="hw-ledger-header-card glass">
                             <div class="hw-ledger-header-left">
                                 <div class="hw-ledger-header-icon">
-                                    <i data-lucide="clipboard-check"></i>
+                                    <i data-lucide="clipboard-list"></i>
                                 </div>
                                 <div>
-                                    <span class="hw-ledger-tag">ADMIN AUDIT REGISTRY</span>
-                                    <h1 class="hw-ledger-title">Component Issue & Return Ledger</h1>
-                                    <p class="hw-ledger-desc">Official administrative registry tracking component
-                                        checkouts, verified borrower credentials, authorizing administrator, timestamps,
-                                        and return verification.</p>
+                                    <span class="hw-ledger-tag" id="hw-ledger-banner-tag">ACTIVITY & COMPONENT LOGS</span>
+                                    <h1 class="hw-ledger-title" id="hw-ledger-banner-title">Logs & Issue History</h1>
+                                    <p class="hw-ledger-desc" id="hw-ledger-banner-desc">Review your pending component approval requests, active checkouts, and return verification history.</p>
                                 </div>
                             </div>
                             <div class="hw-ledger-stats-bar">
                                 <div class="hw-stat-pill pill-cyan">
                                     <span class="hw-stat-num" id="hw-stat-total-logs">0</span>
-                                    <span class="hw-stat-lbl">Total Events</span>
+                                    <span class="hw-stat-lbl">Total Logs</span>
+                                </div>
+                                <div class="hw-stat-pill pill-pink" id="hw-stat-pill-requests">
+                                    <span class="hw-stat-num" id="hw-stat-pending-requests">0</span>
+                                    <span class="hw-stat-lbl">Approval Requests</span>
                                 </div>
                                 <div class="hw-stat-pill pill-yellow">
                                     <span class="hw-stat-num" id="hw-stat-active-issued">0</span>
@@ -1159,6 +1192,10 @@
                             <div class="hw-ledger-filters">
                                 <button type="button" class="hw-filter-btn active" data-filter="all" id="hw-filter-all">
                                     <span>All Events</span>
+                                </button>
+                                <button type="button" class="hw-filter-btn" data-filter="requests" id="hw-filter-requests">
+                                    <span class="status-indicator-dot dot-pink"></span>
+                                    <span>Approval Requests</span>
                                 </button>
                                 <button type="button" class="hw-filter-btn" data-filter="borrowed"
                                     id="hw-filter-borrowed">
@@ -1813,12 +1850,12 @@
 
                     <div class="form-group">
                         <div class="label-row-cyber">
-                            <label for="edit-profile-batch">Academic Batch</label>
-                            <span class="cyber-badge-tag">YEAR</span>
+                            <label for="edit-profile-branch">Academic Branch</label>
+                            <span class="cyber-badge-tag">BRANCH</span>
                         </div>
                         <div class="input-icon-wrapper">
-                            <i data-lucide="calendar" class="input-icon"></i>
-                            <input type="text" id="edit-profile-batch" placeholder="e.g. 2022-2026">
+                            <i data-lucide="git-branch" class="input-icon"></i>
+                            <input type="text" id="edit-profile-branch" placeholder="e.g. CSE / ECE / IT">
                         </div>
                     </div>
                 </div>
@@ -2022,12 +2059,12 @@
                         <span class="profile-status-pill approved" id="inspector-user-status">ACTIVE</span>
                     </div>
                     <div class="profile-inspector-meta-row">
+                        <span class="profile-meta-item" id="inspector-user-branch"><i data-lucide="git-branch"></i>
+                            <span>CSE</span></span>
                         <span class="profile-meta-item" id="inspector-user-roll"><i data-lucide="hash"></i>
                             <span>—</span></span>
                         <span class="profile-meta-item" id="inspector-user-email"><i data-lucide="mail"></i>
                             <span>student@mail.jiit.ac.in</span></span>
-                        <span class="profile-meta-item" id="inspector-user-batch"><i data-lucide="graduation-cap"></i>
-                            <span>JIIT Member</span></span>
                     </div>
                 </div>
             </div>

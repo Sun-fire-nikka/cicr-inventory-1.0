@@ -842,6 +842,10 @@ class DatabaseManager {
                 if (navBadge.classList.contains('pulse')) navBadge.classList.remove('pulse');
             }
         }
+
+        if (typeof NotificationCenterManager !== 'undefined' && typeof NotificationCenterManager.updateNotifications === 'function') {
+            NotificationCenterManager.updateNotifications();
+        }
     }
 
     private static isSyncInProgress = false;
@@ -1204,7 +1208,7 @@ class DashboardManager {
                     'meetings-view': 'MEETINGS',
                     'events-view': 'EVENTS',
                     'inventory-view': 'INVENTORY',
-                    'hardware-logs-view': 'COMPONENT LEDGER',
+                    'hardware-logs-view': 'LOGS',
                     'developers-view': 'MEET THE DEVELOPERS',
                     'profile-view': 'MY PROFILE',
                     'admin-view': 'ADMIN MANAGEMENT'
@@ -1229,13 +1233,8 @@ class DashboardManager {
                 AdminManager.loadAuditLogs();
             }
 
-            // If switching to hardware-logs-view, enforce admin access & render component issue & return ledger
+            // If switching to hardware-logs-view, render logs & component history
             if (targetId === 'hardware-logs-view') {
-                if (ModalManager.getCurrentRole() !== 'ADMIN') {
-                    ToastManager.show('Access Restricted', 'Admin privileges required to access Component Ledger.', 'warning');
-                    switchSection('inventory-view');
-                    return;
-                }
                 if (typeof HardwareLedgerManager !== 'undefined') {
                     HardwareLedgerManager.render();
                 }
@@ -5232,12 +5231,30 @@ class PasswordResetManager {
 // ==========================================
 // Admin Member Management & Approval System
 // ==========================================
+export function getStudentBranch(rollVal?: string | null, explicitBranch?: string | null): string {
+    if (explicitBranch && explicitBranch.trim() && !explicitBranch.includes('NaN')) {
+        const cleanExp = explicitBranch.trim().toUpperCase();
+        if (cleanExp !== 'JIIT MEMBER' && cleanExp !== 'ACTIVE' && cleanExp !== 'BATCH: ACTIVE') {
+            return cleanExp;
+        }
+    }
+    const clean = (rollVal || '').trim();
+    if (!clean) return 'CSE';
+    if (clean.includes('103') || clean.includes('0103')) return 'CSE';
+    if (clean.includes('102') || clean.includes('0102')) return 'IT';
+    if (clean.includes('121') || clean.includes('0121')) return 'ECE';
+    if (clean.includes('114') || clean.includes('0114')) return 'BT';
+    if (clean.includes('101') || clean.includes('0101')) return 'CSE';
+    return 'CSE';
+}
+
 interface AdminUserRecord {
     id: string;
     name: string;
     email: string;
     username?: string | null;
     batch?: string | null;
+    branch?: string | null;
     roll_number: string | null;
     role: 'ADMIN' | 'MEMBER';
     status: 'APPROVED' | 'PENDING' | 'REJECTED';
@@ -6114,7 +6131,7 @@ class AdminManager {
                 <div class="pending-card-extra">
                     <span><i data-lucide="calendar" style="width:11px; height:11px; vertical-align:middle;"></i> ${dt.dateStr}${dt.timeStr ? ` • ${dt.timeStr}` : ''}</span>
                     ${u.roll_number ? `<span>• Roll: ${this.escapeHtml(u.roll_number)}</span>` : ''}
-                    ${u.batch ? `<span>• Batch: ${this.escapeHtml(u.batch)}</span>` : ''}
+                    <span>• Branch: ${this.escapeHtml(getStudentBranch(u.roll_number, u.batch))}</span>
                 </div>
                 <div class="pending-card-actions">
                     <button class="btn-approve" onclick="window.adminApprove('${u.id}')">
@@ -6217,9 +6234,8 @@ class AdminManager {
                 actionsHtml = `${roleBtn} ${deleteBtn}`;
             }
 
-            const metaSub = u.roll_number || u.batch
-                ? `<span class="user-cell-subtext">${u.roll_number ? `Roll: ${this.escapeHtml(u.roll_number)}` : ''}${u.roll_number && u.batch ? ' • ' : ''}${u.batch ? `Batch: ${this.escapeHtml(u.batch)}` : ''}</span>`
-                : (u.username ? `<span class="user-cell-subtext">@${this.escapeHtml(u.username)}</span>` : '');
+            const userBranch = getStudentBranch(u.roll_number, u.batch);
+            const metaSub = `<span class="user-cell-subtext">${u.roll_number ? `Roll: ${this.escapeHtml(u.roll_number)}` : ''}${u.roll_number && userBranch ? ' • ' : ''}${userBranch ? `Branch: ${this.escapeHtml(userBranch)}` : ''}</span>`;
 
             return `
                 <tr data-user-id="${u.id}">
@@ -6564,7 +6580,7 @@ class AdminManager {
         const displayName = matchedUser?.name || data.name || 'Student Borrower';
         const displayEmail = matchedUser?.email || data.email || 'student@mail.jiit.ac.in';
         const displayRoll = matchedUser?.roll_number || data.roll || (displayEmail.includes('@') ? displayEmail.split('@')[0] : '—');
-        const displayBatch = matchedUser?.batch || data.batch || 'JIIT Member';
+        const displayBranch = getStudentBranch(displayRoll, matchedUser?.batch || data.batch);
         const displayRole = matchedUser?.role || (ModalManager.isDesignatedAdminUser(displayEmail, displayName) ? 'ADMIN' : 'MEMBER');
         const displayStatus = matchedUser?.status || 'ACTIVE';
 
@@ -6590,14 +6606,14 @@ class AdminManager {
         }
 
         // Meta items
+        const branchEl = document.getElementById('inspector-user-branch');
+        if (branchEl) branchEl.innerHTML = `<i data-lucide="git-branch"></i> <span>Branch: ${AdminManager.escapeHtml(displayBranch)}</span>`;
+
         const rollEl = document.getElementById('inspector-user-roll');
         if (rollEl) rollEl.innerHTML = `<i data-lucide="hash"></i> <span>Roll: ${AdminManager.escapeHtml(displayRoll)}</span>`;
 
         const emailEl = document.getElementById('inspector-user-email');
         if (emailEl) emailEl.innerHTML = `<i data-lucide="mail"></i> <span>${AdminManager.escapeHtml(displayEmail)}</span>`;
-
-        const batchEl = document.getElementById('inspector-user-batch');
-        if (batchEl) batchEl.innerHTML = `<i data-lucide="graduation-cap"></i> <span>Batch: ${AdminManager.escapeHtml(displayBatch)}</span>`;
 
         // Gather active and historical borrowings for this user
         const normName = displayName.toLowerCase().trim();
@@ -7628,19 +7644,7 @@ class ProfileViewManager {
         const role = (user.role || localStorage.getItem('cicr_user_role') || 'MEMBER').toUpperCase();
         const roll = (user.roll_number || user.roll || '').trim();
         const email = (user.email || (roll ? `${roll}@mail.jiit.ac.in` : '')).trim() || 'operator@mail.jiit.ac.in';
-        const extractSafeBatch = (rollVal: string, existingBatch?: string): string => {
-            if (existingBatch && existingBatch.trim() && !existingBatch.includes('NaN')) {
-                return existingBatch.trim();
-            }
-            const clean = (rollVal || '').trim();
-            const digits = clean.replace(/\D/g, '');
-            if (digits.length >= 2) {
-                const yr = parseInt(digits.substring(0, 2), 10);
-                if (yr >= 18 && yr <= 32) return `20${yr}-20${yr + 4}`;
-            }
-            return '2023-2027';
-        };
-        const batch = extractSafeBatch(roll, user.batch);
+        const branch = getStudentBranch(roll, user.branch || user.batch);
         const userId = user.id ? `#${String(user.id).substring(0, 8)}` : `#${roll || 'JIIT-09'}`;
 
         // Hero initials & avatar image sync
@@ -7710,9 +7714,9 @@ class ProfileViewManager {
             heroRollTag.textContent = roll ? `Roll No: ${roll}` : 'Roll: JIIT Member';
         }
 
-        const heroBatchTag = document.getElementById('profile-hero-batch-text');
-        if (heroBatchTag) {
-            heroBatchTag.textContent = batch ? `Batch: ${batch}` : 'Batch: Active';
+        const heroBranchTag = document.getElementById('profile-hero-branch-text');
+        if (heroBranchTag) {
+            heroBranchTag.textContent = branch ? `Branch: ${branch}` : 'Branch: CSE';
         }
 
         // Role & Status Badges
@@ -7753,8 +7757,8 @@ class ProfileViewManager {
         const credMail = document.getElementById('cred-email');
         if (credMail) credMail.textContent = email;
 
-        const credBat = document.getElementById('cred-batch');
-        if (credBat) credBat.textContent = batch || '—';
+        const credBranch = document.getElementById('cred-branch');
+        if (credBranch) credBranch.textContent = branch || 'CSE';
 
         const credRol = document.getElementById('cred-role');
         if (credRol) {
@@ -8092,7 +8096,7 @@ class ProfileEditManager {
 
         const nameInput = document.getElementById('edit-profile-name') as HTMLInputElement;
         const usernameInput = document.getElementById('edit-profile-username') as HTMLInputElement;
-        const batchInput = document.getElementById('edit-profile-batch') as HTMLInputElement;
+        const branchInput = document.getElementById('edit-profile-branch') as HTMLInputElement;
         const emailInput = document.getElementById('edit-profile-email') as HTMLInputElement;
         const rollInput = document.getElementById('edit-profile-roll') as HTMLInputElement;
         const errorEl = document.getElementById('edit-profile-error');
@@ -8102,23 +8106,11 @@ class ProfileEditManager {
         const username = (user.username || (authName ? authName.toLowerCase() : '')).trim();
         const roll = (user.roll_number || user.roll || '').trim();
         const email = (user.email || (roll ? `${roll}@mail.jiit.ac.in` : '')).trim();
-        const extractSafeBatch = (rollVal: string, existingBatch?: string): string => {
-            if (existingBatch && existingBatch.trim() && !existingBatch.includes('NaN')) {
-                return existingBatch.trim();
-            }
-            const clean = (rollVal || '').trim();
-            const digits = clean.replace(/\D/g, '');
-            if (digits.length >= 2) {
-                const yr = parseInt(digits.substring(0, 2), 10);
-                if (yr >= 18 && yr <= 32) return `20${yr}-20${yr + 4}`;
-            }
-            return '2023-2027';
-        };
-        const batch = extractSafeBatch(roll, user.batch);
+        const branch = getStudentBranch(roll, user.branch || user.batch);
 
         if (nameInput) nameInput.value = name;
         if (usernameInput) usernameInput.value = username;
-        if (batchInput) batchInput.value = batch;
+        if (branchInput) branchInput.value = branch;
         if (emailInput) {
             emailInput.value = email || 'student@mail.jiit.ac.in';
             emailInput.readOnly = true;
@@ -8161,13 +8153,13 @@ class ProfileEditManager {
     private static async saveProfile() {
         const nameInput = document.getElementById('edit-profile-name') as HTMLInputElement;
         const usernameInput = document.getElementById('edit-profile-username') as HTMLInputElement;
-        const batchInput = document.getElementById('edit-profile-batch') as HTMLInputElement;
+        const branchInput = document.getElementById('edit-profile-branch') as HTMLInputElement;
         const saveBtn = document.getElementById('save-edit-profile-btn') as HTMLButtonElement;
         const errorEl = document.getElementById('edit-profile-error');
 
         const newName = nameInput ? nameInput.value.trim() : '';
         const newUsername = usernameInput ? usernameInput.value.trim() : '';
-        const newBatch = batchInput ? batchInput.value.trim() : '';
+        const newBranch = branchInput ? branchInput.value.trim() : '';
 
         if (!newName) {
             if (errorEl) {
@@ -8198,7 +8190,8 @@ class ProfileEditManager {
         const payload: any = {
             name: newName,
             username: newUsername || undefined,
-            batch: newBatch || undefined
+            branch: newBranch || undefined,
+            batch: newBranch || undefined
         };
 
         if (this.pendingAvatarUrl !== undefined) {
@@ -8238,7 +8231,8 @@ class ProfileEditManager {
                     ...user,
                     name: newName,
                     username: newUsername || user.username,
-                    batch: newBatch || user.batch,
+                    branch: newBranch || user.branch,
+                    batch: newBranch || user.batch,
                     avatar_url: this.pendingAvatarUrl !== undefined ? (this.pendingAvatarUrl || null) : user.avatar_url
                 };
             }
@@ -8287,7 +8281,8 @@ class ProfileEditManager {
 (window as any).closeProfileEditModal = () => ProfileEditManager.close();
 
 // ==========================================
-// Hardware Ledger Manager (Tabular Issue & Return Registry)
+// ==========================================
+// Hardware Ledger & Activity Logs Manager
 // ==========================================
 interface LedgerEntry {
     id: string;
@@ -8299,7 +8294,7 @@ interface LedgerEntry {
     borrower_roll: string;
     admin_approved_by: string;
     operator_name?: string;
-    action_type: 'ISSUED' | 'RETURNED';
+    action_type: 'ISSUED' | 'RETURNED' | 'PENDING_APPROVAL';
     quantity: number;
     date: string;
     due_date?: string | null;
@@ -8312,7 +8307,7 @@ interface LedgerEntry {
 class HardwareLedgerManager {
     private static isInitialized = false;
     private static records: LedgerEntry[] = [];
-    private static activeFilter: 'all' | 'borrowed' | 'returned' = 'all';
+    private static activeFilter: 'all' | 'borrowed' | 'returned' | 'requests' = 'all';
     private static searchQuery = '';
     private static isLoading = false;
 
@@ -8376,11 +8371,20 @@ class HardwareLedgerManager {
         const tbodyEl = document.getElementById('hw-ledger-table-body');
         if (tbodyEl) {
             tbodyEl.addEventListener('click', (e) => {
-                const btn = (e.target as HTMLElement).closest('.hw-btn-delete-log') as HTMLElement | null;
-                if (btn && btn.dataset.logId) {
+                const delBtn = (e.target as HTMLElement).closest('.hw-btn-delete-log') as HTMLElement | null;
+                if (delBtn && delBtn.dataset.logId) {
                     e.preventDefault();
                     e.stopPropagation();
-                    HardwareLedgerManager.promptDeleteRecord(btn.dataset.logId);
+                    HardwareLedgerManager.promptDeleteRecord(delBtn.dataset.logId);
+                    return;
+                }
+
+                const retBtn = (e.target as HTMLElement).closest('.btn-ledger-return-action') as HTMLElement | null;
+                if (retBtn && retBtn.dataset.borrowId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    HardwareLedgerManager.triggerReturn(retBtn.dataset.borrowId, retBtn.dataset.compId, retBtn.dataset.compName);
+                    return;
                 }
             });
         }
@@ -8452,7 +8456,7 @@ class HardwareLedgerManager {
                             date: b.date || new Date().toISOString(),
                             due_date: b.dueDate || null,
                             return_date: b.returnDate || (isReturned ? (b.date || new Date().toISOString()) : null),
-                            purpose: b.purpose || b.reason || 'Hardware Prototyping & Capstone Research',
+                            purpose: b.purpose || b.reason || 'Hardware Prototyping & Research',
                             remarks: b.remarks || b.note || null,
                             status: isReturned ? 'RETURNED' : (b.status || 'APPROVED')
                         });
@@ -8460,16 +8464,54 @@ class HardwareLedgerManager {
                 });
             }
 
+            // Collect pending approval requests from local state and backend
+            const pendingRequestRecords: LedgerEntry[] = [];
+            let localReqs: any[] = [];
+            try {
+                const raw = localStorage.getItem('cicr_requests');
+                if (raw) localReqs = JSON.parse(raw);
+            } catch {}
+
+            const combinedReqs = [...(requests || []), ...localReqs];
+            const seenReqIds = new Set<string>();
+            combinedReqs.forEach((r: any) => {
+                if (!r || !r.id || seenReqIds.has(String(r.id))) return;
+                seenReqIds.add(String(r.id));
+                const status = (r.status || 'PENDING').toUpperCase();
+                if (status === 'PENDING') {
+                    pendingRequestRecords.push({
+                        id: `req-${r.id}`,
+                        component_id: r.itemId || '',
+                        component_name: r.itemName || 'Hardware Component',
+                        category: r.category || 'Component',
+                        borrower_name: r.name || r.borrowerName || 'Student Borrower',
+                        borrower_email: r.email || r.borrowerEmail || (r.roll ? `${r.roll}@mail.jiit.ac.in` : ''),
+                        borrower_roll: r.roll || r.rollNumber || '—',
+                        admin_approved_by: 'Awaiting Admin Review',
+                        operator_name: 'Awaiting Admin Review',
+                        action_type: 'PENDING_APPROVAL',
+                        quantity: Number(r.qty || r.quantity) || 1,
+                        date: r.requestedAt || r.date || new Date().toISOString(),
+                        due_date: r.dueDate || '7 Days',
+                        return_date: null,
+                        purpose: r.purpose || 'Academic Project Research',
+                        remarks: 'Pending Administrator Approval',
+                        status: 'PENDING'
+                    });
+                }
+            });
+
             // Merge and deduplicate with rigorous normalization
             const mergedMap = new Map<string, LedgerEntry>();
             fetchedData.forEach((r: any) => {
                 const isReturned = r.status === 'RETURNED' || Boolean(r.returned_at);
+                const isPending = r.status === 'PENDING' || r.action_type === 'PENDING_APPROVAL';
                 const borrower = r.borrower_name || r.users?.name || r.userName || 'Student Borrower';
                 const roll = r.borrower_roll || r.roll_number || r.users?.roll_number || (r.borrower_email ? r.borrower_email.split('@')[0] : '—');
                 const email = r.borrower_email || r.users?.email || (roll && roll !== '—' ? `${roll}@mail.jiit.ac.in` : '');
                 let adminApprover = r.admin_approved_by || r.reviewed_by || r.adminName || r.operator_name || '';
                 if (!adminApprover || adminApprover.includes('SRVKILLER09')) {
-                    adminApprover = (r.users?.role === 'ADMIN' ? r.users.name : (activeAdminName ? `${activeAdminName} (Admin)` : 'Lab Administrator'));
+                    adminApprover = isPending ? 'Awaiting Admin Review' : (r.users?.role === 'ADMIN' ? r.users.name : (activeAdminName ? `${activeAdminName} (Admin)` : 'Lab Administrator'));
                 }
                 const normalized: LedgerEntry = {
                     id: String(r.id),
@@ -8481,24 +8523,66 @@ class HardwareLedgerManager {
                     borrower_roll: roll,
                     admin_approved_by: adminApprover,
                     operator_name: adminApprover,
-                    action_type: isReturned ? 'RETURNED' : 'ISSUED',
+                    action_type: isPending ? 'PENDING_APPROVAL' : (isReturned ? 'RETURNED' : 'ISSUED'),
                     quantity: Number(r.quantity) || 1,
                     date: r.date || r.borrowed_at || r.created_at || new Date().toISOString(),
                     due_date: r.due_date || r.dueDate || null,
                     return_date: r.return_date || r.returned_at || (isReturned ? (r.borrowed_at || new Date().toISOString()) : null),
                     purpose: r.purpose || 'Academic Research',
                     remarks: r.remarks || null,
-                    status: isReturned ? 'RETURNED' : (r.status || 'BORROWED')
+                    status: isPending ? 'PENDING' : (isReturned ? 'RETURNED' : (r.status || 'BORROWED'))
                 };
                 mergedMap.set(String(r.id), normalized);
             });
+
             localRecords.forEach(r => {
                 if (!mergedMap.has(String(r.id))) {
                     mergedMap.set(String(r.id), r);
                 }
             });
 
-            this.records = Array.from(mergedMap.values()).sort((a, b) => {
+            pendingRequestRecords.forEach(r => {
+                if (!mergedMap.has(String(r.id))) {
+                    mergedMap.set(String(r.id), r);
+                }
+            });
+
+            let allRecords = Array.from(mergedMap.values());
+
+            // Personalization: If not admin, only show records belonging to the current user
+            const currentRole = ModalManager.getCurrentRole();
+            const isAdmin = currentRole === 'ADMIN';
+
+            if (!isAdmin) {
+                let currentUser: any = {};
+                try { currentUser = JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch {}
+                const authName = localStorage.getItem('cicr_auth') || '';
+                const myEmail = (currentUser.email || '').toLowerCase().trim();
+                const myRoll = (currentUser.roll_number || currentUser.roll || '').toLowerCase().trim();
+                const myName = (currentUser.name || currentUser.username || authName || '').toLowerCase().trim();
+
+                allRecords = allRecords.filter(r => {
+                    const bEmail = (r.borrower_email || '').toLowerCase().trim();
+                    const bRoll = (r.borrower_roll || '').toLowerCase().trim();
+                    const bName = (r.borrower_name || '').toLowerCase().trim();
+
+                    return (myEmail && bEmail === myEmail) ||
+                           (myRoll && bRoll === myRoll) ||
+                           (myName && bName === myName);
+                });
+            }
+
+            // Update banner dynamic titles
+            const tagEl = document.getElementById('hw-ledger-banner-tag');
+            const titleEl = document.getElementById('hw-ledger-banner-title');
+            const descEl = document.getElementById('hw-ledger-banner-desc');
+            if (tagEl) tagEl.textContent = isAdmin ? 'ADMIN AUDIT REGISTRY' : 'MY ACTIVITY LOGS';
+            if (titleEl) titleEl.textContent = isAdmin ? 'Component Issue & Return Ledger' : 'My Logs & Issue History';
+            if (descEl) descEl.textContent = isAdmin 
+                ? 'Official administrative registry tracking component checkouts, verified borrower credentials, authorizing administrator, timestamps, and return verification.'
+                : 'Review your pending component approval requests, active checkouts, and return verification history.';
+
+            this.records = allRecords.sort((a, b) => {
                 const timeA = new Date(a.date).getTime() || 0;
                 const timeB = new Date(b.date).getTime() || 0;
                 return timeB - timeA;
@@ -8511,13 +8595,16 @@ class HardwareLedgerManager {
     public static renderTable() {
         // Update stats
         const totalLogs = this.records.length;
-        const activeIssued = this.records.filter(r => r.action_type !== 'RETURNED' && !r.return_date && r.status !== 'RETURNED').length;
+        const pendingRequests = this.records.filter(r => r.action_type === 'PENDING_APPROVAL' || r.status === 'PENDING').length;
+        const activeIssued = this.records.filter(r => (r.action_type === 'ISSUED' || r.status === 'APPROVED' || r.status === 'BORROWED') && !r.return_date && r.status !== 'RETURNED').length;
         const totalReturned = this.records.filter(r => r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED').length;
 
         const statTotal = document.getElementById('hw-stat-total-logs');
+        const statPending = document.getElementById('hw-stat-pending-requests');
         const statActive = document.getElementById('hw-stat-active-issued');
         const statReturned = document.getElementById('hw-stat-total-returned');
         if (statTotal) statTotal.textContent = String(totalLogs);
+        if (statPending) statPending.textContent = String(pendingRequests);
         if (statActive) statActive.textContent = String(activeIssued);
         if (statReturned) statReturned.textContent = String(totalReturned);
 
@@ -8527,7 +8614,11 @@ class HardwareLedgerManager {
 
         const filtered = this.records.filter(r => {
             const isRet = r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED';
-            if (filter === 'borrowed' && isRet) return false;
+            const isPend = r.action_type === 'PENDING_APPROVAL' || r.status === 'PENDING';
+            const isIss = (r.action_type === 'ISSUED' || r.status === 'APPROVED' || r.status === 'BORROWED') && !isRet && !isPend;
+
+            if (filter === 'requests' && !isPend) return false;
+            if (filter === 'borrowed' && !isIss) return false;
             if (filter === 'returned' && !isRet) return false;
 
             if (query) {
@@ -8553,8 +8644,8 @@ class HardwareLedgerManager {
                     <td colspan="10" class="hw-ledger-empty-cell">
                         <div class="hw-empty-state">
                             <i data-lucide="clipboard-x"></i>
-                            <h4>No Ledger Records Found</h4>
-                            <p>${query ? `No transactions match "${AdminManager.escapeHtml(query)}". Try a different search.` : 'There are currently no component checkout or return transactions recorded in the system.'}</p>
+                            <h4>No Activity Logs Found</h4>
+                            <p>${query ? `No records match "${AdminManager.escapeHtml(query)}". Try a different search.` : 'There are currently no transactions or approval requests recorded for this filter.'}</p>
                         </div>
                     </td>
                 </tr>
@@ -8564,9 +8655,11 @@ class HardwareLedgerManager {
         }
 
         const now = new Date();
+        const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
 
         tbody.innerHTML = filtered.map(r => {
-            const isReturned = r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED';
+            const isPending = r.action_type === 'PENDING_APPROVAL' || r.status === 'PENDING';
+            const isReturned = !isPending && (r.action_type === 'RETURNED' || Boolean(r.return_date) || r.status === 'RETURNED');
             const rawDate = r.date ? new Date(r.date) : null;
             const dateStr = rawDate && !isNaN(rawDate.getTime())
                 ? rawDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -8576,10 +8669,10 @@ class HardwareLedgerManager {
                 : '—';
 
             const rawDueDate = r.due_date ? new Date(r.due_date) : null;
-            const isOverdue = !isReturned && rawDueDate && !isNaN(rawDueDate.getTime()) && rawDueDate < now;
+            const isOverdue = !isReturned && !isPending && rawDueDate && !isNaN(rawDueDate.getTime()) && rawDueDate < now;
             const dueDateStr = rawDueDate && !isNaN(rawDueDate.getTime())
                 ? rawDueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                : 'Open Loan';
+                : (r.due_date || 'Open Loan');
 
             const rawReturnDate = r.return_date ? new Date(r.return_date) : null;
             const returnDateStr = rawReturnDate && !isNaN(rawReturnDate.getTime())
@@ -8595,13 +8688,27 @@ class HardwareLedgerManager {
             };
             const catLabel = catMap[r.category?.toLowerCase()] || (r.category || 'COMPONENT').toUpperCase();
 
-            const actionBadge = isReturned
-                ? `<span class="hw-badge-event badge-returned"><i data-lucide="check-circle-2"></i> RETURNED</span>`
-                : `<span class="hw-badge-event badge-issued"><i data-lucide="arrow-down-right"></i> ISSUED</span>`;
+            let actionBadge = '';
+            let statusCell = '';
+            let actionCell = '';
 
-            const statusCell = isReturned
-                ? `<div class="hw-return-log text-green"><i data-lucide="shield-check"></i> <span>Returned: ${returnDateStr}</span></div>`
-                : `<div class="hw-due-log"><span class="${isOverdue ? 'text-pink font-bold' : 'text-cyan'}"><i data-lucide="clock"></i> Due: ${dueDateStr}</span>${isOverdue ? '<span class="badge-overdue-pill"><i data-lucide="alert-triangle"></i> OVERDUE</span>' : ''}</div>`;
+            if (isPending) {
+                actionBadge = `<span class="hw-badge-event badge-pending-pill"><i data-lucide="clock"></i> REQUESTED</span>`;
+                statusCell = `<div class="hw-due-log text-pink"><i data-lucide="hourglass"></i> <span>Awaiting Admin Review</span></div>`;
+                actionCell = `<span class="badge-in-review-pill"><i data-lucide="loader"></i> In Review</span>`;
+            } else if (isReturned) {
+                actionBadge = `<span class="hw-badge-event badge-returned"><i data-lucide="check-circle-2"></i> RETURNED</span>`;
+                statusCell = `<div class="hw-return-log text-green"><i data-lucide="shield-check"></i> <span>Returned: ${returnDateStr}</span></div>`;
+                actionCell = isAdmin
+                    ? `<button type="button" class="hw-btn-delete-log" data-log-id="${r.id}" title="Permanently Delete Record (Admin Only)"><i data-lucide="trash-2"></i></button>`
+                    : `<span class="badge-completed-pill"><i data-lucide="check-check"></i> Completed</span>`;
+            } else {
+                actionBadge = `<span class="hw-badge-event badge-issued"><i data-lucide="arrow-down-right"></i> ISSUED</span>`;
+                statusCell = `<div class="hw-due-log"><span class="${isOverdue ? 'text-pink font-bold' : 'text-cyan'}"><i data-lucide="clock"></i> Due: ${dueDateStr}</span>${isOverdue ? '<span class="badge-overdue-pill"><i data-lucide="alert-triangle"></i> OVERDUE</span>' : ''}</div>`;
+                actionCell = isAdmin
+                    ? `<button type="button" class="hw-btn-delete-log" data-log-id="${r.id}" title="Permanently Delete Record (Admin Only)"><i data-lucide="trash-2"></i></button>`
+                    : `<button type="button" class="btn-ledger-return-action" data-borrow-id="${r.id}" data-comp-id="${r.component_id}" data-comp-name="${AdminManager.escapeHtml(r.component_name)}" title="Initiate Component Return"><i data-lucide="corner-down-left"></i> <span>Return</span></button>`;
+            }
 
             return `
                 <tr class="hw-ledger-row ${isOverdue ? 'row-overdue' : ''}">
@@ -8628,10 +8735,10 @@ class HardwareLedgerManager {
                     <td>
                         <div class="hw-td-admin">
                             <div class="hw-admin-badge-pill">
-                                <i data-lucide="shield-check"></i>
+                                <i data-lucide="${isPending ? 'clock' : 'shield-check'}"></i>
                                 <span class="hw-admin-name">${AdminManager.escapeHtml(r.admin_approved_by || 'Admin Supervisor')}</span>
                             </div>
-                            <span class="hw-admin-role-tag">VERIFIED ADMIN</span>
+                            <span class="hw-admin-role-tag">${isPending ? 'PENDING APPROVAL' : 'VERIFIED ADMIN'}</span>
                         </div>
                     </td>
 
@@ -8669,9 +8776,7 @@ class HardwareLedgerManager {
 
                     <!-- Action -->
                     <td>
-                        <button type="button" class="hw-btn-delete-log" data-log-id="${r.id}" title="Permanently Delete Record (Admin Only)">
-                            <i data-lucide="trash-2"></i>
-                        </button>
+                        ${actionCell}
                     </td>
                 </tr>
             `;
@@ -8680,6 +8785,56 @@ class HardwareLedgerManager {
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
             lucide.createIcons();
         }
+    }
+
+    public static triggerReturn(borrowId: string, compId?: string, compName?: string) {
+        if (!borrowId) return;
+
+        // Try to find the item and loan in inventory
+        let targetItem: InventoryItem | undefined;
+        let targetLoan: BorrowRecord | undefined;
+        let targetIdx = 0;
+
+        if (Array.isArray(inventory)) {
+            for (const item of inventory) {
+                if (compId && String(item.id) === String(compId)) {
+                    targetItem = item;
+                }
+                const idx = (item.borrowedBy || []).findIndex((b: any) => String(b.id) === String(borrowId));
+                if (idx !== -1) {
+                    targetItem = item;
+                    targetLoan = item.borrowedBy[idx];
+                    targetIdx = idx;
+                    break;
+                }
+            }
+        }
+
+        if (targetItem && targetLoan) {
+            ModalManager.openReturnModal(targetLoan, targetItem, targetIdx);
+            return;
+        }
+
+        // Synthesize item & loan if not found in local array
+        let user: any = {};
+        try { user = JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch {}
+        const synthItem: any = targetItem || {
+            id: compId || '1',
+            name: compName || 'Hardware Component',
+            borrowedBy: []
+        };
+        const synthLoan: BorrowRecord = {
+            id: borrowId,
+            name: user.name || 'Member',
+            roll: user.roll_number || user.roll || '',
+            email: user.email || '',
+            qty: 1,
+            date: new Date().toISOString(),
+            purpose: 'Academic Project Research',
+            status: 'BORROWED'
+        };
+
+        ModalManager.openReturnModal(synthLoan, synthItem, 0);
     }
 
     public static pendingDeleteId: string | null = null;
@@ -8741,6 +8896,396 @@ class HardwareLedgerManager {
         (window as any).switchSection('hardware-logs-view');
     }
 };
+
+// ==========================================
+// Personalized Notification Center Manager
+// ==========================================
+class NotificationCenterManager {
+    private static isInitialized = false;
+    private static readIds: Set<string> = new Set();
+
+    public static init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+
+        try {
+            const stored = localStorage.getItem('cicr_read_notifs');
+            if (stored) {
+                this.readIds = new Set(JSON.parse(stored));
+            }
+        } catch {}
+
+        const notifBtn = document.getElementById('header-notif-btn');
+        const dropdown = document.getElementById('header-notif-dropdown');
+        const clearBtn = document.getElementById('btn-clear-notifs');
+        const viewAllBtn = document.getElementById('btn-notif-view-all-logs');
+
+        if (notifBtn && dropdown) {
+            notifBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = dropdown.style.display !== 'none';
+                if (isOpen) {
+                    dropdown.style.display = 'none';
+                    notifBtn.setAttribute('aria-expanded', 'false');
+                } else {
+                    dropdown.style.display = 'block';
+                    notifBtn.setAttribute('aria-expanded', 'true');
+                    this.renderDropdown();
+                }
+            });
+
+            // Dismiss when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target as Node) && !notifBtn.contains(e.target as Node)) {
+                    dropdown.style.display = 'none';
+                    notifBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.markAllAsRead();
+            });
+        }
+
+        if (viewAllBtn) {
+            viewAllBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (dropdown) dropdown.style.display = 'none';
+                if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
+                (window as any).switchSection?.('hardware-logs-view');
+            });
+        }
+
+        this.updateNotifications();
+    }
+
+    public static getPersonalizedNotifications(): Array<{
+        id: string;
+        type: 'request' | 'issued' | 'returned' | 'due' | 'admin_alert';
+        title: string;
+        message: string;
+        time: string;
+        timestamp: number;
+        unread: boolean;
+        linkAction?: () => void;
+    }> {
+        let currentUser: any = {};
+        try { currentUser = JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch {}
+        const authName = localStorage.getItem('cicr_auth') || '';
+        const userEmail = (currentUser.email || '').toLowerCase().trim();
+        const userRoll = (currentUser.roll_number || currentUser.roll || '').toLowerCase().trim();
+        const userName = (currentUser.name || currentUser.username || authName || '').toLowerCase().trim();
+        const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
+
+        const notifs: Array<{
+            id: string;
+            type: 'request' | 'issued' | 'returned' | 'due' | 'admin_alert';
+            title: string;
+            message: string;
+            time: string;
+            timestamp: number;
+            unread: boolean;
+            linkAction?: () => void;
+        }> = [];
+
+        // 1. Pending / Active Requests
+        let localRequests: any[] = [];
+        try {
+            const raw = localStorage.getItem('cicr_requests');
+            if (raw) localRequests = JSON.parse(raw);
+        } catch {}
+
+        const combinedReqs = [...(requests || []), ...localRequests];
+        const seenReqIds = new Set<string>();
+
+        if (isAdmin) {
+            combinedReqs.forEach((req: any) => {
+                if (!req || !req.id || seenReqIds.has(String(req.id))) return;
+                seenReqIds.add(String(req.id));
+
+                if (req.status === 'PENDING') {
+                    const reqTime = req.requestedAt ? new Date(req.requestedAt).getTime() : Date.now();
+                    const notifId = `req-admin-${req.id}`;
+                    notifs.push({
+                        id: notifId,
+                        type: 'admin_alert',
+                        title: 'New Hardware Request',
+                        message: `${req.name || 'Student'} requested ${req.qty || 1}x ${req.itemName || 'item'}`,
+                        time: this.formatRelativeTime(reqTime),
+                        timestamp: reqTime,
+                        unread: !this.readIds.has(notifId),
+                        linkAction: () => {
+                            (window as any).switchSection?.('admin-view');
+                            setTimeout(() => {
+                                const tab = document.querySelector('[data-tab="tab-hardware-requests"]') as HTMLElement;
+                                if (tab) tab.click();
+                            }, 100);
+                        }
+                    });
+                }
+            });
+        } else {
+            combinedReqs.forEach((req: any) => {
+                if (!req || !req.id || seenReqIds.has(String(req.id))) return;
+                seenReqIds.add(String(req.id));
+
+                const reqEmail = (req.email || req.borrowerEmail || '').toLowerCase();
+                const reqRoll = (req.roll || '').toLowerCase();
+                const reqName = (req.name || '').toLowerCase();
+
+                const isMyReq = (userEmail && reqEmail === userEmail) ||
+                                (userRoll && reqRoll === userRoll) ||
+                                (userName && reqName === userName);
+
+                if (isMyReq) {
+                    const reqTime = req.requestedAt ? new Date(req.requestedAt).getTime() : Date.now();
+                    const status = (req.status || 'PENDING').toUpperCase();
+                    const notifId = `my-req-${req.id}`;
+                    notifs.push({
+                        id: notifId,
+                        type: status === 'APPROVED' ? 'issued' : 'request',
+                        title: status === 'APPROVED' ? 'Request Approved' : 'Request In Review',
+                        message: status === 'APPROVED'
+                            ? `Your request for ${req.itemName} was approved and issued!`
+                            : `Request for ${req.qty || 1}x ${req.itemName} is awaiting admin approval.`,
+                        time: this.formatRelativeTime(reqTime),
+                        timestamp: reqTime,
+                        unread: !this.readIds.has(notifId),
+                        linkAction: () => {
+                            (window as any).switchSection?.('hardware-logs-view');
+                        }
+                    });
+                }
+            });
+        }
+
+        // 2. Active Loans & Returns from inventory
+        if (Array.isArray(inventory)) {
+            const now = Date.now();
+            inventory.forEach((item: any) => {
+                (item.borrowedBy || []).forEach((b: any, idx: number) => {
+                    const borrowerEmail = (b.userEmail || b.email || '').toLowerCase();
+                    const borrowerRoll = (b.userRoll || b.roll || '').toLowerCase();
+                    const borrowerName = (b.userName || b.borrowerName || b.name || '').toLowerCase();
+
+                    const isMine = (userEmail && borrowerEmail === userEmail) ||
+                                   (userRoll && borrowerRoll === userRoll) ||
+                                   (userName && borrowerName === userName);
+
+                    if (isAdmin || isMine) {
+                        const isReturned = b.returned || b.status === 'RETURNED';
+                        const loanTime = b.date ? new Date(b.date).getTime() : Date.now();
+                        const loanId = b.id || `${item.id}-${idx}`;
+
+                        if (isReturned) {
+                            const notifId = `ret-${loanId}`;
+                            notifs.push({
+                                id: notifId,
+                                type: 'returned',
+                                title: isMine ? 'Return Verified' : 'Return Logged',
+                                message: isMine
+                                    ? `${item.name} (${b.qty || 1} units) return has been verified.`
+                                    : `${b.userName || 'Member'} returned ${item.name}`,
+                                time: this.formatRelativeTime(loanTime),
+                                timestamp: loanTime,
+                                unread: !this.readIds.has(notifId),
+                                linkAction: () => {
+                                    (window as any).switchSection?.('hardware-logs-view');
+                                }
+                            });
+                        } else {
+                            if (b.dueDate) {
+                                const dueTime = new Date(b.dueDate).getTime();
+                                if (!isNaN(dueTime)) {
+                                    const diffHours = (dueTime - now) / (1000 * 60 * 60);
+                                    if (diffHours < 48 && diffHours > 0) {
+                                        const dueNotifId = `due-${loanId}`;
+                                        notifs.push({
+                                            id: dueNotifId,
+                                            type: 'due',
+                                            title: 'Return Due Soon',
+                                            message: `${item.name} is due within 48 hours (${new Date(b.dueDate).toLocaleDateString()}).`,
+                                            time: 'Action Required',
+                                            timestamp: dueTime,
+                                            unread: !this.readIds.has(dueNotifId),
+                                            linkAction: () => {
+                                                (window as any).switchSection?.('hardware-logs-view');
+                                            }
+                                        });
+                                    } else if (diffHours <= 0) {
+                                        const overdueNotifId = `overdue-${loanId}`;
+                                        notifs.push({
+                                            id: overdueNotifId,
+                                            type: 'due',
+                                            title: 'Component Overdue',
+                                            message: `${item.name} is overdue! Please return to robotics lab.`,
+                                            time: 'Overdue',
+                                            timestamp: dueTime,
+                                            unread: !this.readIds.has(overdueNotifId),
+                                            linkAction: () => {
+                                                (window as any).switchSection?.('hardware-logs-view');
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+
+                            const loanNotifId = `loan-${loanId}`;
+                            notifs.push({
+                                id: loanNotifId,
+                                type: 'issued',
+                                title: isMine ? 'Component Issued' : 'Loan Recorded',
+                                message: isMine
+                                    ? `${item.name} (${b.qty || 1} units) issued to you.`
+                                    : `${item.name} issued to ${b.userName || 'Member'}`,
+                                time: this.formatRelativeTime(loanTime),
+                                timestamp: loanTime,
+                                unread: !this.readIds.has(loanNotifId),
+                                linkAction: () => {
+                                    (window as any).switchSection?.('hardware-logs-view');
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+        const uniqueMap = new Map<string, typeof notifs[0]>();
+        notifs.forEach(n => {
+            if (!uniqueMap.has(n.id)) {
+                uniqueMap.set(n.id, n);
+            }
+        });
+
+        return Array.from(uniqueMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    public static updateNotifications() {
+        const notifs = this.getPersonalizedNotifications();
+        const unreadCount = notifs.filter(n => n.unread).length;
+
+        const badge = document.getElementById('header-notif-badge');
+        const dot = document.getElementById('header-notif-dot');
+
+        if (badge) {
+            if (unreadCount > 0) {
+                badge.textContent = String(unreadCount);
+                badge.style.display = 'inline-flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        if (dot) {
+            dot.style.display = unreadCount > 0 ? 'block' : 'none';
+        }
+    }
+
+    public static renderDropdown() {
+        const listEl = document.getElementById('header-notif-list');
+        const subEl = document.getElementById('notif-dropdown-sub');
+        if (!listEl) return;
+
+        const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
+        if (subEl) {
+            subEl.textContent = isAdmin ? 'Admin Alerts & Activity' : 'Your Personal Activity & Updates';
+        }
+
+        const notifs = this.getPersonalizedNotifications().slice(0, 8);
+
+        if (notifs.length === 0) {
+            listEl.innerHTML = `
+                <div class="notif-empty-state">
+                    <i data-lucide="bell-off"></i>
+                    <h5>No Notifications</h5>
+                    <p>You're all caught up! There are no recent alerts for your account.</p>
+                </div>
+            `;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            return;
+        }
+
+        const iconMap: Record<string, { icon: string; cls: string }> = {
+            request: { icon: 'clock', cls: 'notif-type-pending' },
+            issued: { icon: 'check-circle-2', cls: 'notif-type-issued' },
+            returned: { icon: 'shield-check', cls: 'notif-type-returned' },
+            due: { icon: 'alert-triangle', cls: 'notif-type-due' },
+            admin_alert: { icon: 'bell', cls: 'notif-type-admin' }
+        };
+
+        listEl.innerHTML = notifs.map(n => {
+            const cfg = iconMap[n.type] || { icon: 'info', cls: 'notif-type-info' };
+            return `
+                <div class="notif-item-card ${n.unread ? 'unread' : ''}" data-notif-id="${n.id}">
+                    <div class="notif-item-icon-wrap ${cfg.cls}">
+                        <i data-lucide="${cfg.icon}"></i>
+                    </div>
+                    <div class="notif-item-content">
+                        <div class="notif-item-header">
+                            <span class="notif-item-title">${AdminManager.escapeHtml(n.title)}</span>
+                            <span class="notif-item-time">${n.time}</span>
+                        </div>
+                        <p class="notif-item-desc">${AdminManager.escapeHtml(n.message)}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        listEl.querySelectorAll('.notif-item-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const id = (card as HTMLElement).dataset.notifId;
+                if (id) {
+                    this.readIds.add(id);
+                    localStorage.setItem('cicr_read_notifs', JSON.stringify(Array.from(this.readIds)));
+                    card.classList.remove('unread');
+                    this.updateNotifications();
+                }
+                const notif = notifs.find(n => n.id === id);
+                if (notif && notif.linkAction) {
+                    const dropdown = document.getElementById('header-notif-dropdown');
+                    if (dropdown) dropdown.style.display = 'none';
+                    const notifBtn = document.getElementById('header-notif-btn');
+                    if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
+                    notif.linkAction();
+                }
+            });
+        });
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+
+    public static markAllAsRead() {
+        const notifs = this.getPersonalizedNotifications();
+        notifs.forEach(n => this.readIds.add(n.id));
+        localStorage.setItem('cicr_read_notifs', JSON.stringify(Array.from(this.readIds)));
+        this.updateNotifications();
+        this.renderDropdown();
+    }
+
+    private static formatRelativeTime(ts: number): string {
+        const diffMs = Date.now() - ts;
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+}
+
+(window as any).NotificationCenterManager = NotificationCenterManager;
 
 // ==========================================
 // Theme Manager System
@@ -8892,6 +9437,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ProfileViewManager.init();
     ProfileEditManager.init();
     HardwareLedgerManager.init();
+    NotificationCenterManager.init();
 
     AuthManager.init();
     AdminManager.init();
