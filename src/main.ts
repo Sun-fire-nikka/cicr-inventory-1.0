@@ -1,11 +1,18 @@
-import * as THREE from 'three';
 import './style.css';
+import { createIcons as lucideCreateIcons } from 'lucide';
 import type { InventoryItem, ActivityLog, RequestRecord, BorrowRecord } from './types';
 
-// Global declarations for CDN libraries
+// Global declarations for CDN / bundled libraries
 declare const lucide: {
     createIcons: (options?: any) => void;
 };
+
+if (typeof window !== 'undefined') {
+    (window as any).__rawLucideCreateIcons = (window as any).__rawLucideCreateIcons || lucideCreateIcons;
+    if (typeof (window as any).lucide === 'undefined') {
+        (window as any).lucide = { createIcons: lucideCreateIcons };
+    }
+}
 
 // Safe, idempotent Lucide icon renderer that NEVER destroys already-rendered SVGs
 function renderLucideIcons(root?: HTMLElement | Document | null) {
@@ -31,6 +38,31 @@ function renderLucideIcons(root?: HTMLElement | Document | null) {
         svg.removeAttribute('data-lucide');
         svg.setAttribute('data-lucide-rendered', 'true');
     });
+}
+
+// Ultra-fast inline SVG generator for cards to avoid synchronous Lucide DOM queries
+function getFastIconSvg(name: string, size: number = 13): string {
+    const s = `${size}px`;
+    switch (name) {
+        case 'map-pin':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>`;
+        case 'shopping-bag':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`;
+        case 'check':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><polyline points="20 6 9 17 4 12"/></svg>`;
+        case 'trash-2':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`;
+        case 'clock':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+        case 'package-check':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><path d="m16 16 2 2 4-4"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`;
+        case 'arrow-right':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+        case 'corner-up-left':
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${s};height:${s};vertical-align:middle;" data-lucide-rendered="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>`;
+        default:
+            return `<i data-lucide="${name}"></i>`;
+    }
 }
 
 // Intercept lucide.createIcons globally so ANY third-party or legacy call is automatically safe
@@ -259,192 +291,16 @@ class ToastManager {
 }
 
 // ==========================================
-// 2. Three.js 3D Background Engine
+// 2. High-Performance Static Background Engine
 // ==========================================
 class Background3D {
-    private canvas: HTMLCanvasElement;
-    private scene!: THREE.Scene;
-    private camera!: THREE.PerspectiveCamera;
-    private renderer!: THREE.WebGLRenderer;
-
-    private particles!: THREE.Points;
-    private particlePhases: Float32Array = new Float32Array(0);
-    private currentTheme = 'cyberpunk';
-
-    private mouseX = 0;
-    private mouseY = 0;
-    private targetCameraX = 0;
-    private targetCameraY = 4;
-
     constructor() {
-        this.canvas = document.getElementById('canvas-3d') as HTMLCanvasElement;
-        if (!this.canvas) return;
-        this.init();
-        this.createLighting();
-        this.createParticles();
-        this.setupEvents();
-        this.animate();
-    }
-
-    private init() {
-        this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.FogExp2(0x06060e, 0.015);
-
-        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(0, 4, 18);
-        this.camera.lookAt(0, 0, 0);
-
-        this.renderer = new THREE.WebGLRenderer({
-            canvas: this.canvas,
-            antialias: true,
-            alpha: true,
-            powerPreference: "high-performance"
-        });
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
-    }
-
-    private createLighting() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        this.scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xbd00ff, 1.5, 100);
-        pointLight.position.set(0, 10, -20);
-        this.scene.add(pointLight);
-
-        const pointLight2 = new THREE.PointLight(0x00f0ff, 1.5, 100);
-        pointLight2.position.set(20, 5, 10);
-        this.scene.add(pointLight2);
-    }
-
-    public updateThemeColors(theme: string) {
-        this.currentTheme = theme;
-        this.setParticleColorsForTheme(theme);
-    }
-
-    private setParticleColorsForTheme(theme: string) {
-        if (!this.particles) return;
-        const colors = this.particles.geometry.attributes.color.array as Float32Array;
-        const count = colors.length / 3;
-
-        let c1: THREE.Color, c2: THREE.Color;
-        if (theme === 'sakura' || theme === 'pink') {
-            c1 = new THREE.Color(0xff75a0); // Vibrant cherry pink
-            c2 = new THREE.Color(0xffb7c5); // Soft blossom petal
-        } else if (theme === 'light') {
-            c1 = new THREE.Color(0x0284c7); // Deep Sky Blue
-            c2 = new THREE.Color(0x38bdf8); // Light Cyan
-        } else {
-            // Default Cyberpunk
-            c1 = new THREE.Color(0x00f0ff);
-            c2 = new THREE.Color(0xbd00ff);
+        const canvas = document.getElementById('canvas-3d') as HTMLCanvasElement | null;
+        if (canvas) {
+            canvas.style.display = 'none';
         }
-
-        for (let i = 0; i < count; i++) {
-            const ratio = Math.random();
-            const c = c1.clone().lerp(c2, ratio);
-
-            colors[i * 3] = c.r;
-            colors[i * 3 + 1] = c.g;
-            colors[i * 3 + 2] = c.b;
-        }
-
-        this.particles.geometry.attributes.color.needsUpdate = true;
     }
-
-    private createParticles() {
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        const particleCount = isMobile ? 80 : 350;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const colors = new Float32Array(particleCount * 3);
-        this.particlePhases = new Float32Array(particleCount);
-
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 120;
-            positions[i * 3 + 1] = Math.random() * 40 - 10;
-            positions[i * 3 + 2] = (Math.random() - 0.7) * 150;
-            this.particlePhases[i] = Math.random() * Math.PI * 2;
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        const material = new THREE.PointsMaterial({
-            size: isMobile ? 0.20 : 0.24,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.88,
-            blending: THREE.AdditiveBlending
-        });
-
-        this.particles = new THREE.Points(geometry, material);
-        this.scene.add(this.particles);
-        this.setParticleColorsForTheme(this.currentTheme);
-    }
-
-    private setupEvents() {
-        window.addEventListener('mousemove', (e) => {
-            if (window.innerWidth < 768) return;
-            this.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            this.mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-        }, { passive: true });
-
-        let lastWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
-        window.addEventListener('resize', () => {
-            // On mobile devices, scrolling expands/collapses the URL address bar which triggers innerHeight resize events.
-            // Only reallocate the WebGL backing canvas buffer if innerWidth actually changes (device rotation / orientation change).
-            if (Math.abs(window.innerWidth - lastWidth) < 4) return;
-            lastWidth = window.innerWidth;
-
-            this.camera.aspect = window.innerWidth / window.innerHeight;
-            this.camera.updateProjectionMatrix();
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
-            const isMobile = window.innerWidth < 768;
-            this.renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
-        }, { passive: true });
-    }
-
-    private animate() {
-        requestAnimationFrame(() => this.animate());
-        if (typeof document !== 'undefined' && document.hidden) return;
-
-        const isScrolling = !!(window as any).isUserScrolling;
-        if (isScrolling) {
-            // Pause 3D particle updates and scene re-renders during active scrolling to keep 60fps buttery smooth
-            return;
-        }
-
-        if (this.particles) {
-            const positions = this.particles.geometry.attributes.position.array as Float32Array;
-            const particleCount = positions.length / 3;
-
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3 + 1] += 0.015;
-                positions[i * 3 + 2] += 0.03;
-
-                if (positions[i * 3 + 1] > 30) {
-                    positions[i * 3 + 1] = -5;
-                }
-                if (positions[i * 3 + 2] > 20) {
-                    positions[i * 3 + 2] = -120;
-                    positions[i * 3] = (Math.random() - 0.5) * 120;
-                }
-            }
-            this.particles.geometry.attributes.position.needsUpdate = true;
-        }
-
-        this.targetCameraX = this.mouseX * 3;
-        this.targetCameraY = 4 + (this.mouseY * 1.5);
-
-        this.camera.position.x += (this.targetCameraX - this.camera.position.x) * 0.05;
-        this.camera.position.y += (this.targetCameraY - this.camera.position.y) * 0.05;
-
-        this.camera.lookAt(0, -1, -5);
-
-        this.renderer.render(this.scene, this.camera);
-    }
+    public updateThemeColors(_theme: string) {}
 }
 
 // ==========================================
@@ -1016,6 +872,9 @@ class DashboardManager {
     public init() {
         this.renderStats();
         this.renderInventory();
+        if (typeof CartManager !== 'undefined') {
+            CartManager.init();
+        }
         AuthManager.updateAdminVisibility(ModalManager.getCurrentRole());
         if (!this.listenersInitialized) {
             this.setupEventListeners();
@@ -1106,6 +965,12 @@ class DashboardManager {
     private startClock() {
         if (this.clockTimerId) clearInterval(this.clockTimerId);
 
+        const clockEl = document.getElementById('dashboard-clock');
+        const dateEl = document.getElementById('dashboard-date');
+        const greetingEl = document.getElementById('dashboard-greeting');
+        let lastDateStr = '';
+        let lastGreetingStr = '';
+
         const updateTime = () => {
             const now = new Date();
 
@@ -1117,26 +982,22 @@ class DashboardManager {
             hours = hours % 12;
             hours = hours ? hours : 12; // the hour '0' should be '12'
             const formattedHours = String(hours).padStart(2, '0');
+            const timeStr = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
 
-            const clockEl = document.getElementById('dashboard-clock');
-            if (clockEl) {
-                clockEl.innerText = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+            if (clockEl && clockEl.textContent !== timeStr) {
+                clockEl.textContent = timeStr;
             }
 
-            // Format date: Tuesday, 17 March 2026
+            // Update date only when changed
             const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-            const dayName = days[now.getDay()];
-            const dateNum = now.getDate();
-            const monthName = months[now.getMonth()];
-            const year = now.getFullYear();
-
-            const dateEl = document.getElementById('dashboard-date');
-            if (dateEl) {
-                dateEl.innerText = `${dayName}, ${dateNum} ${monthName} ${year}`;
+            const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+            if (dateStr !== lastDateStr) {
+                lastDateStr = dateStr;
+                if (dateEl) dateEl.textContent = dateStr;
             }
 
-            // Update time-of-day greeting
+            // Update time-of-day greeting only when hour or user changes
             const curHour = now.getHours();
             let timeOfDay = 'evening';
             if (curHour < 12) {
@@ -1146,9 +1007,10 @@ class DashboardManager {
             }
 
             const username = localStorage.getItem('cicr_auth') || 'Operator';
-            const greetingEl = document.getElementById('dashboard-greeting');
-            if (greetingEl) {
-                greetingEl.innerText = `Good ${timeOfDay}, ${username}`;
+            const greetingStr = `Good ${timeOfDay}, ${username}`;
+            if (greetingStr !== lastGreetingStr) {
+                lastGreetingStr = greetingStr;
+                if (greetingEl) greetingEl.textContent = greetingStr;
             }
         };
 
@@ -1262,6 +1124,12 @@ class DashboardManager {
             document.body.classList.toggle('view-admin-view', targetId === 'admin-view');
             document.body.classList.toggle('view-inventory-view', targetId === 'inventory-view');
             document.body.classList.toggle('view-hardware-logs-view', targetId === 'hardware-logs-view');
+
+            // Top navbar cart button is strictly visible ONLY on the Vault page (inventory-view)
+            const headerCartWrapper = document.querySelector('.header-cart-wrapper') as HTMLElement | null;
+            if (headerCartWrapper) {
+                headerCartWrapper.style.display = targetId === 'inventory-view' ? 'inline-flex' : 'none';
+            }
 
             // Refresh Lucide icons if needed
             if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -1526,14 +1394,20 @@ class DashboardManager {
             });
         }
 
-        // 7. Inventory Search Input listeners
+        // 7. Inventory Search Input listeners (with 75ms debounce to prevent input lag)
+        let searchDebounceTimer: any = null;
         this.searchInput.addEventListener('input', (e) => {
-            this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase().trim();
-            this.clearSearchBtn.style.display = this.searchQuery ? 'block' : 'none';
-            this.renderInventory();
+            const val = (e.target as HTMLInputElement).value;
+            this.clearSearchBtn.style.display = val.trim() ? 'block' : 'none';
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                this.searchQuery = val.toLowerCase().trim();
+                this.renderInventory();
+            }, 75);
         });
 
         this.clearSearchBtn.addEventListener('click', () => {
+            clearTimeout(searchDebounceTimer);
             this.searchInput.value = '';
             this.searchQuery = '';
             this.clearSearchBtn.style.display = 'none';
@@ -1710,12 +1584,19 @@ class DashboardManager {
         const role = ModalManager.getCurrentRole();
         const isAdmin = role === 'ADMIN';
 
+        const q = this.searchQuery;
         const filtered = inventory.filter(item => {
-            const matchesCategory = this.activeCategory === 'all' || item.category === this.activeCategory;
-            const matchesSearch = item.name.toLowerCase().includes(this.searchQuery) ||
-                item.specs.toLowerCase().includes(this.searchQuery) ||
-                item.location.toLowerCase().includes(this.searchQuery) ||
-                (Array.isArray(item.tags) && item.tags.some((t: string) => t.toLowerCase().includes(this.searchQuery)));
+            if (this.activeCategory !== 'all' && item.category !== this.activeCategory) {
+                return false;
+            }
+
+            if (q) {
+                const matchesSearch = item.name.toLowerCase().includes(q) ||
+                    item.specs.toLowerCase().includes(q) ||
+                    item.location.toLowerCase().includes(q) ||
+                    (Array.isArray(item.tags) && item.tags.some((t: string) => t.toLowerCase().includes(q)));
+                if (!matchesSearch) return false;
+            }
 
             const activeBorrows = (item.borrowedBy || []).filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED');
             const borrowedSum = activeBorrows.reduce((sum, rec) => sum + rec.qty, 0);
@@ -1724,24 +1605,23 @@ class DashboardManager {
                 ? Math.min(totalQty, Math.max(0, item.availableQuantity))
                 : Math.max(0, totalQty - borrowedSum);
 
-            let matchesStock = true;
             if (this.activeStockFilter === 'available') {
-                matchesStock = available > 0;
+                return available > 0;
             } else if (this.activeStockFilter === 'borrowed') {
                 if (isAdmin) {
-                    matchesStock = borrowedSum > 0 || (typeof item.availableQuantity === 'number' && item.availableQuantity < totalQty);
+                    return borrowedSum > 0 || (typeof item.availableQuantity === 'number' && item.availableQuantity < totalQty);
                 } else {
-                    matchesStock = activeBorrows.some((r: any) => ModalManager.isUserLoanMatch(r));
+                    return activeBorrows.some((r: any) => ModalManager.isUserLoanMatch(r));
                 }
             } else if (this.activeStockFilter === 'low') {
                 const status = getItemStockStatus(item.quantity, available);
-                matchesStock = status.class === 'status-low';
+                return status.class === 'status-low';
             } else if (this.activeStockFilter === 'out') {
                 const status = getItemStockStatus(item.quantity, available);
-                matchesStock = status.class === 'status-out';
+                return status.class === 'status-out';
             }
 
-            return matchesCategory && matchesSearch && matchesStock;
+            return true;
         });
 
         const currentFingerprint = `${role}_${this.activeCategory}_${this.activeStockFilter}_${this.searchQuery}_` +
@@ -1752,7 +1632,6 @@ class DashboardManager {
             return;
         }
 
-        const isInitial = this.lastRenderedFingerprint === '';
         this.lastRenderedFingerprint = currentFingerprint;
 
         this.inventoryGrid.innerHTML = '';
@@ -1769,22 +1648,17 @@ class DashboardManager {
                 this.activeStockFilter === 'out' ? ' (Out of Stock)' : '';
         this.resultsCount.innerText = `Showing ${filtered.length} component${filtered.length > 1 ? 's' : ''}${filterSuffix}`;
 
-        filtered.forEach((item, index) => {
-            const card = this.createCardElement(item, isInitial);
-            if (isInitial) {
-                card.style.transitionDelay = `${(index % 4) * 0.06}s`;
-                this.inventoryGrid.appendChild(card);
-                requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        card.classList.add('active');
-                    }, 40);
-                });
-            } else {
-                card.style.transitionDelay = '0s';
-                card.classList.add('active');
-                this.inventoryGrid.appendChild(card);
-            }
+        const totalCountEl = document.getElementById('vault-total-count-text');
+        if (totalCountEl) {
+            totalCountEl.innerText = String(inventory.length);
+        }
+
+        const fragment = document.createDocumentFragment();
+        filtered.forEach((item) => {
+            const card = this.createCardElement(item);
+            fragment.appendChild(card);
         });
+        this.inventoryGrid.appendChild(fragment);
 
         renderLucideIcons(this.inventoryGrid);
 
@@ -1801,9 +1675,9 @@ class DashboardManager {
         this.renderStats();
     }
 
-    private createCardElement(item: InventoryItem, isInitial = false): HTMLElement {
+    private createCardElement(item: InventoryItem): HTMLElement {
         const card = document.createElement('div');
-        card.className = isInitial ? 'inventory-card glass reveal' : 'inventory-card glass active';
+        card.className = 'inventory-card active';
 
         const borrowedSum = (item.borrowedBy || [])
             .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
@@ -1864,7 +1738,7 @@ class DashboardManager {
         const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
         const deleteBtnHtml = isAdmin ? `
             <button class="btn-card-delete-item" data-id="${item.id}" data-name="${AdminManager.escapeHtml(itemName)}" onclick="event.stopPropagation(); event.preventDefault(); window.adminDeleteItem('${item.id}', '${AdminManager.escapeHtml(itemName)}')" title="Delete Component from Inventory">
-                <i data-lucide="trash-2"></i>
+                ${getFastIconSvg('trash-2', 13)}
             </button>
         ` : '';
 
@@ -1872,18 +1746,26 @@ class DashboardManager {
         const myLoanTotal = myLoans.reduce((sum: number, r: any) => sum + (Number(r.qty) || 0), 0);
         const myPendingReturn = myLoans.some((r: any) => (r as any).status === 'RETURN_REQUESTED');
         const myLoanBadgeHtml = myLoanTotal > 0 ? `
-            <div class="card-loan-action-pill" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; background: ${myPendingReturn ? 'rgba(255, 183, 3, 0.12)' : 'rgba(0, 240, 255, 0.08)'}; border: 1px solid ${myPendingReturn ? 'rgba(255, 183, 3, 0.35)' : 'rgba(0, 240, 255, 0.28)'}; border-radius: 6px; padding: 5px 10px; font-size: 11px; color: ${myPendingReturn ? '#ffb703' : 'var(--neon-cyan)'}; cursor: pointer; transition: all 0.2s ease;">
+            <div class="card-loan-action-pill" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; background: ${myPendingReturn ? 'rgba(245, 158, 11, 0.12)' : 'rgba(99, 102, 241, 0.08)'}; border: 1px solid ${myPendingReturn ? 'rgba(245, 158, 11, 0.35)' : 'rgba(99, 102, 241, 0.28)'}; border-radius: 6px; padding: 5px 10px; font-size: 11px; color: ${myPendingReturn ? '#f59e0b' : '#818cf8'}; cursor: pointer; transition: all 0.2s ease;">
                 <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;">
-                    <i data-lucide="${myPendingReturn ? 'clock' : 'package-check'}" style="width: 12px; height: 12px;"></i> ${myPendingReturn ? `Return Pending (${myLoanTotal} issued)` : `You have ${myLoanTotal} issued`}
+                    ${getFastIconSvg(myPendingReturn ? 'clock' : 'package-check', 12)} ${myPendingReturn ? `Return Pending (${myLoanTotal} issued)` : `You have ${myLoanTotal} issued`}
                 </span>
                 <span style="font-weight: 700; text-decoration: underline; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 3px;">
-                    ${myPendingReturn ? 'View Status' : 'Return'} <i data-lucide="${myPendingReturn ? 'arrow-right' : 'corner-up-left'}" style="width: 11px; height: 11px;"></i>
+                    ${myPendingReturn ? 'View Status' : 'Return'} ${getFastIconSvg(myPendingReturn ? 'arrow-right' : 'corner-up-left', 11)}
                 </span>
             </div>
         ` : '';
 
+        // Cart status for this item
+        const inCart = typeof CartManager !== 'undefined' && CartManager.hasItem(item.id);
+        const cartQty = typeof CartManager !== 'undefined' ? CartManager.getItemQty(item.id) : 0;
+        const isOutOfStock = available <= 0;
+
+        const cartBtnText = inCart ? `In Cart (${cartQty})` : (isOutOfStock ? 'Out of Stock' : '+ Add to Cart');
+        const cartBtnIcon = inCart ? 'check' : 'shopping-bag';
+        const cartBtnClass = inCart ? 'btn-card-add-cart in-cart' : 'btn-card-add-cart';
+
         card.innerHTML = `
-            <div class="card-glow-bar bar-${statusClass}"></div>
             <div class="card-header">
                 <span class="card-category-badge cat-${item.category}">${categoryLabel}</span>
                 <div class="card-header-actions">
@@ -1891,7 +1773,6 @@ class DashboardManager {
                         <span class="status-indicator-dot"></span>
                         ${statusText}
                     </span>
-                    ${deleteBtnHtml}
                 </div>
             </div>
             <h3 class="card-title ${titleSizeClass}" title="${AdminManager.escapeHtml(itemName)}">${AdminManager.escapeHtml(itemName)}</h3>
@@ -1901,7 +1782,7 @@ class DashboardManager {
             <div class="card-footer">
                 <div class="footer-info" title="${AdminManager.escapeHtml(item.location)}">
                     <span class="info-title">Location</span>
-                    <span class="info-content"><i data-lucide="map-pin"></i> ${AdminManager.escapeHtml(shortLocation)}</span>
+                    <span class="info-content">${getFastIconSvg('map-pin', 12)} ${AdminManager.escapeHtml(shortLocation)}</span>
                 </div>
                 <div class="footer-info" style="align-items: flex-end;">
                     <span class="info-title">Availability</span>
@@ -1911,7 +1792,25 @@ class DashboardManager {
                     </div>
                 </div>
             </div>
+            <div class="card-action-row">
+                <button type="button" class="${cartBtnClass}" data-id="${item.id}" ${isOutOfStock ? 'disabled' : ''} title="${isOutOfStock ? 'Out of stock in vault' : 'Add to Hardware Request Cart'}">
+                    ${getFastIconSvg(cartBtnIcon, 13)}
+                    <span>${cartBtnText}</span>
+                </button>
+                ${deleteBtnHtml}
+            </div>
         `;
+
+        const addCartBtn = card.querySelector('.btn-card-add-cart') as HTMLButtonElement | null;
+        if (addCartBtn) {
+            addCartBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (typeof CartManager !== 'undefined') {
+                    CartManager.addItem(item);
+                }
+            });
+        }
 
         if (isAdmin) {
             const delBtn = card.querySelector('.btn-card-delete-item');
@@ -1960,6 +1859,657 @@ class DashboardManager {
         }
     }
 }
+
+// ==========================================
+// 4b. Hardware Request Cart Manager (Consolidated 1-Go Checkout)
+// ==========================================
+export interface CartItem {
+    id: string;
+    name: string;
+    category: string;
+    quantity: number;
+    maxAvailable: number;
+    location: string;
+    specs: string;
+    dueDate?: string;
+}
+
+class CartManager {
+    private static items: CartItem[] = [];
+    private static itemMap = new Map<string, number>();
+    private static isInitialized = false;
+    private static isCheckingOut = false;
+
+    private static syncItemMap() {
+        this.itemMap.clear();
+        for (let i = 0; i < this.items.length; i++) {
+            this.itemMap.set(this.items[i].id, this.items[i].quantity);
+        }
+    }
+
+    public static init() {
+        if (this.isInitialized) {
+            this.updateCartBadges();
+            return;
+        }
+        this.isInitialized = true;
+        this.loadFromStorage();
+        this.setupEventListeners();
+        this.updateCartBadges();
+    }
+
+    private static loadFromStorage() {
+        try {
+            const raw = localStorage.getItem('cicr_cart_items');
+            if (raw) {
+                this.items = JSON.parse(raw);
+            }
+        } catch {
+            this.items = [];
+        }
+        this.syncItemMap();
+    }
+
+    private static saveToStorage() {
+        try {
+            localStorage.setItem('cicr_cart_items', JSON.stringify(this.items));
+        } catch {}
+        this.syncItemMap();
+        this.updateCartBadges();
+    }
+
+    public static getItems(): CartItem[] {
+        return this.items;
+    }
+
+    public static getCount(): number {
+        return this.items.length;
+    }
+
+    public static getTotalQuantity(): number {
+        return this.items.reduce((sum, it) => sum + it.quantity, 0);
+    }
+
+    public static hasItem(itemId: string): boolean {
+        return this.itemMap.has(itemId);
+    }
+
+    public static getItemQty(itemId: string): number {
+        return this.itemMap.get(itemId) || 0;
+    }
+
+    public static addItem(item: InventoryItem, qty = 1) {
+        const borrowedSum = (item.borrowedBy || [])
+            .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
+            .reduce((sum, rec) => sum + rec.qty, 0);
+        const totalQty = Number(item.quantity) || 0;
+        const available = typeof item.availableQuantity === 'number'
+            ? Math.min(totalQty, Math.max(0, item.availableQuantity))
+            : Math.max(0, totalQty - borrowedSum);
+
+        if (available <= 0) {
+            ToastManager.show('Out of Stock', `"${item.name}" currently has 0 available units in the vault.`, 'warning');
+            return;
+        }
+
+        const globalDueInput = document.getElementById('cart-due-date') as HTMLInputElement | null;
+        const defaultDueDate = globalDueInput?.value || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        const existing = this.items.find(it => it.id === item.id);
+        if (existing) {
+            if (existing.quantity >= available) {
+                ToastManager.show('Stock Limit Reached', `Only ${available} unit(s) of "${item.name}" are available in the vault.`, 'info');
+                return;
+            }
+            existing.quantity = Math.min(available, existing.quantity + qty);
+            existing.maxAvailable = available;
+            if (!existing.dueDate) existing.dueDate = defaultDueDate;
+            ToastManager.show('Cart Updated', `Incremented "${item.name}" to ${existing.quantity} unit(s).`, 'success');
+        } else {
+            this.items.push({
+                id: item.id,
+                name: item.name,
+                category: item.category,
+                quantity: Math.min(available, Math.max(1, qty)),
+                maxAvailable: available,
+                location: item.location || 'Lab Shelf',
+                specs: item.specs || '',
+                dueDate: defaultDueDate
+            });
+            ToastManager.show('Added to Request Cart', `Added 1x "${item.name}" to your Hardware Request Cart.`, 'success');
+        }
+
+        this.saveToStorage();
+        if (window.dashboard) {
+            window.dashboard.renderInventory();
+        }
+        this.pulseFloatingCart();
+    }
+
+    public static removeItem(itemId: string) {
+        const idx = this.items.findIndex(it => it.id === itemId);
+        if (idx !== -1) {
+            const removed = this.items.splice(idx, 1)[0];
+            this.saveToStorage();
+            ToastManager.show('Removed from Cart', `"${removed.name}" was removed from your cart.`, 'info');
+            this.renderCartModal();
+            if (window.dashboard) {
+                window.dashboard.renderInventory();
+            }
+        }
+    }
+
+    public static updateQty(itemId: string, newQty: number) {
+        const item = this.items.find(it => it.id === itemId);
+        if (!item) return;
+
+        if (newQty <= 0) {
+            this.removeItem(itemId);
+            return;
+        }
+
+        item.quantity = Math.min(item.maxAvailable, newQty);
+        this.saveToStorage();
+        this.renderCartModal();
+        if (window.dashboard) {
+            window.dashboard.renderInventory();
+        }
+    }
+
+    public static clear() {
+        this.items = [];
+        this.saveToStorage();
+        this.renderCartModal();
+        if (window.dashboard) {
+            window.dashboard.renderInventory();
+        }
+    }
+
+    public static updateCartBadges() {
+        const count = this.getCount();
+
+        // Top Navbar Small Cart Button
+        const navbarBadge = document.getElementById('header-cart-badge');
+        const navbarDot = document.getElementById('header-cart-dot');
+        const navbarBtn = document.getElementById('btn-navbar-cart');
+        if (navbarBadge) navbarBadge.innerText = String(count);
+        if (navbarDot) navbarDot.style.display = count > 0 ? 'block' : 'none';
+        if (navbarBtn) {
+            if (count > 0) navbarBtn.classList.add('has-items');
+            else navbarBtn.classList.remove('has-items');
+        }
+
+        // Capsule Nav Cart Badge (if on capsule view)
+        const capsuleBadge = document.getElementById('nav-cart-badge');
+        if (capsuleBadge) {
+            capsuleBadge.innerText = String(count);
+            capsuleBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+
+        // Modal badge
+        const modalBadge = document.getElementById('cart-manifest-badge');
+        if (modalBadge) modalBadge.innerHTML = `<span class="cart-badge-dot"></span> ${count} item${count === 1 ? '' : 's'}`;
+    }
+
+    public static pulseFloatingCart() {
+        const navbarBtn = document.getElementById('btn-navbar-cart');
+        if (navbarBtn) {
+            navbarBtn.classList.remove('pulse-anim');
+            void navbarBtn.offsetWidth;
+            navbarBtn.classList.add('pulse-anim');
+        }
+    }
+
+    public static openCart() {
+        const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
+        if (!isLoggedIn) {
+            ToastManager.show('Login Required', 'Please log in to review your hardware request cart.', 'warning');
+            const authOverlay = document.getElementById('auth-overlay');
+            if (authOverlay) {
+                authOverlay.style.display = 'flex';
+                authOverlay.classList.remove('hidden');
+                document.getElementById('tab-login-btn')?.click();
+            }
+            return;
+        }
+
+        const storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+        let userName = storedUser.name || storedUser.username || localStorage.getItem('cicr_auth') || 'Member';
+        let userRoll = storedUser.roll_number || storedUser.roll || '';
+        if (!userRoll && storedUser.email) {
+            const m = String(storedUser.email).match(/^([0-9]{6,12})@/);
+            if (m) userRoll = m[1];
+        }
+
+        const nameEl = document.getElementById('cart-borrower-name');
+        const rollEl = document.getElementById('cart-borrower-roll');
+        if (nameEl) nameEl.innerText = userName;
+        if (rollEl) rollEl.innerText = userRoll || 'Student';
+
+        const dueDateInput = document.getElementById('cart-due-date') as HTMLInputElement | null;
+        if (dueDateInput && !dueDateInput.value) {
+            const defaultDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            dueDateInput.min = new Date().toISOString().split('T')[0];
+            dueDateInput.value = defaultDue;
+        }
+
+        this.renderCartModal();
+        const cartModal = document.getElementById('cart-modal');
+        if (cartModal) {
+            cartModal.classList.add('active');
+            renderLucideIcons(cartModal);
+        }
+    }
+
+    public static closeCart() {
+        const cartModal = document.getElementById('cart-modal');
+        if (cartModal) {
+            cartModal.classList.remove('active');
+        }
+    }
+
+    public static renderCartModal() {
+        const listEl = document.getElementById('cart-items-list');
+        const emptyState = document.getElementById('cart-empty-state');
+        const checkoutPane = document.getElementById('cart-checkout-pane');
+        const summaryCount = document.getElementById('cart-summary-count');
+        const summaryTotalQty = document.getElementById('cart-summary-total-qty');
+        const modalBadge = document.getElementById('cart-manifest-badge');
+
+        const count = this.getCount();
+        const totalQty = this.getTotalQuantity();
+
+        if (summaryCount) {
+            summaryCount.innerHTML = `<span class="hud-number">${count}</span> <span class="hud-suffix">component${count === 1 ? '' : 's'}</span>`;
+        }
+        if (summaryTotalQty) {
+            summaryTotalQty.innerHTML = `<span class="hud-number text-cyan">${totalQty}</span> <span class="hud-suffix text-cyan-sub">unit${totalQty === 1 ? '' : 's'}</span>`;
+        }
+        if (modalBadge) modalBadge.innerHTML = `<span class="cart-badge-dot"></span> ${count} item${count === 1 ? '' : 's'}`;
+
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        if (count === 0) {
+            if (emptyState) emptyState.style.display = 'block';
+            if (checkoutPane) (checkoutPane as HTMLElement).style.opacity = '0.4';
+            const submitBtn = document.getElementById('btn-submit-cart-checkout') as HTMLButtonElement | null;
+            if (submitBtn) submitBtn.disabled = true;
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+        if (checkoutPane) (checkoutPane as HTMLElement).style.opacity = '1';
+        const submitBtn = document.getElementById('btn-submit-cart-checkout') as HTMLButtonElement | null;
+        if (submitBtn) submitBtn.disabled = false;
+
+        const globalDueInput = document.getElementById('cart-due-date') as HTMLInputElement | null;
+        const globalDueDate = globalDueInput?.value || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const minDate = new Date().toISOString().split('T')[0];
+
+        this.items.forEach(it => {
+            const itemDue = it.dueDate || globalDueDate;
+            const row = document.createElement('div');
+            row.className = 'cart-item-card';
+            row.innerHTML = `
+                <div class="cart-item-main-row">
+                    <div class="cart-item-left">
+                        <div class="cart-item-title-row">
+                            <span class="cart-item-cat-chip">${AdminManager.escapeHtml(it.category || 'MCU')}</span>
+                            <span class="cart-item-name" title="${AdminManager.escapeHtml(it.name)}">${AdminManager.escapeHtml(it.name)}</span>
+                        </div>
+                        <div class="cart-item-meta">
+                            <span><i data-lucide="map-pin" style="width:11px;height:11px;vertical-align:middle;"></i> ${AdminManager.escapeHtml(it.location)}</span>
+                            <span>&bull; Max Available: <strong style="color:#e2e8f0;">${it.maxAvailable}</strong></span>
+                        </div>
+                    </div>
+                    <div class="cart-item-right">
+                        <div class="cart-qty-ctrl">
+                            <button type="button" class="cart-qty-btn btn-qty-minus" data-id="${it.id}" title="Decrease Quantity">
+                                <i data-lucide="minus"></i>
+                            </button>
+                            <span class="cart-qty-val">${it.quantity}</span>
+                            <button type="button" class="cart-qty-btn btn-qty-plus" data-id="${it.id}" title="Increase Quantity" ${it.quantity >= it.maxAvailable ? 'disabled' : ''}>
+                                <i data-lucide="plus"></i>
+                            </button>
+                        </div>
+                        <button type="button" class="btn-cart-remove" data-id="${it.id}" title="Remove Item">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="cart-item-date-bar">
+                    <span class="item-date-label">
+                        <i data-lucide="calendar"></i> Expected Return:
+                    </span>
+                    <div class="cart-item-date-right">
+                        <input type="date" class="item-due-input" data-id="${it.id}" value="${itemDue}" min="${minDate}" title="Select custom return date for this component">
+                        <button type="button" class="btn-item-date-sync" data-id="${it.id}" title="Sync with overall default return date">
+                            <i data-lucide="link"></i> Same Date
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            row.querySelector('.btn-qty-minus')?.addEventListener('click', () => {
+                this.updateQty(it.id, it.quantity - 1);
+            });
+            row.querySelector('.btn-qty-plus')?.addEventListener('click', () => {
+                this.updateQty(it.id, it.quantity + 1);
+            });
+            row.querySelector('.btn-cart-remove')?.addEventListener('click', () => {
+                this.removeItem(it.id);
+            });
+
+            // Per-item return date selection listener
+            const itemDateInp = row.querySelector('.item-due-input') as HTMLInputElement | null;
+            if (itemDateInp) {
+                itemDateInp.addEventListener('change', (e) => {
+                    const target = e.target as HTMLInputElement;
+                    it.dueDate = target.value;
+                    this.saveToStorage();
+                    ToastManager.show('Return Date Updated', `Return date for "${it.name}" set to ${it.dueDate}.`, 'info');
+                });
+            }
+
+            // Sync with default date button
+            const syncBtn = row.querySelector('.btn-item-date-sync') as HTMLButtonElement | null;
+            if (syncBtn) {
+                syncBtn.addEventListener('click', () => {
+                    const curGlobal = (document.getElementById('cart-due-date') as HTMLInputElement)?.value || globalDueDate;
+                    it.dueDate = curGlobal;
+                    if (itemDateInp) itemDateInp.value = curGlobal;
+                    this.saveToStorage();
+                    ToastManager.show('Date Synced', `"${it.name}" return date synced to overall checkout date (${curGlobal}).`, 'success');
+                });
+            }
+
+            listEl.appendChild(row);
+        });
+
+        renderLucideIcons(listEl);
+    }
+
+    public static async handleCheckout(e: Event) {
+        e.preventDefault();
+        if (this.isCheckingOut) return;
+
+        const count = this.getCount();
+        if (count === 0) {
+            ToastManager.show('Cart Empty', 'Please add at least one component before checking out.', 'warning');
+            return;
+        }
+
+        const purposeInput = document.getElementById('cart-purpose') as HTMLInputElement | null;
+        const purpose = (purposeInput?.value || '').trim();
+        if (!purpose) {
+            ToastManager.show('Purpose Required', 'Please provide a project or purpose for this hardware issue.', 'warning');
+            purposeInput?.focus();
+            return;
+        }
+
+        const dueDateInput = document.getElementById('cart-due-date') as HTMLInputElement | null;
+        const defaultDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const dueDate = dueDateInput?.value || defaultDue;
+
+        let durationDays = 7;
+        if (dueDate) {
+            const t0 = new Date();
+            t0.setHours(0, 0, 0, 0);
+            const t1 = new Date(dueDate);
+            t1.setHours(0, 0, 0, 0);
+            const diff = Math.round((t1.getTime() - t0.getTime()) / (1000 * 60 * 60 * 24));
+            if (diff > 0) durationDays = diff;
+        }
+
+        const token = localStorage.getItem('cicr_token');
+        if (!token) {
+            ToastManager.show('Authentication Required', 'Please log in to submit your hardware request.', 'error');
+            return;
+        }
+
+        const storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+        const borrowerName = storedUser.name || storedUser.username || localStorage.getItem('cicr_auth') || 'Member';
+        const userEmail = storedUser.email || (localStorage.getItem('cicr_auth')?.includes('@') ? localStorage.getItem('cicr_auth') : 'student@mail.jiit.ac.in');
+        let rollNum = storedUser.roll_number || storedUser.roll || '';
+        if (!rollNum && storedUser.email) {
+            const m = String(storedUser.email).match(/^([0-9]{6,12})@/);
+            if (m) rollNum = m[1];
+        }
+
+        const submitBtn = document.getElementById('btn-submit-cart-checkout') as HTMLButtonElement | null;
+        this.isCheckingOut = true;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Processing Request Manifest...`;
+            renderLucideIcons(submitBtn);
+        }
+
+        const date = new Date().toISOString().split('T')[0];
+        const itemsToSubmit = [...this.items];
+
+        const payload = {
+            purpose,
+            dueDate,
+            due_date: dueDate,
+            durationDays,
+            duration_days: durationDays,
+            borrowerName,
+            borrower_name: borrowerName,
+            borrowerEmail: userEmail,
+            borrower_email: userEmail,
+            rollNumber: rollNum,
+            roll_number: rollNum,
+            items: itemsToSubmit.map(it => {
+                const itDueDate = it.dueDate || dueDate;
+                let itDuration = durationDays;
+                if (itDueDate) {
+                    const t0 = new Date();
+                    t0.setHours(0, 0, 0, 0);
+                    const t1 = new Date(itDueDate);
+                    t1.setHours(0, 0, 0, 0);
+                    const diff = Math.round((t1.getTime() - t0.getTime()) / (1000 * 60 * 60 * 24));
+                    if (diff > 0) itDuration = diff;
+                }
+                return {
+                    itemId: it.id,
+                    inventory_id: it.id,
+                    itemName: it.name,
+                    name: it.name,
+                    quantity: it.quantity,
+                    qty: it.quantity,
+                    dueDate: itDueDate,
+                    due_date: itDueDate,
+                    durationDays: itDuration,
+                    duration_days: itDuration
+                };
+            })
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/borrow/bulk-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const resData = await res.json().catch(() => ({})) as any;
+
+            itemsToSubmit.forEach((it, idx) => {
+                const reqId = resData?.data?.[idx]?.id || `req-cart-${Date.now()}-${idx}`;
+                const itDueDate = it.dueDate || dueDate;
+                const newReq: RequestRecord = {
+                    id: reqId,
+                    itemId: it.id,
+                    itemName: it.name,
+                    name: borrowerName,
+                    roll: rollNum,
+                    qty: it.quantity,
+                    purpose: purpose,
+                    status: 'PENDING',
+                    requestedAt: date,
+                    dueDate: itDueDate
+                };
+                requests = requests.filter(r => r.id !== newReq.id && !(r.status === 'PENDING' && r.itemId === newReq.itemId && r.qty === newReq.qty && r.purpose === newReq.purpose));
+                requests.unshift(newReq);
+            });
+
+            DatabaseManager.save();
+            DatabaseManager.addLog('borrow', `<span>${borrowerName}</span> checked out request cart with ${itemsToSubmit.length} components for '${purpose}'.`);
+
+            this.clear();
+            this.closeCart();
+            if (purposeInput) purposeInput.value = '';
+
+            ToastManager.show(
+                'Request Manifest Transmitted',
+                `Successfully submitted ${itemsToSubmit.length} component(s) to the Admin Portal.`,
+                'success'
+            );
+
+            AdminManager.loadHardwareRequests(true);
+            DatabaseManager.updateNotificationBadges();
+            await DatabaseManager.syncFromBackend();
+        } catch (err: any) {
+            console.error('Bulk checkout error, queuing locally:', err);
+            itemsToSubmit.forEach((it, idx) => {
+                const reqId = `req-cart-${Date.now()}-${idx}`;
+                const itDueDate = it.dueDate || dueDate;
+                const newReq: RequestRecord = {
+                    id: reqId,
+                    itemId: it.id,
+                    itemName: it.name,
+                    name: borrowerName,
+                    roll: rollNum,
+                    qty: it.quantity,
+                    purpose: purpose,
+                    status: 'PENDING',
+                    requestedAt: date,
+                    dueDate: itDueDate
+                };
+                requests = requests.filter(r => r.id !== newReq.id && !(r.status === 'PENDING' && r.itemId === newReq.itemId && r.qty === newReq.qty && r.purpose === newReq.purpose));
+                requests.unshift(newReq);
+            });
+
+            DatabaseManager.save();
+            DatabaseManager.addLog('borrow', `<span>${borrowerName}</span> queued request cart with ${itemsToSubmit.length} components for '${purpose}'.`);
+
+            this.clear();
+            this.closeCart();
+            if (purposeInput) purposeInput.value = '';
+
+            ToastManager.show(
+                'Request Manifest Queued',
+                `Hardware request for ${itemsToSubmit.length} components queued for Admin authorization.`,
+                'success'
+            );
+            AdminManager.loadHardwareRequests(true);
+        } finally {
+            this.isCheckingOut = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i data-lucide="send"></i> Checkout & Submit Request`;
+                renderLucideIcons(submitBtn);
+            }
+        }
+    }
+
+    private static setupEventListeners() {
+        document.getElementById('btn-navbar-cart')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openCart();
+        });
+
+        document.getElementById('nav-capsule-cart')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openCart();
+        });
+
+        document.getElementById('btn-vault-cart-trigger')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openCart();
+        });
+
+        document.getElementById('btn-close-cart-modal')?.addEventListener('click', () => {
+            this.closeCart();
+        });
+
+        document.getElementById('btn-clear-cart')?.addEventListener('click', () => {
+            if (this.getCount() > 0) {
+                this.clear();
+            }
+        });
+
+        document.getElementById('btn-empty-cart-browse')?.addEventListener('click', () => {
+            this.closeCart();
+            if ((window as any).switchSection) {
+                (window as any).switchSection('inventory-view');
+            }
+        });
+
+        const form = document.getElementById('cart-checkout-form') as HTMLFormElement | null;
+        if (form && !form.dataset.bound) {
+            form.dataset.bound = 'true';
+            form.addEventListener('submit', (e) => this.handleCheckout(e));
+        }
+
+        const cartPresets = document.querySelectorAll('.date-preset-pill.cart-preset');
+        const dueDateInput = document.getElementById('cart-due-date') as HTMLInputElement | null;
+        const durationBadge = document.getElementById('cart-duration-badge');
+
+        const updateCartDurationBadge = (dateVal: string) => {
+            if (!durationBadge || !dateVal) return;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const target = new Date(dateVal);
+            target.setHours(0, 0, 0, 0);
+            const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays <= 0) {
+                durationBadge.textContent = 'Due Today';
+            } else if (diffDays === 1) {
+                durationBadge.textContent = '1 Day Loan';
+            } else {
+                durationBadge.textContent = `${diffDays} Days Loan`;
+            }
+        };
+
+        const syncAllItemsToGlobalDate = (newDate: string) => {
+            this.items.forEach(it => {
+                it.dueDate = newDate;
+            });
+            this.saveToStorage();
+            document.querySelectorAll<HTMLInputElement>('.item-due-input').forEach(inp => {
+                inp.value = newDate;
+            });
+        };
+
+        dueDateInput?.addEventListener('input', () => {
+            if (dueDateInput.value) {
+                updateCartDurationBadge(dueDateInput.value);
+                syncAllItemsToGlobalDate(dueDateInput.value);
+            }
+        });
+
+        cartPresets.forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                e.preventDefault();
+                const days = Number((pill as HTMLElement).dataset.days) || 7;
+                const newDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                if (dueDateInput) {
+                    dueDateInput.value = newDate;
+                    updateCartDurationBadge(newDate);
+                    syncAllItemsToGlobalDate(newDate);
+                }
+                cartPresets.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+            });
+        });
+    }
+}
+(window as any).CartManager = CartManager;
 
 
 
@@ -2012,12 +2562,12 @@ class ModalManager {
             this.handleBorrowSubmit();
         });
 
-        document.querySelector('.btn-back-to-detail')!.addEventListener('click', () => {
+        document.querySelector('.btn-back-to-detail')?.addEventListener('click', () => {
             this.close('borrow-form-modal');
             this.open('detail-modal');
         });
 
-        document.getElementById('btn-borrow')!.addEventListener('click', () => {
+        document.getElementById('btn-borrow')?.addEventListener('click', () => {
             this.openBorrowFormModal();
         });
 
@@ -2519,20 +3069,11 @@ class ModalManager {
         const badge = document.getElementById('detail-status')!;
         badge.className = 'modal-status-badge';
 
-        const borrowBtn = document.getElementById('btn-borrow') as HTMLButtonElement;
         const returnBtn = document.getElementById('btn-return') as HTMLButtonElement;
 
         const status = getItemStockStatus(totalQty, available);
         badge.innerText = status.text;
         badge.className = `modal-status-badge ${status.class}`;
-
-        if (available > 0) {
-            borrowBtn.disabled = false;
-            borrowBtn.style.opacity = '1';
-        } else {
-            borrowBtn.disabled = true;
-            borrowBtn.style.opacity = '0.5';
-        }
 
         const myLoans = (item.borrowedBy || []).filter(rec => !rec.returned && (rec as any).status !== 'PENDING' && ModalManager.isUserLoanMatch(rec));
         const myActiveLoan = myLoans.find(r => (r as any).status !== 'RETURN_REQUESTED') || myLoans[0];
@@ -2591,10 +3132,49 @@ class ModalManager {
             };
         }
 
-        if (role === 'ADMIN') {
-            borrowBtn.innerHTML = '<i data-lucide="shopping-cart"></i> Checkout / Borrow';
-        } else {
-            borrowBtn.innerHTML = '<i data-lucide="send"></i> Request Issue';
+        const modalCartBtn = document.getElementById('btn-modal-add-cart') as HTMLButtonElement | null;
+        if (modalCartBtn) {
+            if (available > 0) {
+                modalCartBtn.disabled = false;
+                modalCartBtn.style.opacity = '1';
+                modalCartBtn.style.cursor = 'pointer';
+                const inCart = typeof CartManager !== 'undefined' && CartManager.hasItem(item.id);
+                const cartQty = typeof CartManager !== 'undefined' ? CartManager.getItemQty(item.id) : 0;
+                if (inCart) {
+                    modalCartBtn.classList.add('in-cart');
+                    modalCartBtn.innerHTML = `<i data-lucide="check"></i> In Cart (${cartQty}) &bull; View Cart`;
+                    modalCartBtn.onclick = () => {
+                        this.closeAll();
+                        if (typeof CartManager !== 'undefined') {
+                            CartManager.openCart();
+                        }
+                    };
+                } else {
+                    modalCartBtn.classList.remove('in-cart');
+                    modalCartBtn.innerHTML = `<i data-lucide="shopping-bag"></i> Add to Request Cart`;
+                    modalCartBtn.onclick = () => {
+                        if (typeof CartManager !== 'undefined') {
+                            CartManager.addItem(item);
+                            const updatedQty = CartManager.getItemQty(item.id);
+                            modalCartBtn.classList.add('in-cart');
+                            modalCartBtn.innerHTML = `<i data-lucide="check"></i> In Cart (${updatedQty}) &bull; View Cart`;
+                            modalCartBtn.onclick = () => {
+                                this.closeAll();
+                                CartManager.openCart();
+                            };
+                            renderLucideIcons(modalCartBtn);
+                        }
+                    };
+                }
+            } else {
+                modalCartBtn.disabled = true;
+                modalCartBtn.style.opacity = '0.5';
+                modalCartBtn.style.cursor = 'not-allowed';
+                modalCartBtn.classList.remove('in-cart');
+                modalCartBtn.innerHTML = `<i data-lucide="ban"></i> Out of Stock`;
+                modalCartBtn.onclick = null;
+            }
+            renderLucideIcons(modalCartBtn);
         }
 
         const borrowersPanel = document.getElementById('borrowers-panel')!;
@@ -2666,6 +3246,16 @@ class ModalManager {
 
     static openBorrowFormModal() {
         if (!selectedItem) return;
+
+        const role = this.getCurrentRole();
+        if (role !== 'ADMIN') {
+            if (typeof CartManager !== 'undefined') {
+                CartManager.addItem(selectedItem);
+                this.closeAll();
+                CartManager.openCart();
+                return;
+            }
+        }
 
         const borrowedSum = (selectedItem.borrowedBy || [])
             .filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED')
@@ -3984,7 +4574,11 @@ class AuthManager {
     }
 
     private static setupInactivityTracker() {
+        let lastActivityCheck = 0;
         const onUserActivity = () => {
+            const now = Date.now();
+            if (now - lastActivityCheck < 10000) return;
+            lastActivityCheck = now;
             if (localStorage.getItem('cicr_token')) {
                 this.recordActivity(false);
             }
@@ -7305,6 +7899,9 @@ class TeamShowcaseManager {
 // ==========================================
 class ProfileViewManager {
     private static isInitialized: boolean = false;
+    public static activeTab: 'loans' | 'requests' | 'history' = 'loans';
+    private static cachedRequests: any[] = [];
+    private static cachedHistory: any[] = [];
 
     public static init() {
         if (this.isInitialized) return;
@@ -7314,6 +7911,19 @@ class ProfileViewManager {
         const editBtn = document.getElementById('profile-edit-btn');
         if (editBtn) {
             editBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof PasswordResetManager !== 'undefined' && typeof PasswordResetManager.open === 'function') {
+                    PasswordResetManager.open();
+                } else {
+                    const modal = document.getElementById('reset-password-modal');
+                    if (modal) modal.classList.add('active');
+                }
+            });
+        }
+
+        const secBtn = document.getElementById('profile-security-btn');
+        if (secBtn) {
+            secBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (typeof PasswordResetManager !== 'undefined' && typeof PasswordResetManager.open === 'function') {
                     PasswordResetManager.open();
@@ -7358,17 +7968,63 @@ class ProfileViewManager {
                 }
             });
         }
+
+        // 4. Hardware Hub Tabs switching
+        const tabBtns = document.querySelectorAll('.profile-hub-tab');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTab = (btn as HTMLElement).dataset.hubTab as 'loans' | 'requests' | 'history';
+                if (targetTab) {
+                    this.switchTab(targetTab);
+                }
+            });
+        });
+    }
+
+    public static switchTab(tab: 'loans' | 'requests' | 'history') {
+        this.activeTab = tab;
+        const tabBtns = document.querySelectorAll('.profile-hub-tab');
+        tabBtns.forEach(btn => {
+            const isMatch = (btn as HTMLElement).dataset.hubTab === tab;
+            btn.classList.toggle('active', isMatch);
+        });
+
+        const paneLoans = document.getElementById('pane-active-loans');
+        const paneRequests = document.getElementById('pane-pending-requests');
+        const paneHistory = document.getElementById('pane-return-history');
+
+        if (paneLoans) {
+            paneLoans.style.display = tab === 'loans' ? 'block' : 'none';
+            paneLoans.classList.toggle('active', tab === 'loans');
+        }
+        if (paneRequests) {
+            paneRequests.style.display = tab === 'requests' ? 'block' : 'none';
+            paneRequests.classList.toggle('active', tab === 'requests');
+        }
+        if (paneHistory) {
+            paneHistory.style.display = tab === 'history' ? 'block' : 'none';
+            paneHistory.classList.toggle('active', tab === 'history');
+        }
     }
 
     public static async syncFromBackend() {
         const token = localStorage.getItem('cicr_token');
         if (!token) return;
+
         try {
-            const res = await fetch(`${API_BASE}/auth/profile`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const json = await res.json();
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            // In parallel, fetch profile, hardware requests, and borrow history
+            const [profileRes, requestsRes, historyRes] = await Promise.allSettled([
+                fetch(`${API_BASE}/auth/profile`, { headers }),
+                fetch(`${API_BASE}/borrow/requests`, { headers }),
+                fetch(`${API_BASE}/borrow/history`, { headers })
+            ]);
+
+            // 1. Process profile
+            if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
+                const json = await profileRes.value.json();
                 if (json.status === 'success' && json.data) {
                     let user: any = {};
                     try {
@@ -7379,11 +8035,28 @@ class ProfileViewManager {
                     if (json.data.username) {
                         localStorage.setItem('cicr_auth', json.data.username);
                     }
-                    this.render(false);
                 }
             }
+
+            // 2. Process hardware requests
+            if (requestsRes.status === 'fulfilled' && requestsRes.value.ok) {
+                const reqJson = await requestsRes.value.json();
+                if (reqJson.status === 'success' && Array.isArray(reqJson.data)) {
+                    this.cachedRequests = reqJson.data;
+                }
+            }
+
+            // 3. Process borrow history
+            if (historyRes.status === 'fulfilled' && historyRes.value.ok) {
+                const histJson = await historyRes.value.json();
+                if (histJson.status === 'success' && Array.isArray(histJson.data)) {
+                    this.cachedHistory = histJson.data;
+                }
+            }
+
+            this.render(false);
         } catch (e) {
-            console.warn('[ProfileView] Backend profile fetch notice:', e);
+            console.warn('[ProfileView] Backend sync notice:', e);
         }
     }
 
@@ -7407,7 +8080,6 @@ class ProfileViewManager {
         const roll = (user.roll_number || user.roll || '').trim();
         const email = (user.email || (roll ? `${roll}@mail.jiit.ac.in` : '')).trim() || 'operator@mail.jiit.ac.in';
         const branch = getStudentBranch(roll, user.branch || user.batch);
-        const userId = user.id ? `#${String(user.id).substring(0, 8)}` : `#${roll || 'JIIT-09'}`;
 
         // Hero initials & avatar image sync
         const heroAvatarImg = document.getElementById('profile-hero-avatar-img') as HTMLImageElement;
@@ -7457,29 +8129,19 @@ class ProfileViewManager {
         }
 
         const heroName = document.getElementById('profile-hero-display-name');
-        if (heroName) {
-            heroName.textContent = name;
-        }
+        if (heroName) heroName.textContent = name;
 
         const heroHandle = document.getElementById('profile-hero-handle');
-        if (heroHandle) {
-            heroHandle.textContent = `@${username}`;
-        }
+        if (heroHandle) heroHandle.textContent = `@${username}`;
 
         const heroEmail = document.getElementById('profile-hero-email');
-        if (heroEmail) {
-            heroEmail.textContent = email;
-        }
+        if (heroEmail) heroEmail.textContent = email;
 
         const heroRollTag = document.getElementById('profile-hero-roll-text');
-        if (heroRollTag) {
-            heroRollTag.textContent = roll ? `Roll No: ${roll}` : 'Roll: JIIT Member';
-        }
+        if (heroRollTag) heroRollTag.textContent = roll ? `Roll No: ${roll}` : 'Roll: JIIT Member';
 
         const heroBranchTag = document.getElementById('profile-hero-branch-text');
-        if (heroBranchTag) {
-            heroBranchTag.textContent = branch ? `Branch: ${branch}` : 'Branch: CSE';
-        }
+        if (heroBranchTag) heroBranchTag.textContent = branch ? `Branch: ${branch}` : 'Branch: CSE';
 
         // Role & Status Badges
         const roleBadgeText = document.getElementById('profile-badge-role-text');
@@ -7496,25 +8158,12 @@ class ProfileViewManager {
             }
         }
 
-        const statusBadgeText = document.getElementById('profile-badge-status-text');
-        if (statusBadgeText) {
-            statusBadgeText.textContent = role === 'ADMIN' ? 'VAULT SUPERVISOR' : 'VERIFIED OPERATOR';
-        }
-
-        const idBadgeText = document.getElementById('profile-badge-id-text');
-        if (idBadgeText) {
-            idBadgeText.textContent = `UID: ${userId}`;
-        }
-
         // Institutional Credentials
         const credName = document.getElementById('cred-full-name');
         if (credName) credName.textContent = name;
 
         const credRoll = document.getElementById('cred-roll-no');
         if (credRoll) credRoll.textContent = roll || 'Not Linked';
-
-        const credUser = document.getElementById('cred-username');
-        if (credUser) credUser.textContent = `@${username}`;
 
         const credMail = document.getElementById('cred-email');
         if (credMail) credMail.textContent = email;
@@ -7545,32 +8194,55 @@ class ProfileViewManager {
             });
         });
 
+        // Add history count from backend history if larger
+        if (this.cachedHistory.length > 0) {
+            const histReturned = this.cachedHistory.filter(h => h.status === 'RETURNED').length;
+            if (histReturned > totalReturnedCount) {
+                totalReturnedCount = histReturned;
+            }
+        }
+
         const MAX_LOAN_QUOTA = 5;
         const activeCount = activeLoans.length;
 
-        // Metric: Active Loans
+        // Pending requests calculation
+        const pendingReqs = this.cachedRequests.filter(r => {
+            const s = (r.status || '').toUpperCase();
+            return s === 'PENDING' || s === 'SUBMITTED' || s === 'RETURN_REQUESTED';
+        });
+        const pendingCount = pendingReqs.length;
+
+        // 1. Metric: Active Loans
         const metricActiveCount = document.getElementById('profile-metric-active-count');
         if (metricActiveCount) metricActiveCount.textContent = String(activeCount);
 
         const quotaPill = document.getElementById('profile-loans-quota-pill');
-        if (quotaPill) quotaPill.textContent = `${activeCount} / ${MAX_LOAN_QUOTA} Used`;
+        if (quotaPill) quotaPill.textContent = `${activeCount} / ${MAX_LOAN_QUOTA} Slots`;
 
         const progressFill = document.getElementById('profile-loan-progress-fill');
         if (progressFill) {
             const pct = Math.min(100, Math.round((activeCount / MAX_LOAN_QUOTA) * 100));
             progressFill.style.width = `${pct}%`;
-            if (activeCount >= MAX_LOAN_QUOTA) {
-                progressFill.style.background = 'var(--neon-pink)';
-            } else {
-                progressFill.style.background = 'var(--neon-cyan)';
-            }
+            progressFill.style.background = activeCount >= MAX_LOAN_QUOTA
+                ? 'var(--neon-pink, #ff007a)'
+                : 'linear-gradient(90deg, var(--neon-cyan, #00f0ff), #8b5cf6)';
         }
 
-        // Metric: Return History
+        // 2. Metric: Pending Requests
+        const metricPendingCount = document.getElementById('profile-metric-pending-count');
+        if (metricPendingCount) metricPendingCount.textContent = String(pendingCount);
+
+        const pendingSub = document.getElementById('profile-pending-sub');
+        if (pendingSub) {
+            pendingSub.textContent = pendingCount === 0
+                ? 'All manifests verified'
+                : `${pendingCount} awaiting approval`;
+        }
+
+        // 3. Metric: Return History & Standing
         const metricHistory = document.getElementById('profile-metric-history-count');
         if (metricHistory) metricHistory.textContent = String(totalReturnedCount);
 
-        // Metric: Account Standing
         const now = new Date();
         const hasOverdue = activeLoans.some(l => {
             if (!l.rec.dueDate) return false;
@@ -7582,14 +8254,14 @@ class ProfileViewManager {
         if (metricStanding) {
             if (hasOverdue) {
                 metricStanding.textContent = 'Action Required';
-                metricStanding.className = 'metric-value text-pink';
+                metricStanding.className = 'metric-sub-note text-pink font-bold';
             } else {
-                metricStanding.textContent = 'Clear';
-                metricStanding.className = 'metric-value text-green';
+                metricStanding.textContent = 'Clear Standing';
+                metricStanding.className = 'metric-sub-note text-green';
             }
         }
 
-        // Metric: Vault Clearance
+        // 4. Metric: Vault Clearance
         const metricClearance = document.getElementById('profile-metric-clearance');
         const clearancePill = document.getElementById('profile-clearance-pill');
         const clearanceSub = document.getElementById('profile-clearance-sub');
@@ -7597,21 +8269,22 @@ class ProfileViewManager {
             if (role === 'ADMIN') {
                 metricClearance.textContent = 'SYSADMIN';
                 if (clearancePill) clearancePill.textContent = 'Tier 4';
-                if (clearanceSub) clearanceSub.textContent = 'Full lab telemetry & vault write access';
+                if (clearanceSub) clearanceSub.textContent = 'Full telemetry & write clearance';
             } else {
                 metricClearance.textContent = 'OPERATOR';
                 if (clearancePill) clearancePill.textContent = 'Tier 1';
-                if (clearanceSub) clearanceSub.textContent = 'Standard hardware checkout access';
+                if (clearanceSub) clearanceSub.textContent = 'Hardware checkout authorized';
             }
         }
 
-        // Active Loans List Heading Badge
-        const activeLoansBadge = document.getElementById('profile-active-loans-badge');
-        if (activeLoansBadge) {
-            activeLoansBadge.textContent = `${activeCount} Active ${activeCount === 1 ? 'Loan' : 'Loans'}`;
-        }
+        // Tab count badges
+        const tabCountLoans = document.getElementById('profile-tab-count-loans');
+        if (tabCountLoans) tabCountLoans.textContent = String(activeCount);
 
-        // Render Active Loans
+        const tabCountRequests = document.getElementById('profile-tab-count-requests');
+        if (tabCountRequests) tabCountRequests.textContent = String(pendingCount);
+
+        // Render Tab 1: Active Loans List
         const loansContainer = document.getElementById('profile-active-loans-list');
         if (loansContainer) {
             if (activeLoans.length === 0) {
@@ -7623,7 +8296,7 @@ class ProfileViewManager {
                         <h4 class="empty-loans-title">All Hardware Returned & Clear</h4>
                         <p class="empty-loans-desc">You currently have no pending hardware checkouts. Your full borrowing allowance (${MAX_LOAN_QUOTA} slots) is ready for use.</p>
                         <button type="button" class="profile-browse-vault-btn" id="profile-browse-vault-btn">
-                            <i data-lucide="box"></i>
+                            <i data-lucide="layers"></i>
                             <span>Explore Inventory Vault</span>
                         </button>
                     </div>
@@ -7631,8 +8304,8 @@ class ProfileViewManager {
                 const browseBtn = document.getElementById('profile-browse-vault-btn');
                 if (browseBtn) {
                     browseBtn.addEventListener('click', () => {
-                        if ((window as any).dashboard && (window as any).dashboard.switchSection) {
-                            (window as any).dashboard.switchSection('inventory-view');
+                        if ((window as any).switchSection) {
+                            (window as any).switchSection('inventory-view');
                         }
                     });
                 }
@@ -7690,6 +8363,106 @@ class ProfileViewManager {
                         }
                     });
                 });
+            }
+        }
+
+        // Render Tab 2: Pending Requests List
+        const requestsContainer = document.getElementById('profile-pending-requests-list');
+        if (requestsContainer) {
+            if (this.cachedRequests.length === 0) {
+                requestsContainer.innerHTML = `
+                    <div class="profile-empty-loans">
+                        <div class="empty-icon-shield" style="background: rgba(189, 0, 255, 0.12); border-color: rgba(189, 0, 255, 0.3); color: var(--neon-purple);">
+                            <i data-lucide="check-check"></i>
+                        </div>
+                        <h4 class="empty-loans-title">No Pending Requests</h4>
+                        <p class="empty-loans-desc">You have no hardware checkout requests currently awaiting administrator review.</p>
+                        <button type="button" class="profile-browse-vault-btn" id="profile-req-browse-btn">
+                            <i data-lucide="shopping-bag"></i>
+                            <span>Browse Vault & Request Hardware</span>
+                        </button>
+                    </div>
+                `;
+                document.getElementById('profile-req-browse-btn')?.addEventListener('click', () => {
+                    if ((window as any).switchSection) (window as any).switchSection('inventory-view');
+                });
+            } else {
+                requestsContainer.innerHTML = this.cachedRequests.map(req => {
+                    const status = (req.status || 'PENDING').toUpperCase();
+                    const statusClass = status === 'APPROVED' ? 'tag-active' : (status === 'REJECTED' ? 'tag-overdue' : 'tag-pending');
+                    const reqDate = req.created_at ? new Date(req.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
+                    const items = Array.isArray(req.items) ? req.items : (req.item ? [req.item] : []);
+
+                    return `
+                        <div class="profile-request-card">
+                            <div class="profile-request-header">
+                                <span class="profile-request-title"><i data-lucide="file-text" style="width:13px;height:13px;display:inline-block;vertical-align:middle;"></i> Request #${String(req.id).slice(0, 8)}</span>
+                                <span class="loan-tag ${statusClass}">${status}</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: #94a3b8; display:flex; gap: 12px; flex-wrap: wrap;">
+                                <span><i data-lucide="calendar" style="width:11px;height:11px;display:inline-block;vertical-align:middle;"></i> ${reqDate}</span>
+                                ${req.purpose ? `<span><i data-lucide="target" style="width:11px;height:11px;display:inline-block;vertical-align:middle;"></i> ${req.purpose}</span>` : ''}
+                            </div>
+                            ${items.length > 0 ? `
+                                <div class="profile-request-items-list">
+                                    ${items.map((it: any) => `
+                                        <div class="profile-request-item-row">
+                                            <span>${it.name || it.item_name || 'Component'}</span>
+                                            <span style="color: var(--neon-cyan); font-weight:700;">x${it.quantity || it.qty || 1}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render Tab 3: Return History List
+        const historyContainer = document.getElementById('profile-return-history-list');
+        if (historyContainer) {
+            const returnedRecords = this.cachedHistory.filter(h => h.status === 'RETURNED' || h.returned_at);
+            if (returnedRecords.length === 0) {
+                historyContainer.innerHTML = `
+                    <div class="profile-empty-loans">
+                        <div class="empty-icon-shield">
+                            <i data-lucide="history"></i>
+                        </div>
+                        <h4 class="empty-loans-title">No Return Records</h4>
+                        <p class="empty-loans-desc">Completed return transactions and inspection logs will appear here.</p>
+                    </div>
+                `;
+            } else {
+                historyContainer.innerHTML = returnedRecords.map(rec => {
+                    const retDate = rec.returned_at ? new Date(rec.returned_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Verified';
+                    const itemName = rec.inventory?.name || rec.item_name || rec.borrower_name || 'Lab Asset';
+                    const qty = rec.quantity || rec.qty || 1;
+
+                    return `
+                        <div class="profile-loan-card">
+                            <div class="loan-card-top-row">
+                                <div class="loan-card-cat-wrap">
+                                    <span class="loan-cat-pill">RETURNED</span>
+                                    <span class="loan-tag tag-active"><i data-lucide="check"></i> VERIFIED BY ADMIN</span>
+                                </div>
+                                <span class="loan-qty-badge">${qty} ${qty === 1 ? 'Unit' : 'Units'}</span>
+                            </div>
+                            <div class="loan-card-info-row">
+                                <div class="loan-icon-thumb" style="color: #10b981; border-color: rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.1);">
+                                    <i data-lucide="package-check"></i>
+                                </div>
+                                <div class="loan-details-wrap">
+                                    <h4 class="loan-item-title">${itemName}</h4>
+                                    <div class="loan-meta-pills">
+                                        <span><i data-lucide="calendar"></i> Returned On: ${retDate}</span>
+                                        <span><i data-lucide="shield-check"></i> Restocked to Vault</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
         }
 
@@ -9271,83 +10044,27 @@ document.addEventListener('DOMContentLoaded', () => {
     DatabaseManager.startAutoSync(45000);
     lucide.createIcons();
 
-    // Global mouse-coordinate spotlight tracker for interactive cyber gridlines (requestAnimationFrame throttled)
-    let mouseMoveTicking = false;
-    document.addEventListener('mousemove', (e) => {
-        if (!mouseMoveTicking) {
-            requestAnimationFrame(() => {
-                const x = (e.clientX / window.innerWidth) * 100;
-                const y = (e.clientY / window.innerHeight) * 100;
-                document.documentElement.style.setProperty('--mouse-x', `${x}%`);
-                document.documentElement.style.setProperty('--mouse-y', `${y}%`);
-                mouseMoveTicking = false;
-            });
-            mouseMoveTicking = true;
-        }
-    }, { passive: true });
-
-    // Custom 3D tilt interaction logic for desktop interactivity
-    const apply3DTilt = (el: HTMLElement, maxRotation: number = 6) => {
-        el.addEventListener('mousemove', (e) => {
-            if (window.innerWidth < 768) return; // Only apply on desktop
-            const rect = el.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            const rotateX = ((y - centerY) / centerY) * -maxRotation;
-            const rotateY = ((x - centerX) / centerX) * maxRotation;
-
-            el.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.01, 1.01, 1.01)`;
-            el.style.transition = 'transform 0.1s ease-out';
-        });
-
-        el.addEventListener('mouseleave', () => {
-            el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
-            el.style.transition = 'transform 0.5s ease';
-        });
-    };
-
-    const heroCard = document.getElementById('team-hero-card');
-    if (heroCard) {
-        apply3DTilt(heroCard, 5);
-    }
-
-
-
-
-
-    // High-performance scroll state manager without DOM class thrashing
-    let scrollDebounceTimer: number | undefined;
+    // High-performance scroll state tracker with automatic debounced reset & hit-testing bypass
+    let scrollEndTimer: any = null;
     window.addEventListener('scroll', () => {
         (window as any).isUserScrolling = true;
-        if (scrollDebounceTimer !== undefined) {
-            clearTimeout(scrollDebounceTimer);
+        if (!document.body.classList.contains('is-scrolling')) {
+            document.body.classList.add('is-scrolling');
         }
-        scrollDebounceTimer = window.setTimeout(() => {
+        clearTimeout(scrollEndTimer);
+        scrollEndTimer = setTimeout(() => {
             (window as any).isUserScrolling = false;
+            document.body.classList.remove('is-scrolling');
             if ((window as any)._pendingDashboardRender && window.dashboard) {
                 (window as any)._pendingDashboardRender = false;
-                window.dashboard.renderStats();
                 window.dashboard.renderInventory();
             }
-        }, 150);
+        }, 120);
     }, { passive: true });
 
-    // IntersectionObserver scroll reveal triggers matching Pinterest visual transition
+    // Immediate section reveal activation to eliminate 1-second scroll loading delay
     const revealElements = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('active');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, {
-        threshold: 0.08,
-        rootMargin: '0px 0px -60px 0px'
-    });
-    revealElements.forEach(el => observer.observe(el));
+    revealElements.forEach(el => el.classList.add('active'));
 
     // Real-Time Sidebar Alignment Sync (Desktop Viewport-Fixed Positioning)
     const syncFixedSidebarPosition = () => {
