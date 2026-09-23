@@ -10,7 +10,12 @@ const {
   getUserApproval,
   setUserApproval,
   deleteUserApproval,
+  unpurgeEmail,
 } = require('../dist/modules/auth/userApprovalService.js');
+
+// Cleanup that leaves zero residue in the shared file-backed store:
+// deleteUserApproval removes state but purges the email, so unpurge after it.
+const cleanEmail = (email) => { deleteUserApproval(email); unpurgeEmail(email); };
 
 const ADMIN_EMAIL = SUPER_ADMIN_EMAILS[0];
 
@@ -48,7 +53,7 @@ test('F. approving a user with an admin-looking name must NOT elevate role', () 
     const rec = setUserApproval(email, 'APPROVED', 'TEST', { name: 'Aryan Varshney' });
     assert.equal(rec.role, 'MEMBER');
   } finally {
-    deleteUserApproval(email);
+    cleanEmail(email);
   }
 });
 
@@ -65,6 +70,6 @@ test('G. member email with designated-admin substring name is not elevated', () 
     assert.equal(approval.role, 'MEMBER');
     assert.equal(effectiveRole, 'MEMBER');
   } finally {
-    deleteUserApproval(email);
+    cleanEmail(email);
   }
 });

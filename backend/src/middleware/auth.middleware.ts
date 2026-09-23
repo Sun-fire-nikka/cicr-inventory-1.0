@@ -13,6 +13,7 @@
 // for admin endpoints, `requireRole('ADMIN','MEMBER')` for member endpoints.
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { dbRead } from '../config/database';
 
 export interface AuthUser {
   id: string;
@@ -48,7 +49,14 @@ const parseJwtUser = (decoded: unknown): AuthUser | null => {
   };
 };
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+const parseTokenVersion = (decoded: unknown): number | null => {
+  if (!decoded || typeof decoded !== 'object') return null;
+  const tv = (decoded as Record<string, unknown>).tv;
+  if (typeof tv !== 'number' || !Number.isInteger(tv) || tv <= 0) return null;
+  return tv;
+};
+
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -67,6 +75,38 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       const user = parseJwtUser(decoded);
       if (!user) {
         return res.status(403).json({ status: 'error', message: 'Invalid token claims.' });
+      }
+      // H-3: tokens without a valid tv claim are rejected (forces re-login).
+      const tv = parseTokenVersion(decoded);
+      if (tv === null) {
+        return res.status(403).json({ status: 'error', message: 'Invalid or expired token.' });
+      }
+      // H-3: server-side token-version check. The DB router covers Supabase
+      // primary / Neon failover. No Redis cache in v1 (exact semantics).
+      // Fail closed on lookup error — never fall back to the JWT claim.
+      let record: { id: string; token_version: unknown } | null = null;
+      try {
+        const { data, error } = await dbRead
+          .from('users')
+          .select('id, token_version')
+          .eq('id', user.id)
+          .single();
+        if (error || !data) {
+          return res.status(401).json({ status: 'error', message: 'Access denied. User no longer exists.' });
+        }
+        record = data as { id: string; token_version: unknown };
+      } catch {
+        return res.status(503).json({ status: 'error', message: 'Authentication temporarily unavailable.' });
+      }
+      // H-3: deleted users have no row (handled above); a version mismatch
+      // means the credential/role changed after issuance — reject.
+      if (
+        !record ||
+        typeof record.token_version !== 'number' ||
+        !Number.isInteger(record.token_version) ||
+        record.token_version !== tv
+      ) {
+        return res.status(403).json({ status: 'error', message: 'Invalid or expired token.' });
       }
       req.user = user;
       return next();

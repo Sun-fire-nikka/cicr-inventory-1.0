@@ -339,8 +339,18 @@ export const login = async (req: Request, res: Response) => {
       ? 'ADMIN'
       : 'MEMBER';
 
+    // H-3: bind the JWT to the row's token_version (1 for rows predating
+    // the migration). Any later password/role invalidation bumps the row,
+    // so this token stops verifying.
+    const tokenVersion =
+      typeof user.token_version === 'number' &&
+      Number.isInteger(user.token_version) &&
+      user.token_version > 0
+        ? user.token_version
+        : 1;
+
     const token = jwt.sign(
-      { id: user.id, name: user.name, email: user.email, role: effectiveRole },
+      { id: user.id, name: user.name, email: user.email, role: effectiveRole, tv: tokenVersion },
       secret,
       { expiresIn: '7d' }
     );
@@ -692,7 +702,8 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
     }
 
     const updated = setUserRole(user.email, role);
-    await supabase.from('users').update({ role }).eq('id', id);
+    // H-3: fresh token_version invalidates JWTs issued before this role change.
+    await supabase.from('users').update({ role, token_version: Date.now() }).eq('id', id);
 
     logAuditEvent({
       action: 'Role Changed',
@@ -844,8 +855,11 @@ export const resetPassword = async (req: Request, res: Response) => {
     const password_hash = await bcrypt.hash(new_password, salt);
 
     // Direct update in Supabase database!
-    const { error: updateErr } = await dbWrite.from('users').update({ 
-      password_hash
+    // H-3: assign a fresh token_version (race-safe set, not read-modify-write)
+    // so JWTs issued before this reset stop verifying immediately.
+    const { error: updateErr } = await dbWrite.from('users').update({
+      password_hash,
+      token_version: Date.now()
     }).eq('id', user.id);
 
     if (updateErr) {
@@ -915,7 +929,8 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     const password_hash = await bcrypt.hash(new_password, salt);
 
     // Update in DB
-    const { error: updateErr } = await dbWrite.from('users').update({ password_hash }).eq('id', user.id);
+    // H-3: fresh token_version invalidates JWTs issued before this change.
+    const { error: updateErr } = await dbWrite.from('users').update({ password_hash, token_version: Date.now() }).eq('id', user.id);
     if (updateErr) {
       console.error('[CHANGE PASSWORD ERROR] DB update failed:', updateErr);
       return res.status(500).json({ status: 'error', message: 'Failed to update password.' });
