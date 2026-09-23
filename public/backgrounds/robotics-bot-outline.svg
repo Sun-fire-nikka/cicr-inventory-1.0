@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 700" fill="none">
+  <!-- Technical Antenna Mast -->
+  <line x1="325" y1="120" x2="325" y2="210" stroke="rgba(128,107,232,0.10)" stroke-width="2"/>
+  <circle cx="325" cy="115" r="9" stroke="rgba(128,107,232,0.14)" stroke-width="1.8" fill="none"/>
+  <circle cx="325" cy="115" r="3.5" fill="rgba(128,107,232,0.18)"/>
+  <path d="M 307 100 A 24 24 0 0 1 343 100" stroke="rgba(79,199,216,0.10)" stroke-width="1.2" fill="none"/>
+  <path d="M 297 88 A 36 36 0 0 1 353 88" stroke="rgba(79,199,216,0.07)" stroke-width="1.2" fill="none"/>
+  <!-- Main Head Chassis -->
+  <rect x="155.0" y="245.0" width="340" height="270" rx="36" stroke="rgba(75,70,130,0.07)" stroke-width="2.2" fill="none"/>
+  <rect x="133.0" y="346.0" width="22" height="68" rx="8" stroke="rgba(75,70,130,0.06)" stroke-width="1.6" fill="none"/>
+  <rect x="495.0" y="346.0" width="22" height="68" rx="8" stroke="rgba(75,70,130,0.06)" stroke-width="1.6" fill="none"/>
+  <!-- Sensor Visor Array -->
+  <rect x="190.0" y="335" width="270" height="110" rx="20" stroke="rgba(128,107,232,0.08)" stroke-width="1.4" fill="none"/>
+  <circle cx="261" cy="390" r="26" stroke="rgba(79,199,216,0.11)" stroke-width="1.8" fill="none"/>
+  <circle cx="261" cy="390" r="14" stroke="rgba(128,107,232,0.12)" stroke-width="1.2" fill="none"/>
+  <circle cx="261" cy="390" r="4" fill="rgba(79,199,216,0.18)"/>
+  <line x1="227" y1="390" x2="295" y2="390" stroke="rgba(75,70,130,0.06)" stroke-width="0.9" stroke-dasharray="3 3"/>
+  <line x1="261" y1="356" x2="261" y2="424" stroke="rgba(75,70,130,0.06)" stroke-width="0.9" stroke-dasharray="3 3"/>
+  <circle cx="389" cy="390" r="26" stroke="rgba(79,199,216,0.11)" stroke-width="1.8" fill="none"/>
+  <circle cx="389" cy="390" r="14" stroke="rgba(128,107,232,0.12)" stroke-width="1.2" fill="none"/>
+  <circle cx="389" cy="390" r="4" fill="rgba(79,199,216,0.18)"/>
+  <line x1="355" y1="390" x2="423" y2="390" stroke="rgba(75,70,130,0.06)" stroke-width="0.9" stroke-dasharray="3 3"/>
+  <line x1="389" y1="356" x2="389" y2="424" stroke="rgba(75,70,130,0.06)" stroke-width="0.9" stroke-dasharray="3 3"/>
+  <line x1="280" y1="476" x2="294" y2="476" stroke="rgba(75,70,130,0.07)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="306" y1="476" x2="320" y2="476" stroke="rgba(75,70,130,0.07)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="332" y1="476" x2="346" y2="476" stroke="rgba(75,70,130,0.07)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="358" y1="476" x2="372" y2="476" stroke="rgba(75,70,130,0.07)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 265 515.0 V 539.0 H 385 V 515.0" stroke="rgba(75,70,130,0.06)" stroke-width="1.6" fill="none"/>
+  <text x="325" y="545" fill="rgba(75,70,130,0.08)" font-family="ui-monospace, monospace" font-size="8" text-anchor="middle" letter-spacing="1">UNIT // CICR-BOT.ALPHA // 0x4B</text>
+</svg>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 750" fill="none">
+  <defs>
+    <linearGradient id="roboBusGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(128,107,232,0.14)"/>
+      <stop offset="35%" stop-color="rgba(128,107,232,0.10)"/>
+      <stop offset="75%" stop-color="rgba(75,70,130,0.06)"/>
+      <stop offset="100%" stop-color="rgba(75,70,130,0.01)"/>
+    </linearGradient>
+  </defs>
+  <!-- Primary Actuator Bus Line -->
+  <path d="M 0 130 H 280 L 350 200 H 750 L 810 260 H 980" stroke="url(#roboBusGrad)" stroke-width="2.2" fill="none"/>
+  <circle cx="980" cy="260" r="4.5" fill="none" stroke="rgba(128,107,232,0.18)" stroke-width="1.2"/>
+  <circle cx="980" cy="260" r="2" fill="rgba(128,107,232,0.22)"/>
+  <text x="365" y="192" fill="rgba(128,107,232,0.14)" font-family="ui-monospace, monospace" font-size="8" letter-spacing="1">ACTUATOR_BUS // SERVO_PWM [0:5]</text>
+  <!-- Parallel Sensor Bus -->
+  <path d="M 0 50 H 230.0 L 310.0 130.0 H 680.0" stroke="rgba(75,70,130,0.1)" stroke-width="1.4" fill="none"/>
+  <circle cx="680.0" cy="130.0" r="2.8" fill="none" stroke="rgba(75,70,130,0.15)" stroke-width="0.9"/>
+  <path d="M 0 64 H 241.2 L 321.2 144.0 H 960.0" stroke="rgba(75,70,130,0.07)" stroke-width="0.9" fill="none"/>
+  <circle cx="960.0" cy="144.0" r="2.8" fill="none" stroke="rgba(75,70,130,0.11)" stroke-width="0.9"/>
+  <path d="M 0 78 H 252.4 L 332.4 158.0 H 1240.0" stroke="rgba(75,70,130,0.04)" stroke-width="0.9" fill="none"/>
+  <circle cx="1240.0" cy="158.0" r="2.8" fill="none" stroke="rgba(75,70,130,0.06)" stroke-width="0.9"/>
+  <path d="M 0 92 H 263.6 L 343.6 172.0 H 1520.0" stroke="rgba(75,70,130,0.04)" stroke-width="0.9" fill="none"/>
+  <circle cx="1520.0" cy="172.0" r="2.8" fill="none" stroke="rgba(75,70,130,0.06)" stroke-width="0.9"/>
+  <!-- Joint Schematic Diagram -->
+  <circle cx="880" cy="110" r="24" stroke="rgba(128,107,232,0.10)" stroke-width="1.2" fill="none"/>
+  <circle cx="880" cy="110" r="3" fill="rgba(128,107,232,0.20)"/>
+  <line x1="844" y1="110" x2="916" y2="110" stroke="rgba(75,70,130,0.08)" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="880" y1="74" x2="880" y2="146" stroke="rgba(75,70,130,0.08)" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="880" y1="110" x2="919.3" y2="82.5" stroke="rgba(128,107,232,0.14)" stroke-width="1.4"/>
+  <circle cx="919.3" cy="82.5" r="4" fill="none" stroke="rgba(128,107,232,0.18)" stroke-width="1"/>
+  <text x="912" y="82" fill="rgba(128,107,232,0.14)" font-family="ui-monospace, monospace" font-size="7.5" letter-spacing="0.8">θ = 35.2° [ELBOW_J2]</text>
+  <!-- Mid-Tier I2C/SPI Sensor Branch -->
+  <path d="M 0 320 H 180 L 250 390 H 580 L 630 440 H 840" stroke="rgba(75,70,130,0.06)" stroke-width="1.0" fill="none"/>
+  <circle cx="840" cy="440" r="3" fill="rgba(75,70,130,0.10)"/>
+  <text x="260" y="382" fill="rgba(75,70,130,0.07)" font-family="ui-monospace, monospace" font-size="7.5" letter-spacing="1">SPI_BUS // IMU_MPU6050</text>
+  <!-- Lower Chassis Ground Trace -->
+  <path d="M 0 490 H 140 L 200 550 H 520 L 570 600 H 1080" stroke="rgba(75,70,130,0.05)" stroke-width="0.9" fill="none"/>
+  <circle cx="1080" cy="600" r="3" fill="none" stroke="rgba(75,70,130,0.09)" stroke-width="1"/>
+  <!-- Core MCU Outline -->
+  <rect x="680" y="50" width="64" height="64" fill="rgba(128,107,232,0.02)" stroke="rgba(75,70,130,0.08)" stroke-width="1.1" rx="4"/>
+  <circle cx="688" cy="58" r="2.2" fill="rgba(128,107,232,0.22)"/>
+  <text x="694" y="88" fill="rgba(75,70,130,0.11)" font-family="ui-monospace, monospace" font-size="8" letter-spacing="1">STM32.F4</text>
+  <text x="24" y="38" fill="rgba(75,70,130,0.09)" font-family="ui-monospace, monospace" font-size="8" letter-spacing="1.2">ROBOTICS.SYS // LAB.CH_01</text>
+  <text x="540" y="592" fill="rgba(75,70,130,0.06)" font-family="ui-monospace, monospace" font-size="7.5" letter-spacing="1">CAN_BUS // MOTORS_TELEMETRY // JIIT-128</text>
+</svg>

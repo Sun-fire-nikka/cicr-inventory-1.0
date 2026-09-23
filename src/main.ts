@@ -269,7 +269,7 @@ class Background3D {
 
     private particles!: THREE.Points;
     private particlePhases: Float32Array = new Float32Array(0);
-    private currentTheme = 'cyberpunk';
+    private currentTheme = 'mono';
 
     private mouseX = 0;
     private mouseY = 0;
@@ -288,7 +288,7 @@ class Background3D {
 
     private init() {
         this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.FogExp2(0x06060e, 0.015);
+        this.scene.fog = new THREE.FogExp2(0x0d0d0c, 0.015);
 
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.camera.position.set(0, 4, 18);
@@ -306,14 +306,14 @@ class Background3D {
     }
 
     private createLighting() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xbd00ff, 1.5, 100);
+        const pointLight = new THREE.PointLight(0xf5f5f2, 1.2, 100);
         pointLight.position.set(0, 10, -20);
         this.scene.add(pointLight);
 
-        const pointLight2 = new THREE.PointLight(0x00f0ff, 1.5, 100);
+        const pointLight2 = new THREE.PointLight(0x9c78ed, 1.0, 100);
         pointLight2.position.set(20, 5, 10);
         this.scene.add(pointLight2);
     }
@@ -329,16 +329,13 @@ class Background3D {
         const count = colors.length / 3;
 
         let c1: THREE.Color, c2: THREE.Color;
-        if (theme === 'sakura' || theme === 'pink') {
-            c1 = new THREE.Color(0xff75a0); // Vibrant cherry pink
-            c2 = new THREE.Color(0xffb7c5); // Soft blossom petal
-        } else if (theme === 'light') {
-            c1 = new THREE.Color(0x0284c7); // Deep Sky Blue
-            c2 = new THREE.Color(0x38bdf8); // Light Cyan
+        if (theme === 'light') {
+            c1 = new THREE.Color(0x9c78ed); // Robo Lab Purple
+            c2 = new THREE.Color(0xf5b8eb); // Robo Lab Soft Pink
         } else {
-            // Default Cyberpunk
-            c1 = new THREE.Color(0x00f0ff);
-            c2 = new THREE.Color(0xbd00ff);
+            // Default Midnight Mono
+            c1 = new THREE.Color(0x737373);
+            c2 = new THREE.Color(0xf5f5f2);
         }
 
         for (let i = 0; i < count; i++) {
@@ -1585,13 +1582,11 @@ class DashboardManager {
         });
 
         // 9. Theme Switcher Buttons listeners
-        const themeBtnDark = document.getElementById('theme-btn-dark');
         const themeBtnLight = document.getElementById('theme-btn-light');
-        const themeBtnPink = document.getElementById('theme-btn-pink');
+        const themeBtnMono = document.getElementById('theme-btn-mono');
 
-        themeBtnDark?.addEventListener('click', () => ThemeManager.applyTheme('cyberpunk'));
         themeBtnLight?.addEventListener('click', () => ThemeManager.applyTheme('light'));
-        themeBtnPink?.addEventListener('click', () => ThemeManager.applyTheme('sakura'));
+        themeBtnMono?.addEventListener('click', () => ThemeManager.applyTheme('mono'));
 
         // 10. Interactive Stat Bubbles Filter Listeners (Total, Active Loans, Low Reserves, Out of Stock)
         const statBubbles = document.querySelectorAll('.stat-bubble-new');
@@ -9126,7 +9121,16 @@ class ThemeManager {
         this.navThemeSelectEl = document.getElementById('nav-theme-select') as HTMLSelectElement;
         this.headerThemeSelectEl = document.getElementById('header-theme-select') as HTMLSelectElement;
 
-        const defaultTheme = localStorage.getItem('cicr_vault_theme') || 'cyberpunk';
+        const storedTheme = localStorage.getItem('cicr_vault_theme') || localStorage.getItem('cicr_theme');
+        // Safe migration for legacy and invalid themes -> default to Midnight Mono ('mono')
+        let defaultTheme = 'mono';
+        if (storedTheme === 'light') {
+            defaultTheme = 'light';
+        } else if (storedTheme === 'mono') {
+            defaultTheme = 'mono';
+        } else {
+            defaultTheme = 'mono';
+        }
         this.applyTheme(defaultTheme);
 
         if (this.themeSelectEl) {
@@ -9153,30 +9157,25 @@ class ThemeManager {
             });
         }
 
-        const themeBtnDark = document.getElementById('theme-btn-dark');
         const themeBtnLight = document.getElementById('theme-btn-light');
-        const themeBtnPink = document.getElementById('theme-btn-pink');
+        const themeBtnMono = document.getElementById('theme-btn-mono');
 
-        if (themeBtnDark) {
-            themeBtnDark.addEventListener('click', () => {
-                this.applyTheme('cyberpunk');
-            });
-        }
         if (themeBtnLight) {
             themeBtnLight.addEventListener('click', () => {
                 this.applyTheme('light');
             });
         }
-        if (themeBtnPink) {
-            themeBtnPink.addEventListener('click', () => {
-                this.applyTheme('sakura');
+        if (themeBtnMono) {
+            themeBtnMono.addEventListener('click', () => {
+                this.applyTheme('mono');
             });
         }
     }
 
     public static applyTheme(theme: string) {
-        if (theme === 'matrix' || theme === 'midnight' || theme === 'avengers') {
-            theme = 'cyberpunk';
+        // Fallback / sanitize: only 'mono' and 'light' exist
+        if (theme !== 'light' && theme !== 'mono') {
+            theme = 'mono';
         }
 
         // 1. Temporarily freeze transitions to eliminate multi-element transition lag & compositor flickering
@@ -9197,19 +9196,10 @@ class ThemeManager {
 
         // 2. Batch attribute and class updates synchronously
         document.documentElement.setAttribute('data-theme', theme);
-        document.body.classList.remove(
-            'theme-cyberpunk',
-            'theme-light',
-            'theme-pink',
-            'theme-sakura'
-        );
+        document.body.classList.remove('theme-light', 'theme-mono');
         document.body.classList.add(`theme-${theme}`);
-        if (theme === 'pink' || theme === 'sakura') {
-            document.body.classList.add('theme-sakura');
-            document.body.classList.add('theme-pink');
-        }
         localStorage.setItem('cicr_vault_theme', theme);
-        localStorage.setItem('cicr_theme', theme === 'sakura' ? 'pink' : theme === 'cyberpunk' ? 'dark' : theme);
+        localStorage.setItem('cicr_theme', theme);
 
         if (this.themeSelectEl && this.themeSelectEl.value !== theme) {
             this.themeSelectEl.value = theme;
@@ -9222,13 +9212,11 @@ class ThemeManager {
         }
 
         // Sync sidebar theme buttons if present
-        const themeBtnDark = document.getElementById('theme-btn-dark');
         const themeBtnLight = document.getElementById('theme-btn-light');
-        const themeBtnPink = document.getElementById('theme-btn-pink');
-        [themeBtnDark, themeBtnLight, themeBtnPink].forEach(b => b?.classList.remove('active'));
+        const themeBtnMono = document.getElementById('theme-btn-mono');
+        [themeBtnLight, themeBtnMono].forEach(b => b?.classList.remove('active'));
         if (theme === 'light') themeBtnLight?.classList.add('active');
-        else if (theme === 'sakura' || theme === 'pink') themeBtnPink?.classList.add('active');
-        else if (theme === 'cyberpunk') themeBtnDark?.classList.add('active');
+        else if (theme === 'mono') themeBtnMono?.classList.add('active');
 
         if (window.bg3D) {
             window.bg3D.updateThemeColors(theme);

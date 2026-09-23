@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 500" fill="none">
+  <!-- Ingress from right edge -->
+  <path d="M 650 180 H 420 L 360 240 H 160 L 110 290 H 0" stroke="rgba(242,240,233,0.08)" stroke-width="1.2" fill="none"/>
+  <circle cx="160" cy="240" r="3.2" fill="none" stroke="rgba(200,191,168,0.15)" stroke-width="1"/>
+  <circle cx="160" cy="240" r="1.4" fill="rgba(200,191,168,0.18)"/>
+  <!-- Secondary Feeder -->
+  <path d="M 650 220 H 450 L 390 280 H 220 L 170 330 H 40" stroke="rgba(242,240,233,0.05)" stroke-width="0.9" fill="none"/>
+  <!-- Ingress from bottom edge -->
+  <path d="M 380 500 V 380 L 320 320 H 80" stroke="rgba(242,240,233,0.06)" stroke-width="1.0" fill="none"/>
+  <circle cx="80" cy="320" r="2.8" fill="rgba(242,240,233,0.10)"/>
+  <!-- Short Corner Branch -->
+  <path d="M 580 500 V 420 L 520 360 H 360" stroke="rgba(200,191,168,0.10)" stroke-width="1.1" fill="none"/>
+  <circle cx="360" cy="360" r="3.5" fill="none" stroke="rgba(200,191,168,0.18)" stroke-width="1"/>
+  <circle cx="360" cy="360" r="1.5" fill="rgba(200,191,168,0.22)"/>
+  <text x="375" y="352" fill="rgba(200,191,168,0.11)" font-family="ui-monospace, monospace" font-size="7.5" letter-spacing="1">TERM.SEC_04 // RX_BUS</text>
+</svg>

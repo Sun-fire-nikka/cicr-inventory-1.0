@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 750" fill="none">
+  <defs>
+    <linearGradient id="pwrTrunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(200,191,168,0.18)"/>
+      <stop offset="25%" stop-color="rgba(200,191,168,0.16)"/>
+      <stop offset="55%" stop-color="rgba(242,240,233,0.12)"/>
+      <stop offset="85%" stop-color="rgba(242,240,233,0.06)"/>
+      <stop offset="100%" stop-color="rgba(242,240,233,0.01)"/>
+    </linearGradient>
+    <linearGradient id="busGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(242,240,233,0.14)"/>
+      <stop offset="35%" stop-color="rgba(242,240,233,0.11)"/>
+      <stop offset="75%" stop-color="rgba(242,240,233,0.06)"/>
+      <stop offset="100%" stop-color="rgba(242,240,233,0.01)"/>
+    </linearGradient>
+  </defs>
+  <!-- Primary High-Power Bus (960px) -->
+  <path d="M 0 140 H 290 L 360 210 H 760 L 820 270 H 960" stroke="url(#pwrTrunkGrad)" stroke-width="2.4" fill="none"/>
+  <circle cx="960" cy="270" r="5" fill="none" stroke="rgba(200,191,168,0.18)" stroke-width="1.2"/>
+  <circle cx="960" cy="270" r="2.2" fill="rgba(200,191,168,0.22)"/>
+  <text x="375" y="202" fill="rgba(200,191,168,0.14)" font-family="ui-monospace, monospace" font-size="8" letter-spacing="1">PWR.BUS_3V3 // PRIMARY_TRUNK</text>
+  <!-- 4-Track Synchronized Data Bus -->
+  <path d="M 0 50 H 240.0 L 320.0 130.0 H 680.0" stroke="rgba(242,240,233,0.12)" stroke-width="1.4" fill="none"/>
+  <circle cx="680.0" cy="130.0" r="3" fill="none" stroke="rgba(242,240,233,0.17)" stroke-width="1"/>
+  <circle cx="680.0" cy="130.0" r="1.3" fill="rgba(242,240,233,0.22)"/>
+  <path d="M 0 64 H 251.2 L 331.2 144.0 H 1030.0" stroke="rgba(242,240,233,0.08)" stroke-width="0.9" fill="none"/>
+  <circle cx="1030.0" cy="144.0" r="3" fill="none" stroke="rgba(242,240,233,0.11)" stroke-width="1"/>
+  <circle cx="1030.0" cy="144.0" r="1.3" fill="rgba(242,240,233,0.14)"/>
+  <path d="M 0 78 H 262.4 L 342.4 158.0 H 1380.0" stroke="rgba(242,240,233,0.05)" stroke-width="0.9" fill="none"/>
+  <circle cx="1380.0" cy="158.0" r="3" fill="none" stroke="rgba(242,240,233,0.07)" stroke-width="1"/>
+  <circle cx="1380.0" cy="158.0" r="1.3" fill="rgba(242,240,233,0.09)"/>
+  <path d="M 0 92 H 273.6 L 353.6 172.0 H 1730.0" stroke="rgba(242,240,233,0.05)" stroke-width="0.9" fill="none"/>
+  <circle cx="1730.0" cy="172.0" r="3" fill="none" stroke="rgba(242,240,233,0.07)" stroke-width="1"/>
+  <circle cx="1730.0" cy="172.0" r="1.3" fill="rgba(242,240,233,0.09)"/>
+  <!-- Vertical Ingress Trace -->
+  <path d="M 340 0 V 90 L 380 130 H 680 L 730 180 H 1080" stroke="rgba(242,240,233,0.08)" stroke-width="1.1" fill="none"/>
+  <circle cx="1080" cy="180" r="3.5" fill="none" stroke="rgba(200,191,168,0.15)" stroke-width="1"/>
+  <circle cx="1080" cy="180" r="1.5" fill="rgba(200,191,168,0.18)"/>
+  <text x="740" y="172" fill="rgba(242,240,233,0.07)" font-family="ui-monospace, monospace" font-size="7.5" letter-spacing="1">CLOCK.SYNC // 100MHz</text>
+  <!-- Mid-Tier Branching Trace (Extends 880px) -->
+  <path d="M 0 310 H 210 L 280 380 H 620 L 680 440 H 880" stroke="rgba(242,240,233,0.07)" stroke-width="1.0" fill="none"/>
+  <circle cx="880" cy="440" r="3" fill="rgba(242,240,233,0.10)"/>
+  <!-- Lower Catalog Background Trace (Extends 1120px) -->
+  <path d="M 0 490 H 160 L 220 550 H 540 L 590 600 H 1120" stroke="rgba(242,240,233,0.05)" stroke-width="0.9" fill="none"/>
+  <circle cx="1120" cy="600" r="3" fill="none" stroke="rgba(242,240,233,0.09)" stroke-width="1"/>
+  <circle cx="1120" cy="600" r="1.3" fill="rgba(242,240,233,0.11)"/>
+  <!-- Sparse Center Traces -->
+  <path d="M 480 340 H 840 L 890 390 H 1240" stroke="rgba(242,240,233,0.035)" stroke-width="0.8" stroke-dasharray="8 6" fill="none"/>
+  <path d="M 640 480 H 1020 L 1060 520 H 1340" stroke="rgba(242,240,233,0.03)" stroke-width="0.8" fill="none"/>
+  <!-- Microcontroller U1 Outline -->
+  <rect x="860" y="60" width="68" height="68" fill="rgba(200,191,168,0.015)" stroke="rgba(242,240,233,0.08)" stroke-width="1.1" rx="2"/>
+  <circle cx="868" cy="68" r="2.2" fill="rgba(200,191,168,0.22)"/>
+  <text x="874" y="100" fill="rgba(242,240,233,0.11)" font-family="ui-monospace, monospace" font-size="8" letter-spacing="1">U1.CORE</text>
+  <line x1="872" y1="60" x2="872" y2="52" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="872" y1="128" x2="872" y2="136" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="883" y1="60" x2="883" y2="52" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="883" y1="128" x2="883" y2="136" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="894" y1="60" x2="894" y2="52" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="894" y1="128" x2="894" y2="136" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="905" y1="60" x2="905" y2="52" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="905" y1="128" x2="905" y2="136" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="916" y1="60" x2="916" y2="52" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <line x1="916" y1="128" x2="916" y2="136" stroke="rgba(242,240,233,0.08)" stroke-width="1"/>
+  <!-- Technical Coordinates & Metadata -->
+  <text x="24" y="38" fill="rgba(242,240,233,0.09)" font-family="ui-monospace, monospace" font-size="8.5" letter-spacing="1.2">SYSTEM_BUS [0:7] // CH_01</text>
+  <text x="24" y="128" fill="rgba(200,191,168,0.13)" font-family="ui-monospace, monospace" font-size="8.5" letter-spacing="1.2">PWR_RAIL // +3.3V_AUX</text>
+  <text x="560" y="592" fill="rgba(242,240,233,0.06)" font-family="ui-monospace, monospace" font-size="7.5" letter-spacing="1">SYSTEM.TRC // SECTOR_02 // JIIT-128</text>
+</svg>
