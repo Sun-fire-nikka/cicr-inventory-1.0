@@ -97,7 +97,8 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const isMasterAdmin = isSuperAdminEmail(normEmail);
-    const isDesignated = isDesignatedAdmin(normEmail, name);
+    // H-1 FIX: ADMIN derives from the exact allow-list email only; name never grants ADMIN.
+    const isDesignated = isDesignatedAdmin(normEmail);
     const userRole = (isMasterAdmin || isDesignated) ? 'ADMIN' : 'MEMBER';
     // Auto-approve college accounts and designated admins!
     const initialStatus = 'APPROVED';
@@ -282,7 +283,8 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ status: 'error', message: 'Invalid credentials. Incorrect password.' });
     }
 
-    const isDesignated = isDesignatedAdmin(user.email, user.name);
+    // H-1 FIX: ADMIN derives from the exact allow-list email only; stored name never grants ADMIN.
+    const isDesignated = isDesignatedAdmin(user.email);
 
     if ((isMasterAdmin || isDesignated) && user.role !== 'ADMIN') {
       try {
@@ -332,7 +334,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(500).json({ status: 'error', message: 'Server misconfiguration.' });
     }
 
-    // Strict role resolution: Dhruvi Gupta, Aryan Varshney, and master admins are ADMIN; normal users are MEMBER
+    // H-1 FIX: role resolution uses the exact allow-list email only; stored name never grants ADMIN.
     const effectiveRole = (isMasterAdmin || isDesignated || user.role === 'ADMIN' || approval.role === 'ADMIN')
       ? 'ADMIN'
       : 'MEMBER';
@@ -404,7 +406,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     if (error || !user) return res.status(404).json({ status: 'error', message: 'User not found.' });
 
-    const isMasterAdmin = isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email, user.name) || user.role === 'ADMIN';
+    const isMasterAdmin = isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email) || user.role === 'ADMIN';
     const approval = isMasterAdmin
       ? { status: 'APPROVED' as const, role: 'ADMIN' as const }
       : getUserApproval(user.email, user.role);
@@ -570,7 +572,7 @@ export const listUsersForAdmin = async (req: AuthRequest, res: Response) => {
       .filter((u: AuthUserRow) => !u.email.endsWith('.test'))
       .map((u: AuthUserRow) => {
         const normEmail = u.email.toLowerCase();
-        const isMaster = isSuperAdminEmail(normEmail) || isDesignatedAdmin(normEmail, u.name) || u.role === 'ADMIN';
+        const isMaster = isSuperAdminEmail(normEmail) || isDesignatedAdmin(normEmail) || u.role === 'ADMIN';
         const approval = allApprovals[normEmail] || getUserApproval(normEmail, u.role || 'MEMBER');
 
         const effectiveRole: 'ADMIN' | 'MEMBER' = isMaster ? 'ADMIN' : (approval.role || 'MEMBER');
@@ -681,7 +683,7 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
     const { data: user, error } = await dbRead.from('users').select('id, email, name, role').eq('id', id).single();
     if (error || !user) return res.status(404).json({ status: 'error', message: 'User not found.' });
 
-    if ((isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email, user.name) || user.role === 'ADMIN') && role !== 'ADMIN') {
+    if ((isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email) || user.role === 'ADMIN') && role !== 'ADMIN') {
       return res.status(400).json({ status: 'error', message: 'Cannot demote a Master Admin / Administrator.' });
     }
 
@@ -711,7 +713,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     const { data: user, error } = await dbRead.from('users').select('id, email, name, role').eq('id', id).single();
     if (error || !user) return res.status(404).json({ status: 'error', message: 'User not found in database.' });
 
-    if (isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email, user.name) || user.role === 'ADMIN') {
+    if (isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email) || user.role === 'ADMIN') {
       return res.status(400).json({ status: 'error', message: 'Cannot delete a Master Admin / Administrator.' });
     }
 

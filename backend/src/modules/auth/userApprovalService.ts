@@ -17,23 +17,12 @@ export const isSuperAdminEmail = (email: string): boolean => {
   return SUPER_ADMIN_EMAILS.some((admin) => admin.toLowerCase() === norm);
 };
 
-export const isDesignatedAdmin = (email: string, name?: string): boolean => {
-  const norm = email.trim().toLowerCase();
-  const normName = (name || '').trim().toLowerCase();
-  return (
-    isSuperAdminEmail(norm) ||
-    norm.includes('vardaan') ||
-    normName.includes('vardaan') ||
-    norm.includes('992501030399') ||
-    norm.includes('dhruvi') ||
-    normName.includes('dhruvi') ||
-    norm.includes('aryan') ||
-    normName.includes('aryan varshney') ||
-    normName.includes('aryan') ||
-    norm.includes('gunjan') ||
-    normName.includes('gunjan pal') ||
-    normName.includes('gunjan')
-  );
+export const isDesignatedAdmin = (email: string, _name?: string): boolean => {
+  // H-1 FIX: exact normalized email allow-list only. The display name,
+  // roll number, or any email substring must NEVER grant ADMIN.
+  // _name is accepted for backward compatibility and intentionally ignored.
+  void _name;
+  return isSuperAdminEmail(email);
 };
 
 export interface UserApprovalRecord {
@@ -164,8 +153,9 @@ export const setUserApproval = (
   metadata?: { username?: string | null; batch?: string | null; name?: string | null; roll_number?: string | null }
 ): UserApprovalRecord => {
   const normEmail = email.trim().toLowerCase();
-  const isDesignated = isDesignatedAdmin(normEmail, metadata?.name || undefined);
-  
+  // H-1 FIX: role derives from the exact allow-list email only; metadata.name is never consulted.
+  const isDesignated = isDesignatedAdmin(normEmail);
+
   if (isSuperAdminEmail(normEmail)) {
     return {
       status: 'APPROVED',
