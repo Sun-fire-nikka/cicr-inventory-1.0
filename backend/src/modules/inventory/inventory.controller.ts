@@ -169,7 +169,50 @@ export const createItem = async (req: AuthRequest, res: Response) => {
 export const updateItem = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const body = req.body || {};
+
+    // M-3: explicit allow-list — only the documented PATCH fields are ever
+    // written. Unknown/protected fields (id, created_at, client updated_at,
+    // image, tags, arbitrary keys) are ignored, never rejected, never stored.
+    // Each field is added only when actually supplied (partial PATCH intact).
+    const updates: Record<string, unknown> = {};
+    if (body.name !== undefined) updates.name = body.name;
+    if (body.description !== undefined) updates.description = body.description;
+    if (body.category !== undefined) updates.category = body.category;
+    if (body.location !== undefined) updates.location = body.location;
+
+    // M-3: strict numeric coercion — numeric strings ("8") are accepted when
+    // they convert cleanly; null, booleans, objects, "", "abc", NaN and
+    // Infinity are invalid and never reach the database.
+    const toValidInteger = (value: unknown): number | null => {
+      if (typeof value === 'number') {
+        return Number.isFinite(value) && Number.isInteger(value) ? value : null;
+      }
+      if (typeof value === 'string' && value.trim() !== '') {
+        const num = Number(value);
+        return Number.isFinite(num) && Number.isInteger(num) ? num : null;
+      }
+      return null;
+    };
+
+    let newQuantity: number | null = null;
+    if (body.quantity !== undefined) {
+      const qty = toValidInteger(body.quantity);
+      if (qty === null || qty < 1 || qty > 10000) {
+        return res.status(400).json({ status: 'error', message: 'Quantity must be a whole number between 1 and 10000.' });
+      }
+      newQuantity = qty;
+      updates.quantity = qty;
+    }
+
+    let explicitAvailable: number | null = null;
+    if (body.available_quantity !== undefined) {
+      const avail = toValidInteger(body.available_quantity);
+      if (avail === null || avail < 0 || avail > 10000) {
+        return res.status(400).json({ status: 'error', message: 'Available quantity must be a whole number between 0 and 10000.' });
+      }
+      explicitAvailable = avail;
+    }
 
     // Fetch existing item to calculate available quantity if total quantity changed
     const { data: existingItem, error: fetchErr } = await dbRead
@@ -182,10 +225,17 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ status: 'error', message: 'Item not found.' });
     }
 
-    if (updates.quantity !== undefined) {
-      const diff = Number(updates.quantity) - existingItem.quantity;
+    if (newQuantity !== null && explicitAvailable === null) {
+      // Preserve the established quantity-difference recalculation behavior.
+      const diff = newQuantity - existingItem.quantity;
       updates.available_quantity = existingItem.available_quantity + diff;
-      if (updates.available_quantity < 0) updates.available_quantity = 0;
+      if ((updates.available_quantity as number) < 0) updates.available_quantity = 0;
+    } else if (explicitAvailable !== null) {
+      // M-3: documented field, honored but clamped to the invariant
+      // 0 <= available_quantity <= quantity, using the new quantity when
+      // supplied, otherwise the existing row quantity.
+      const upperBound = newQuantity !== null ? newQuantity : existingItem.quantity;
+      updates.available_quantity = Math.min(explicitAvailable, upperBound);
     }
 
     updates.updated_at = new Date().toISOString();
