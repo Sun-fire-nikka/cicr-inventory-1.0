@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" fill="none">
+  <!-- Microcontroller STM32 / RP2040 Footprint & Bus -->
+  <rect x="120" y="100" width="130" height="130" rx="14" stroke="rgba(121, 86, 232, 0.40)" stroke-width="2" fill="none"/>
+  <rect x="135" y="115" width="100" height="100" rx="8" stroke="rgba(77, 191, 208, 0.25)" stroke-width="1.2" fill="none"/>
+  <circle cx="145" cy="125" r="4" fill="rgba(121, 86, 232, 0.35)"/>
+  <text x="185" y="160" fill="rgba(121, 86, 232, 0.35)" font-family="ui-monospace, monospace" font-size="9" text-anchor="middle" font-weight="700">ARM.CORTEX-M4</text>
+  <text x="185" y="176" fill="rgba(77, 191, 208, 0.30)" font-family="ui-monospace, monospace" font-size="7.5" text-anchor="middle">STM32F401 // 84MHz</text>
+
+  <!-- MCU Pins (Left & Right & Bottom) -->
+  <!-- Left Pins -->
+  <line x1="90" y1="125" x2="120" y2="125" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.8"/>
+  <line x1="90" y1="145" x2="120" y2="145" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.8"/>
+  <line x1="90" y1="165" x2="120" y2="165" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.8"/>
+  <line x1="90" y1="185" x2="120" y2="185" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.8"/>
+  <line x1="90" y1="205" x2="120" y2="205" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.8"/>
+
+  <!-- Main Bus Traces extending across canvas -->
+  <!-- Bus Trace 1 -->
+  <path d="M 250 130 H 420 L 480 70 H 840 L 890 120 H 1120" stroke="rgba(121, 86, 232, 0.32)" stroke-width="1.8" fill="none"/>
+  <circle cx="420" cy="130" r="3.5" fill="rgba(121, 86, 232, 0.45)"/>
+  <circle cx="840" cy="70" r="3.5" fill="rgba(77, 191, 208, 0.45)"/>
+  <circle cx="1120" cy="120" r="4" fill="rgba(121, 86, 232, 0.45)"/>
+
+  <!-- Bus Trace 2 -->
+  <path d="M 250 155 H 410 L 465 100 H 760 L 810 150 H 1080" stroke="rgba(77, 191, 208, 0.28)" stroke-width="1.6" fill="none"/>
+  <circle cx="760" cy="100" r="3" fill="rgba(77, 191, 208, 0.4)"/>
+
+  <!-- Bus Trace 3 -->
+  <path d="M 250 180 H 380 L 440 240 H 680 L 730 290 H 990" stroke="rgba(121, 86, 232, 0.30)" stroke-width="1.6" fill="none"/>
+  <circle cx="440" cy="240" r="3.5" fill="rgba(121, 86, 232, 0.45)"/>
+  <circle cx="990" cy="290" r="3.5" fill="rgba(77, 191, 208, 0.45)"/>
+
+  <!-- Lower Bus Traces -->
+  <path d="M 185 230 V 340 L 260 415 H 620 L 670 465 H 1050" stroke="rgba(121, 86, 232, 0.26)" stroke-width="1.8" fill="none"/>
+  <circle cx="260" cy="415" r="3.5" fill="rgba(121, 86, 232, 0.40)"/>
+  <circle cx="620" cy="415" r="3.5" fill="rgba(77, 191, 208, 0.40)"/>
+
+  <!-- Crystal Oscillator Footprint -->
+  <rect x="310" y="80" width="40" height="22" rx="4" stroke="rgba(77, 191, 208, 0.35)" stroke-width="1.2" fill="none"/>
+  <text x="330" y="94" fill="rgba(77, 191, 208, 0.30)" font-family="ui-monospace, monospace" font-size="6.5" text-anchor="middle">16.0MHz</text>
+
+  <!-- Filter Capacitor Pairs -->
+  <rect x="274" y="122" width="6" height="16" rx="1.5" fill="rgba(121, 86, 232, 0.28)"/>
+  <rect x="284" y="122" width="6" height="16" rx="1.5" fill="rgba(121, 86, 232, 0.28)"/>
+
+  <rect x="274" y="147" width="6" height="16" rx="1.5" fill="rgba(121, 86, 232, 0.28)"/>
+  <rect x="284" y="147" width="6" height="16" rx="1.5" fill="rgba(121, 86, 232, 0.28)"/>
+
+  <!-- Header Pin Array (2x5 JTAG / SWD) -->
+  <g transform="translate(540, 180)">
+    <rect x="-10" y="-8" width="80" height="34" rx="4" stroke="rgba(121, 86, 232, 0.28)" stroke-width="1.2" fill="none"/>
+    <circle cx="0" cy="0" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="15" cy="0" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="30" cy="0" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="45" cy="0" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="60" cy="0" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="0" cy="16" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="15" cy="16" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="30" cy="16" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="45" cy="16" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <circle cx="60" cy="16" r="3.5" stroke="rgba(121, 86, 232, 0.35)" stroke-width="1.2" fill="none"/>
+    <text x="30" y="-12" fill="rgba(121, 86, 232, 0.30)" font-family="ui-monospace, monospace" font-size="7" text-anchor="middle">DEBUG / SWD</text>
+  </g>
+</svg>

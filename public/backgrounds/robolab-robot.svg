@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 560" fill="none">
+  <defs>
+    <!-- Chassis gradients -->
+    <linearGradient id="chassisGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="45%" stop-color="#F2EEFA"/>
+      <stop offset="100%" stop-color="#D9D2EE"/>
+    </linearGradient>
+
+    <linearGradient id="visorGlass" x1="0%" y1="0%" x2="100%" y2="90%">
+      <stop offset="0%" stop-color="#1B1938"/>
+      <stop offset="50%" stop-color="#282352"/>
+      <stop offset="100%" stop-color="#342D66"/>
+    </linearGradient>
+
+    <linearGradient id="sensorCyanGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4DBFD0"/>
+      <stop offset="100%" stop-color="#72D4DD"/>
+    </linearGradient>
+
+    <linearGradient id="jointAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B65EE"/>
+      <stop offset="100%" stop-color="#7047DF"/>
+    </linearGradient>
+
+    <filter id="robotShadow" x="-15%" y="-15%" width="130%" height="135%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="rgba(121, 86, 232, 0.16)"/>
+    </filter>
+  </defs>
+
+  <!-- Antenna Mast & Sensor Array -->
+  <line x1="210" y1="28" x2="210" y2="78" stroke="#8B65EE" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="210" cy="24" r="8" fill="#4DBFD0"/>
+  <circle cx="210" cy="24" r="3.5" fill="#FFFFFF"/>
+  <path d="M 188 12 A 26 26 0 0 1 232 12" stroke="rgba(139, 101, 238, 0.40)" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 174 -2 A 42 42 0 0 1 246 -2" stroke="rgba(77, 191, 208, 0.30)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+
+  <!-- Left & Right Ear Sensor Pods -->
+  <rect x="74" y="118" width="22" height="64" rx="10" fill="url(#jointAccent)"/>
+  <rect x="80" y="132" width="10" height="36" rx="4" fill="#4DBFD0" opacity="0.85"/>
+  <rect x="324" y="118" width="22" height="64" rx="10" fill="url(#jointAccent)"/>
+  <rect x="330" y="132" width="10" height="36" rx="4" fill="#4DBFD0" opacity="0.85"/>
+
+  <!-- Robot Head Chassis -->
+  <rect x="90" y="72" width="240" height="185" rx="48" fill="url(#chassisGrad)" stroke="#B69AF4" stroke-width="2.2" filter="url(#robotShadow)"/>
+
+  <!-- Head Top Bevel Highlight Line -->
+  <path d="M 132 86 Q 210 78 288 86" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Visor Mask Window -->
+  <rect x="114" y="104" width="192" height="96" rx="30" fill="url(#visorGlass)" stroke="rgba(182, 154, 244, 0.4)" stroke-width="1.6"/>
+
+  <!-- Left Camera Sensor Eye -->
+  <circle cx="166" cy="150" r="24" fill="none" stroke="rgba(77, 191, 208, 0.35)" stroke-width="2"/>
+  <circle cx="166" cy="150" r="16" fill="url(#sensorCyanGlow)"/>
+  <circle cx="166" cy="150" r="7" fill="#1B1938"/>
+  <circle cx="170" cy="146" r="3.2" fill="#FFFFFF"/>
+
+  <!-- Right Camera Sensor Eye -->
+  <circle cx="254" cy="150" r="24" fill="none" stroke="rgba(77, 191, 208, 0.35)" stroke-width="2"/>
+  <circle cx="254" cy="150" r="16" fill="url(#sensorCyanGlow)"/>
+  <circle cx="254" cy="150" r="7" fill="#1B1938"/>
+  <circle cx="258" cy="146" r="3.2" fill="#FFFFFF"/>
+
+  <!-- Micro Telemetry Status LEDs (With warm yellow accent) -->
+  <circle cx="138" cy="226" r="4.5" fill="#4DBFD0"/>
+  <circle cx="154" cy="226" r="4.5" fill="#8B65EE"/>
+  <circle cx="170" cy="226" r="4.5" fill="#E9C557"/>
+
+  <!-- Sub-vent Cooling Slots -->
+  <line x1="228" y1="226" x2="246" y2="226" stroke="#8B65EE" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="254" y1="226" x2="272" y2="226" stroke="#8B65EE" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="280" y1="226" x2="298" y2="226" stroke="#8B65EE" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Articulated Neck Collar & Joint Bearing -->
+  <path d="M 172 257 L 164 286 L 256 286 L 248 257 Z" fill="#282352" stroke="#8B65EE" stroke-width="1.8"/>
+  <ellipse cx="210" cy="272" rx="20" ry="6" fill="#4DBFD0" opacity="0.6"/>
+
+  <!-- Shoulder Ball Joints -->
+  <circle cx="68" cy="336" r="28" fill="url(#chassisGrad)" stroke="#B69AF4" stroke-width="2"/>
+  <circle cx="68" cy="336" r="14" fill="#8B65EE"/>
+  <circle cx="68" cy="336" r="5" fill="#4DBFD0"/>
+
+  <circle cx="352" cy="336" r="28" fill="url(#chassisGrad)" stroke="#B69AF4" stroke-width="2"/>
+  <circle cx="352" cy="336" r="14" fill="#8B65EE"/>
+  <circle cx="352" cy="336" r="5" fill="#4DBFD0"/>
+
+  <!-- Torso Chassis Panel -->
+  <path d="M 104 288
+           C 104 288, 76 348, 86 446
+           C 92 506, 120 540, 210 540
+           C 300 540, 328 506, 334 446
+           C 344 348, 316 288, 316 288 Z"
+        fill="url(#chassisGrad)" stroke="#B69AF4" stroke-width="2.4" filter="url(#robotShadow)"/>
+
+  <!-- Chest Telemetry Core Dome -->
+  <circle cx="210" cy="376" r="38" fill="url(#visorGlass)" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="210" cy="376" r="26" stroke="rgba(77, 191, 208, 0.4)" stroke-width="1.6" stroke-dasharray="4 3" fill="none"/>
+  <polygon points="210,358 224,382 196,382" fill="url(#sensorCyanGlow)"/>
+  <circle cx="210" cy="378" r="4" fill="#FFFFFF"/>
+
+  <!-- Chest Technical Status Print -->
+  <text x="210" y="440" fill="#5F6275" font-family="system-ui, sans-serif" font-size="9" font-weight="700" text-anchor="middle" letter-spacing="2">CICR // AUTONOMOUS LAB UNIT</text>
+  <text x="210" y="456" fill="#8B65EE" font-family="ui-monospace, monospace" font-size="8" text-anchor="middle" letter-spacing="1">FIRMWARE V4.2 • ONLINE</text>
+
+  <!-- Abdominal Articulation Grooves -->
+  <path d="M 152 480 Q 210 492 268 480" stroke="#8B65EE" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 160 502 Q 210 514 260 502" stroke="#8B65EE" stroke-width="2" stroke-linecap="round"/>
+</svg>

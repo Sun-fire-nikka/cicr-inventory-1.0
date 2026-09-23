@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 180" fill="none">
+  <defs>
+    <linearGradient id="droneBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#F0ECF9"/>
+      <stop offset="100%" stop-color="#D9D2EE"/>
+    </linearGradient>
+    <linearGradient id="rotorSweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4DBFD0" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#8B65EE" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Carbon Fiber Truss Arms -->
+  <!-- Top-Left to Bottom-Right -->
+  <line x1="36" y1="42" x2="184" y2="138" stroke="#8B65EE" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Bottom-Left to Top-Right -->
+  <line x1="36" y1="138" x2="184" y2="42" stroke="#8B65EE" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Secondary Truss Struts -->
+  <line x1="68" y1="62" x2="110" y2="90" stroke="rgba(77, 191, 208, 0.5)" stroke-width="1.6"/>
+  <line x1="152" y1="62" x2="110" y2="90" stroke="rgba(77, 191, 208, 0.5)" stroke-width="1.6"/>
+  <line x1="68" y1="118" x2="110" y2="90" stroke="rgba(77, 191, 208, 0.5)" stroke-width="1.6"/>
+  <line x1="152" y1="118" x2="110" y2="90" stroke="rgba(77, 191, 208, 0.5)" stroke-width="1.6"/>
+
+  <!-- 4 Rotors (Spinning Blur Discs & Hubs) -->
+  <!-- Rotor 1: Top-Left -->
+  <ellipse cx="36" cy="42" rx="34" ry="14" fill="url(#rotorSweepGrad)" stroke="#4DBFD0" stroke-width="1.2" stroke-dasharray="6 3"/>
+  <circle cx="36" cy="42" r="7" fill="#282352" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="36" cy="42" r="2.5" fill="#4DBFD0"/>
+
+  <!-- Rotor 2: Top-Right -->
+  <ellipse cx="184" cy="42" rx="34" ry="14" fill="url(#rotorSweepGrad)" stroke="#4DBFD0" stroke-width="1.2" stroke-dasharray="6 3"/>
+  <circle cx="184" cy="42" r="7" fill="#282352" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="184" cy="42" r="2.5" fill="#4DBFD0"/>
+
+  <!-- Rotor 3: Bottom-Left -->
+  <ellipse cx="36" cy="138" rx="34" ry="14" fill="url(#rotorSweepGrad)" stroke="#4DBFD0" stroke-width="1.2" stroke-dasharray="6 3"/>
+  <circle cx="36" cy="138" r="7" fill="#282352" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="36" cy="138" r="2.5" fill="#4DBFD0"/>
+
+  <!-- Rotor 4: Bottom-Right -->
+  <ellipse cx="184" cy="138" rx="34" ry="14" fill="url(#rotorSweepGrad)" stroke="#4DBFD0" stroke-width="1.2" stroke-dasharray="6 3"/>
+  <circle cx="184" cy="138" r="7" fill="#282352" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="184" cy="138" r="2.5" fill="#4DBFD0"/>
+
+  <!-- Landing Skids -->
+  <path d="M 76 122 L 76 148 Q 76 154 82 154 L 138 154 Q 144 154 144 148 L 144 122" stroke="#B69AF4" stroke-width="2" fill="none"/>
+
+  <!-- Aerodynamic Center Fuselage -->
+  <ellipse cx="110" cy="90" rx="42" ry="28" fill="url(#droneBodyGrad)" stroke="#8B65EE" stroke-width="2.2"/>
+
+  <!-- Camera Gimbal Dome / Optical Radar -->
+  <circle cx="110" cy="98" r="14" fill="#282352" stroke="#4DBFD0" stroke-width="1.8"/>
+  <circle cx="110" cy="98" r="7" fill="#4DBFD0"/>
+  <circle cx="112" cy="96" r="2" fill="#FFFFFF"/>
+
+  <!-- Forward Sensor Bar -->
+  <path d="M 94 76 Q 110 72 126 76" stroke="#8B65EE" stroke-width="2" stroke-linecap="round"/>
+  <!-- Status beacon LED (Warm yellow) -->
+  <circle cx="110" cy="74" r="2.5" fill="#E9C557"/>
+</svg>

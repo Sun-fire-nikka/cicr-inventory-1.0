@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 600" fill="none">
+  <defs>
+    <linearGradient id="armLinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="40%" stop-color="#F2EEFA"/>
+      <stop offset="100%" stop-color="#D7D0ED"/>
+    </linearGradient>
+    <linearGradient id="jointGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B65EE"/>
+      <stop offset="100%" stop-color="#282352"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Heavy Base Pedestal (extends from bottom viewport edge) -->
+  <rect x="40" y="540" width="180" height="60" rx="10" fill="#282352" stroke="#8B65EE" stroke-width="2"/>
+  <line x1="50" y1="565" x2="210" y2="565" stroke="rgba(77, 191, 208, 0.4)" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <text x="130" y="586" fill="#A47BF2" font-family="ui-monospace, monospace" font-size="8.5" text-anchor="middle" letter-spacing="1">ARM // JOINT-BASE 0x01</text>
+
+  <!-- Turntable Revolute Bearing (J1) -->
+  <ellipse cx="130" cy="535" rx="58" ry="16" fill="url(#armLinkGrad)" stroke="#B69AF4" stroke-width="2"/>
+  <circle cx="130" cy="535" r="14" fill="#8B65EE"/>
+  <circle cx="130" cy="535" r="5" fill="#4DBFD0"/>
+
+  <!-- Shoulder Joint Turret (J2) -->
+  <rect x="102" y="440" width="56" height="85" rx="16" fill="url(#jointGrad)" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="130" cy="465" r="22" fill="url(#armLinkGrad)" stroke="#B69AF4" stroke-width="2"/>
+  <circle cx="130" cy="465" r="8" fill="#4DBFD0"/>
+
+  <!-- Lower Arm Boom Link (inclined upward to the right) -->
+  <path d="M 124 455 L 210 270 L 254 286 L 148 480 Z" fill="url(#armLinkGrad)" stroke="#B69AF4" stroke-width="2"/>
+
+  <!-- Hydraulic / Linear Actuator Cylinder -->
+  <line x1="140" y1="490" x2="226" y2="330" stroke="#8B65EE" stroke-width="5" stroke-linecap="round"/>
+  <line x1="140" y1="490" x2="190" y2="395" stroke="#282352" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="226" cy="330" r="5" fill="#4DBFD0"/>
+
+  <!-- Elbow Joint (J3) with Degree Graduation Marks -->
+  <circle cx="232" cy="278" r="30" fill="url(#jointGrad)" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="232" cy="278" r="20" fill="url(#armLinkGrad)" stroke="#B69AF4" stroke-width="1.8"/>
+  <circle cx="232" cy="278" r="8" fill="#8B65EE"/>
+  <!-- Graduation ticks -->
+  <line x1="232" y1="242" x2="232" y2="246" stroke="#4DBFD0" stroke-width="2"/>
+  <line x1="258" y1="254" x2="254" y2="257" stroke="#4DBFD0" stroke-width="1.6"/>
+  <line x1="268" y1="278" x2="264" y2="278" stroke="#4DBFD0" stroke-width="2"/>
+  <text x="274" y="270" fill="#4DBFD0" font-family="ui-monospace, monospace" font-size="8" font-weight="700">θ=42.5°</text>
+
+  <!-- Forearm Link (extending upward to top-left) -->
+  <path d="M 226 264 L 154 130 L 184 114 L 250 252 Z" fill="url(#armLinkGrad)" stroke="#B69AF4" stroke-width="2"/>
+
+  <!-- Wrist Pitch & Roll Assembly (J4/J5) -->
+  <circle cx="168" cy="122" r="22" fill="url(#jointGrad)" stroke="#8B65EE" stroke-width="2"/>
+  <circle cx="168" cy="122" r="10" fill="#4DBFD0"/>
+  <rect x="156" y="80" width="24" height="34" rx="6" fill="url(#armLinkGrad)" stroke="#B69AF4" stroke-width="1.8"/>
+
+  <!-- Precision Robotic End-Effector Gripper -->
+  <rect x="150" y="66" width="36" height="14" rx="4" fill="#282352" stroke="#8B65EE" stroke-width="1.6"/>
+  <!-- Left Finger -->
+  <path d="M 154 66 L 150 32 Q 150 24 158 24 L 162 24 L 160 40 L 162 66 Z" fill="url(#armLinkGrad)" stroke="#8B65EE" stroke-width="1.5"/>
+  <!-- Right Finger -->
+  <path d="M 182 66 L 186 32 Q 186 24 178 24 L 174 24 L 176 40 L 174 66 Z" fill="url(#armLinkGrad)" stroke="#8B65EE" stroke-width="1.5"/>
+  <!-- Optical laser targeting point (Cyan & Yellow) -->
+  <circle cx="168" cy="40" r="3" fill="#E9C557"/>
+  <line x1="168" y1="40" x2="168" y2="8" stroke="rgba(77, 191, 208, 0.6)" stroke-width="1.2" stroke-dasharray="3 3"/>
+</svg>

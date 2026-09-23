@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="mono">
 
 <head>
     <meta charset="UTF-8">
@@ -72,9 +72,30 @@
     <script type="module" src="/src/main.ts"></script>
 </head>
 
-<body>
+<body class="theme-mono">
     <!-- 3D Canvas Background -->
     <canvas id="canvas-3d"></canvas>
+
+    <!-- Dedicated Midnight Mono Viewport Background Layer (Hidden by default; active strictly in Midnight Mono) -->
+    <div class="mono-viewport-bg" id="mono-viewport-bg" aria-hidden="true">
+        <div class="mono-bg-layer mono-bg-ambient"></div>
+        <div class="mono-bg-layer mono-bg-circuit-top-left"></div>
+        <div class="mono-bg-layer mono-bg-orbit-primary"></div>
+        <div class="mono-bg-layer mono-bg-orbit-secondary"></div>
+        <div class="mono-bg-layer mono-bg-circuit-bottom-right"></div>
+        <div class="mono-bg-layer mono-bg-schematic-lower"></div>
+    </div>
+
+    <!-- Dedicated Robo Lab Viewport Background Layer (Hidden by default; active strictly in Robo Lab) -->
+    <div class="robolab-viewport-bg" id="robolab-viewport-bg" aria-hidden="true">
+        <div class="robolab-bg-layer robolab-bg-ambient"></div>
+        <div class="robolab-bg-layer robolab-bg-purple-field"></div>
+        <div class="robolab-bg-layer robolab-bg-circuit"></div>
+        <div class="robolab-bg-layer robolab-bg-robot"></div>
+        <div class="robolab-bg-layer robolab-bg-drone"></div>
+        <div class="robolab-bg-layer robolab-bg-arm"></div>
+        <div class="robolab-bg-layer robolab-bg-nodes"></div>
+    </div>
 
     <!-- Auth Overlay (Login/Signup) -->
     <div class="auth-overlay" id="auth-overlay">
@@ -234,9 +255,8 @@
                 <div class="nav-theme-box">
                     <i data-lucide="palette" class="nav-theme-icon"></i>
                     <select id="nav-theme-select" title="Switch Theme">
-                        <option value="cyberpunk">Cyber Neon</option>
-                        <option value="light">Clean Light</option>
-                        <option value="sakura">Cherry Blossom</option>
+                        <option value="mono" selected>Midnight Mono</option>
+                        <option value="light">Robo Lab</option>
                     </select>
                 </div>
                 <a class="nav-link" id="nav-logout"><i data-lucide="log-out"></i> Logout</a>
@@ -461,9 +481,8 @@
                     <div class="header-theme-box">
                         <i data-lucide="palette" class="header-theme-icon"></i>
                         <select id="header-theme-select" title="Switch Theme">
-                            <option value="cyberpunk">Cyber Neon</option>
-                            <option value="light">Clean Light</option>
-                            <option value="sakura">Cherry Blossom</option>
+                            <option value="mono" selected>Midnight Mono</option>
+                            <option value="light">Robo Lab</option>
                         </select>
                     </div>
                 </div>
