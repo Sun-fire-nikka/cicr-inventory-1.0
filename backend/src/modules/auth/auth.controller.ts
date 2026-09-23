@@ -841,14 +841,22 @@ export const resetPassword = async (req: Request, res: Response) => {
       });
     }
 
-    if (user.password_hash) {
-      const isMatch = await bcrypt.compare(current_password, user.password_hash);
-      if (!isMatch) {
-        return res.status(400).json({ 
-          status: 'error', 
-          message: 'Current password is incorrect. Please verify and re-enter your existing password.' 
-        });
-      }
+    // H-2 FIX (fail closed): a missing/invalid stored credential must NEVER
+    // bypass verification. Reject with the same generic message used for a
+    // wrong current password so hash state is not revealed.
+    if (typeof user.password_hash !== 'string' || user.password_hash.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Current password is incorrect. Please verify and re-enter your existing password.'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(current_password, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Current password is incorrect. Please verify and re-enter your existing password.'
+      });
     }
 
     // Hash new password with bcrypt
