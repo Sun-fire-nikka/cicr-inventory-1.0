@@ -460,6 +460,26 @@ test('GET /api/audit with admin token returns logs', async () => {
   assert.ok(Array.isArray(json.data));
 });
 
+test('POST /api/audit with member token returns 403 (admin-only)', async () => {
+  const { status, json } = await api('/api/audit', {
+    method: 'POST',
+    token: memberToken,
+    body: { action: 'System Event', description: 'member write attempt' }
+  });
+  assert.equal(status, 403);
+  assert.match(json.message, /Admin access required/);
+});
+
+test('POST /api/audit with admin token persists the event', async () => {
+  const { status, json } = await api('/api/audit', {
+    method: 'POST',
+    token: adminToken,
+    body: { action: 'System Event', description: 'admin write check' }
+  });
+  assert.equal(status, 201);
+  assert.equal(json.status, 'success');
+});
+
 // ---------- Cleanup ----------
 test('DELETE /api/items/:id with member token returns 403', async () => {
   const { status } = await api(`/api/items/${itemId}`, { method: 'DELETE', token: memberToken });

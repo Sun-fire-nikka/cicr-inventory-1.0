@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/stats', getDashboardStats);
 router.get('/audit', authenticateToken, requireAdmin, getAuditLogs);
-router.post('/audit', authenticateToken, createAuditEvent);
+router.post('/audit', authenticateToken, requireAdmin, createAuditEvent);
 router.post('/audit/cleanup', authenticateToken, requireAdmin, triggerAuditCleanup);
 
 export default router;
