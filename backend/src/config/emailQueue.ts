@@ -36,6 +36,7 @@ if (isRedisEnabled && REDIS_URL) {
   workerConnection.on('error', (err: Error) => console.warn('[EMAIL QUEUE] Worker Redis error:', err.message));
 
   emailQueue = new Queue<EmailJobData>(QUEUE_NAME, { connection: queueConnection });
+  emailQueue.on('error', (err: Error) => console.warn('[EMAIL QUEUE] Queue instance error:', err.message));
 
   // Lazily created on first job: emailService imports enqueueEmail from this
   // module, so resolving SMTP credentials at module top-level would read a
@@ -86,6 +87,9 @@ if (isRedisEnabled && REDIS_URL) {
     },
     { connection: workerConnection, concurrency: 3 }
   );
+  worker.on('error', (err: Error) => {
+    console.warn('[EMAIL QUEUE] Worker instance error:', err.message);
+  });
   worker.on('failed', (job, err) => {
     console.error(`[EMAIL QUEUE] ${job?.data?.kind} failed (job ${job?.id}): ${err.message}`);
   });

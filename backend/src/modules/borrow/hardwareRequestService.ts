@@ -235,6 +235,77 @@ export const createHardwareRequest = async (payload: {
   return newRequest;
 };
 
+export interface BulkHardwareItem {
+  itemId: string;
+  itemName?: string;
+  quantity: number;
+  dueDate?: string;
+  due_date?: string;
+  durationDays?: number;
+  duration_days?: number;
+}
+
+export interface BulkHardwarePayload {
+  userId?: string;
+  userName: string;
+  userEmail: string;
+  rollNumber?: string | null;
+  purpose: string;
+  durationDays?: number;
+  dueDate?: string;
+  items: BulkHardwareItem[];
+}
+
+export const createBulkHardwareRequest = async (
+  payload: BulkHardwarePayload
+): Promise<{ success: boolean; message?: string; count?: number; requests?: HardwareIssueRequest[] }> => {
+  if (!payload.items || !Array.isArray(payload.items) || payload.items.length === 0) {
+    return { success: false, message: 'No items provided in request cart manifest.' };
+  }
+
+  const validItems = payload.items.filter((it) => it && it.itemId && Number(it.quantity) > 0);
+  if (validItems.length === 0) {
+    return { success: false, message: 'All specified component quantities in cart are zero or invalid.' };
+  }
+
+  const createdRequests: HardwareIssueRequest[] = [];
+
+  for (const item of validItems) {
+    try {
+      const itemDue = item.dueDate || item.due_date || payload.dueDate;
+      const itemDuration = Number(item.durationDays || item.duration_days) || payload.durationDays || 7;
+      const req = await createHardwareRequest({
+        itemId: item.itemId,
+        itemName: item.itemName,
+        borrowerName: payload.userName,
+        borrowerEmail: payload.userEmail,
+        rollNumber: payload.rollNumber,
+        userId: payload.userId,
+        quantity: Number(item.quantity) || 1,
+        purpose: payload.purpose,
+        durationDays: itemDuration,
+        dueDate: itemDue
+      });
+      if (req) {
+        createdRequests.push(req);
+      }
+    } catch (err: any) {
+      console.error(`[BULK ISSUE] Failed to create request for item ${item.itemId}:`, err.message);
+    }
+  }
+
+  if (createdRequests.length === 0) {
+    return { success: false, message: 'Failed to queue any hardware requests from the cart.' };
+  }
+
+  return {
+    success: true,
+    message: `Successfully queued ${createdRequests.length} component issue request${createdRequests.length > 1 ? 's' : ''} for Administrator authorization.`,
+    count: createdRequests.length,
+    requests: createdRequests
+  };
+};
+
 export const createReturnRequest = async (payload: {
   borrowId: string;
   returnQuantity: number;

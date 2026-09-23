@@ -67,8 +67,8 @@
             object-fit: contain;
         }
     </style>
-    <!-- Lucide Icons CDN (for dynamic runtime parsing) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lucide Icons CDN (for dynamic runtime parsing, deferred to not block initial render) -->
+    <script defer src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="/src/main.ts"></script>
 </head>
 
@@ -219,8 +219,8 @@
         </div>
     </div>
 
-    <!-- Futuristic Scanning Laser Sweep -->
-    <div class="cyber-scanner-line"></div>
+    <!-- Ambient Accent Header Line -->
+    <div class="app-accent-line"></div>
 
     <!-- Floating Capsule Navbar Wrapper (Hidden by default, shown when logged in) -->
     <div class="navbar-wrapper" id="global-navbar" style="display: none;">
@@ -248,6 +248,10 @@
                 <a class="nav-link" id="nav-profile"
                     onclick="event.preventDefault(); window.switchSection && window.switchSection('profile-view')"><i
                         data-lucide="user"></i> Profile</a>
+                <a class="nav-link" id="nav-capsule-cart" style="position: relative; cursor: pointer;" title="Hardware Request Cart">
+                    <i data-lucide="shopping-bag"></i> Cart
+                    <span class="notification-badge" id="nav-cart-badge" style="display: none;">0</span>
+                </a>
                 <a class="nav-link" id="nav-logs-bell" style="position: relative;">
                     <i data-lucide="bell"></i> History
                     <span class="notification-badge" id="nav-bell-badge"></span>
@@ -404,15 +408,16 @@
                     <span class="profile-name" id="profile-username-display">User</span>
                     <span class="profile-role">MEMBER</span>
                 </div>
-                <button type="button" class="profile-key-btn" id="sidebar-reset-pass-btn"
-                    title="Reset / Change Password"
-                    onclick="document.getElementById('reset-password-modal')?.classList.add('active'); if (window.openPasswordResetModal) window.openPasswordResetModal();"
-                    style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding:6px; display:flex; align-items:center; border-radius:6px; transition:all 0.2s;">
-                    <i data-lucide="key-round" style="width:14px; height:14px;"></i>
-                </button>
-                <button class="profile-logout-btn" id="sidebar-logout-btn" title="Logout">
-                    <i data-lucide="log-out"></i>
-                </button>
+                <div class="sidebar-profile-actions">
+                    <button type="button" class="profile-key-btn" id="sidebar-reset-pass-btn"
+                        title="Reset / Change Password"
+                        onclick="document.getElementById('reset-password-modal')?.classList.add('active'); if (window.openPasswordResetModal) window.openPasswordResetModal();">
+                        <i data-lucide="key-round"></i>
+                    </button>
+                    <button class="profile-logout-btn" id="sidebar-logout-btn" title="Logout">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -436,6 +441,18 @@
                 </div>
 
                 <div class="header-right">
+                    <!-- Small Aesthetic Cart Button in Top Navbar -->
+                    <div class="header-cart-wrapper">
+                        <button type="button" class="header-cart-btn" id="btn-navbar-cart" title="Hardware Request Cart" aria-label="Hardware Cart">
+                            <div class="header-cart-icon-box">
+                                <i data-lucide="shopping-bag"></i>
+                                <span class="header-cart-dot" id="header-cart-dot" style="display: none;"></span>
+                            </div>
+                            <span class="header-cart-text">CART</span>
+                            <span class="header-cart-badge" id="header-cart-badge">0</span>
+                        </button>
+                    </div>
+
                     <!-- Notification Button & Dropdown -->
                     <div class="header-notif-wrapper">
                         <button type="button" class="header-notif-btn" id="header-notif-btn" title="View Recent Notifications" aria-label="Notifications" aria-expanded="false">
@@ -525,22 +542,6 @@
                             </div>
                         </div>
 
-                        <div class="dash-card card-purple" id="dash-card-logs">
-                            <div class="dash-card-header">
-                                <div class="dash-card-icon-wrapper">
-                                    <i data-lucide="clipboard-list"></i>
-                                </div>
-                                <span class="dash-card-tag">CHECKOUTS</span>
-                            </div>
-                            <div class="dash-card-body">
-                                <h3 class="dash-card-title">Active Logs</h3>
-                                <p class="dash-card-desc">Track active checkouts, log due return dates, and review
-                                    student usage permissions.</p>
-                            </div>
-                            <div class="dash-card-footer">
-                                <i data-lucide="arrow-right"></i>
-                            </div>
-                        </div>
 
                         <div class="dash-card card-yellow" id="dash-card-hardware-logs"
                             onclick="window.switchSection && window.switchSection('hardware-logs-view')">
@@ -615,105 +616,132 @@
                     </div>
                 </section>
 
-                <!-- Slide 3: Pinterest Search Explorer Layout (3-Column Staggered Grid) -->
-                <section class="explorer-layout-section reveal" id="inventory-view" style="display: none;">
-                    <div class="explorer-layout-container">
-                        <!-- Column 2 & 3: Main Explorer Center -->
-                        <div class="explorer-main-area">
-                            <!-- Top Search Bar & Stats integration -->
-                            <div class="explorer-search-row">
-                                <div class="search-box-new">
+                <!-- Redesigned Component Vault Section -->
+                <section class="vault-section active" id="inventory-view" style="display: none;">
+                    <div class="vault-layout-container">
+                        <!-- Clean Vault Title -->
+                        <div class="vault-top-bar">
+                            <h1 class="vault-main-heading">Component Vault</h1>
+                        </div>
+
+                        <!-- Search & Category Filter Toolbar -->
+                        <div class="vault-toolbar-card glass">
+                            <div class="vault-search-row">
+                                <div class="vault-search-input-wrap">
                                     <i data-lucide="search" class="search-icon"></i>
                                     <input type="text" id="search-input"
-                                        placeholder="Search components, modules, tools...">
-                                    <button class="clear-search" id="clear-search" style="display: none;">
+                                        placeholder="Search microcontrollers, sensors, actuators, specs, or racks...">
+                                    <button type="button" class="clear-search-btn" id="clear-search" style="display: none;" title="Clear search">
                                         <i data-lucide="x"></i>
                                     </button>
                                 </div>
 
-                                <!-- Category tags in line (horizontal tags selector) -->
-                                <div class="horizontal-tags-selector">
-                                    <span class="tag-pill active" data-category="all">All</span>
-                                    <span class="tag-pill" data-category="microcontrollers">MCU</span>
-                                    <span class="tag-pill" data-category="sensors">Sensors</span>
-                                    <span class="tag-pill" data-category="actuators">Actuators</span>
-                                    <span class="tag-pill" data-category="power">Power</span>
-                                    <span class="tag-pill" data-category="tools">Tools</span>
+                                <div class="vault-category-pills">
+                                    <button type="button" class="tag-pill active" data-category="all">
+                                        <i data-lucide="layers"></i> All
+                                    </button>
+                                    <button type="button" class="tag-pill" data-category="microcontrollers">
+                                        <i data-lucide="cpu"></i> MCU
+                                    </button>
+                                    <button type="button" class="tag-pill" data-category="sensors">
+                                        <i data-lucide="radar"></i> Sensors
+                                    </button>
+                                    <button type="button" class="tag-pill" data-category="actuators">
+                                        <i data-lucide="compass"></i> Actuators
+                                    </button>
+                                    <button type="button" class="tag-pill" data-category="power">
+                                        <i data-lucide="battery-charging"></i> Power
+                                    </button>
+                                    <button type="button" class="tag-pill" data-category="tools">
+                                        <i data-lucide="wrench"></i> Tools
+                                    </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Quick Stats Panel inside Explorer Layout (Interactive Filter Bubbles) -->
-                            <div class="explorer-stats-row">
-                                <div class="stat-bubble-new" id="stat-filter-all" data-stock-filter="all"
-                                    title="Click to show all vaulted hardware">
-                                    <div class="stat-bubble-header">
-                                        <span class="bubble-label"><i data-lucide="boxes"></i> Total Vaulted</span>
-                                        <span class="stat-click-hint">ALL</span>
-                                    </div>
-                                    <span class="bubble-value" id="stat-total">0</span>
+                        <!-- Refined Aesthetic Stock Filter Metric Cards -->
+                        <div class="vault-metrics-row">
+                            <div class="vault-metric-card stat-bubble-new" id="stat-filter-all" data-stock-filter="all"
+                                title="Click to view all vaulted hardware">
+                                <div class="metric-card-top">
+                                    <span class="metric-label"><i data-lucide="boxes"></i> Total Assets</span>
+                                    <span class="metric-action-tag">ALL</span>
                                 </div>
-                                <div class="stat-bubble-new" id="stat-filter-available" data-stock-filter="available"
-                                    title="Click to show only available hardware">
-                                    <div class="stat-bubble-header">
-                                        <span class="bubble-label"><i data-lucide="check-circle-2"></i> Vaults
-                                            Available</span>
-                                        <span class="stat-click-hint">FILTER</span>
-                                    </div>
-                                    <span class="bubble-value text-cyan" id="stat-available">0</span>
-                                </div>
-                                <div class="stat-bubble-new" id="stat-filter-borrowed" data-stock-filter="borrowed"
-                                    title="Click to show only items with active loans">
-                                    <div class="stat-bubble-header">
-                                        <span class="bubble-label"><i data-lucide="shopping-cart"></i> Active
-                                            Loans</span>
-                                        <span class="stat-click-hint">FILTER</span>
-                                    </div>
-                                    <span class="bubble-value text-purple" id="stat-borrowed">0</span>
-                                </div>
-                                <div class="stat-bubble-new" id="stat-filter-low" data-stock-filter="low"
-                                    title="Click to show only items with low reserves (≤ 50% available)">
-                                    <div class="stat-bubble-header">
-                                        <span class="bubble-label"><i data-lucide="alert-circle"></i> Low
-                                            Reserves</span>
-                                        <span class="stat-click-hint">FILTER</span>
-                                    </div>
-                                    <span class="bubble-value text-yellow" id="stat-low">0</span>
-                                </div>
-                                <div class="stat-bubble-new" id="stat-filter-out" data-stock-filter="out"
-                                    title="Click to show only out of stock items">
-                                    <div class="stat-bubble-header">
-                                        <span class="bubble-label"><i data-lucide="package-x"></i> Out of Stock</span>
-                                        <span class="stat-click-hint">FILTER</span>
-                                    </div>
-                                    <span class="bubble-value text-pink" id="stat-out">0</span>
-                                </div>
+                                <div class="metric-card-val" id="stat-total">0</div>
+                                <span class="metric-card-sub">In laboratory inventory</span>
                             </div>
 
-                            <!-- Dynamic Items Grid -->
-                            <div class="explorer-grid-container">
-                                <div class="section-title-bar">
-                                    <div class="title-bar-left">
-                                        <h2>Vault Catalog</h2>
+                            <div class="vault-metric-card metric-available stat-bubble-new" id="stat-filter-available" data-stock-filter="available"
+                                title="Click to filter by available components">
+                                <div class="metric-card-top">
+                                    <span class="metric-label"><i data-lucide="check-circle-2"></i> Available</span>
+                                    <span class="metric-action-tag">FILTER</span>
+                                </div>
+                                <div class="metric-card-val text-available" id="stat-available">0</div>
+                                <span class="metric-card-sub">Ready for checkout</span>
+                            </div>
+
+                            <div class="vault-metric-card metric-borrowed stat-bubble-new" id="stat-filter-borrowed" data-stock-filter="borrowed"
+                                title="Click to view components with active loans">
+                                <div class="metric-card-top">
+                                    <span class="metric-label"><i data-lucide="clock"></i> Active Loans</span>
+                                    <span class="metric-action-tag">FILTER</span>
+                                </div>
+                                <div class="metric-card-val text-indigo" id="stat-borrowed">0</div>
+                                <span class="metric-card-sub">Checked out by members</span>
+                            </div>
+
+                            <div class="vault-metric-card metric-low stat-bubble-new" id="stat-filter-low" data-stock-filter="low"
+                                title="Click to filter low reserve items (≤ 50% stock)">
+                                <div class="metric-card-top">
+                                    <span class="metric-label"><i data-lucide="alert-triangle"></i> Low Reserves</span>
+                                    <span class="metric-action-tag">FILTER</span>
+                                </div>
+                                <div class="metric-card-val text-amber" id="stat-low">0</div>
+                                <span class="metric-card-sub">≤ 50% available</span>
+                            </div>
+
+                            <div class="vault-metric-card metric-out stat-bubble-new" id="stat-filter-out" data-stock-filter="out"
+                                title="Click to view out of stock components">
+                                <div class="metric-card-top">
+                                    <span class="metric-label"><i data-lucide="package-x"></i> Depleted</span>
+                                    <span class="metric-action-tag">FILTER</span>
+                                </div>
+                                <div class="metric-card-val text-rose" id="stat-out">0</div>
+                                <span class="metric-card-sub">0 units in stock</span>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Items Grid Area -->
+                        <div class="vault-catalog-card glass">
+                            <div class="vault-catalog-header">
+                                <div class="catalog-title-col">
+                                    <div class="catalog-heading-wrap">
+                                        <h2 class="catalog-title">Catalog Components</h2>
                                         <span class="items-count-badge" id="results-count">Showing 0 items</span>
-                                        <span class="active-stock-pill" id="active-stock-pill"
-                                            style="display: none;"></span>
+                                        <span class="active-stock-pill" id="active-stock-pill" style="display: none;"></span>
                                     </div>
-                                    <button class="btn-add-inventory-cyber" id="btn-inventory-add-item"
-                                        style="display: none !important;">
+                                    <span class="catalog-subtext">Click any component to inspect specifications or add to your request cart</span>
+                                </div>
+                                <div class="catalog-actions-col">
+                                    <button class="btn btn-secondary btn-sm" id="btn-inventory-add-item" style="display: none !important;">
                                         <i data-lucide="plus-circle"></i> Add Component
                                     </button>
                                 </div>
+                            </div>
 
-                                <!-- No Results State -->
-                                <div class="no-results glass" id="no-results" style="display: none;">
+                            <!-- No Results State -->
+                            <div class="no-results glass" id="no-results" style="display: none;">
+                                <div class="no-results-icon-wrap">
                                     <i data-lucide="package-search"></i>
-                                    <h3>No items found</h3>
-                                    <p>Try adjusting your search keywords or sidebar filters.</p>
                                 </div>
+                                <h3>No components found</h3>
+                                <p>Try adjusting your search query, clearing filters, or switching category tags.</p>
+                            </div>
 
-                                <div class="inventory-grid" id="inventory-grid">
-                                    <!-- Cards will be dynamically injected by JavaScript -->
-                                </div>
+                            <!-- Cards Grid -->
+                            <div class="inventory-grid" id="inventory-grid">
+                                <!-- Cards dynamically injected by JavaScript -->
                             </div>
                         </div>
                     </div>
@@ -796,7 +824,6 @@
                             <button type="button" class="team-carousel-arrow arrow-next" id="team-carousel-next"
                                 aria-label="Next Profile">
                                 <i data-lucide="chevron-right"></i>
-                            </button>
                         </div>
                     </div>
                 </section>
@@ -804,7 +831,7 @@
                 <!-- Section: Member Profile & Equipment Access Pass (CICR Robotics Lab) -->
                 <section class="profile-layout-section reveal" id="profile-view" style="display: none;">
                     <div class="profile-view-container">
-                        <!-- Clean Aesthetic Profile Hero Banner -->
+                        <!-- 1. Cool Aesthetic Cyber Profile Hero Banner -->
                         <div class="profile-clean-hero glass">
                             <div class="profile-hero-left">
                                 <div class="profile-hero-avatar-wrap">
@@ -820,7 +847,7 @@
                                         onclick="window.openProfileEditModal && window.openProfileEditModal()">
                                         <i data-lucide="camera"></i>
                                     </button>
-                                    <div class="profile-status-indicator" title="Active Session">
+                                    <div class="profile-status-indicator" title="Active Verified Session">
                                         <span class="status-pulse-dot"></span>
                                         <span class="status-pulse-ring"></span>
                                     </div>
@@ -837,8 +864,7 @@
                                     <div class="profile-hero-sub-row">
                                         <span class="profile-hero-handle" id="profile-hero-handle">@username</span>
                                         <span class="profile-dot-sep">•</span>
-                                        <span class="profile-hero-email"
-                                            id="profile-hero-email">student@mail.jiit.ac.in</span>
+                                        <span class="profile-hero-email" id="profile-hero-email">student@mail.jiit.ac.in</span>
                                     </div>
                                     <div class="profile-hero-tags-row">
                                         <span class="profile-tag-pill" id="profile-hero-roll-tag">
@@ -848,6 +874,10 @@
                                         <span class="profile-tag-pill" id="profile-hero-branch-tag">
                                             <i data-lucide="git-branch"></i>
                                             <span id="profile-hero-branch-text">Branch: —</span>
+                                        </span>
+                                        <span class="profile-tag-pill status-tag-pill">
+                                            <i data-lucide="check-circle-2"></i>
+                                            <span>Session Active</span>
                                         </span>
                                     </div>
                                 </div>
@@ -860,10 +890,81 @@
                                     <i data-lucide="user-cog"></i>
                                     <span>Edit Profile</span>
                                 </button>
+                                <button type="button" class="btn btn-secondary profile-action-btn"
+                                    id="profile-security-btn" title="Account Security & Password"
+                                    onclick="document.getElementById('reset-password-modal')?.classList.add('active'); if (window.openPasswordResetModal) window.openPasswordResetModal();">
+                                    <i data-lucide="key-round"></i>
+                                    <span>Security</span>
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Two-Column Clean Layout -->
+                        <!-- 2. Cyber Telemetry Metrics HUD -->
+                        <div class="profile-telemetry-hud">
+                            <!-- Card 1: Active Loans -->
+                            <div class="profile-metric-tile stat-cyan">
+                                <div class="metric-tile-top">
+                                    <div class="metric-icon-wrap icon-cyan">
+                                        <i data-lucide="package-check"></i>
+                                    </div>
+                                    <span class="metric-status-pill" id="profile-loans-quota-pill">0 / 5 Used</span>
+                                </div>
+                                <div class="metric-tile-body">
+                                    <div class="metric-value font-mono" id="profile-metric-active-count">0</div>
+                                    <div class="metric-label">Active Checkouts</div>
+                                </div>
+                                <div class="metric-progress-track">
+                                    <div class="metric-progress-fill" id="profile-loan-progress-fill" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2: Pending Requests -->
+                            <div class="profile-metric-tile stat-purple">
+                                <div class="metric-tile-top">
+                                    <div class="metric-icon-wrap icon-purple">
+                                        <i data-lucide="clock"></i>
+                                    </div>
+                                    <span class="metric-status-pill" id="profile-pending-pill">Queue</span>
+                                </div>
+                                <div class="metric-tile-body">
+                                    <div class="metric-value font-mono" id="profile-metric-pending-count">0</div>
+                                    <div class="metric-label">Pending Requests</div>
+                                </div>
+                                <div class="metric-sub-note" id="profile-pending-sub">Awaiting Admin Verification</div>
+                            </div>
+
+                            <!-- Card 3: Returned Hardware -->
+                            <div class="profile-metric-tile stat-green">
+                                <div class="metric-tile-top">
+                                    <div class="metric-icon-wrap icon-green">
+                                        <i data-lucide="corner-up-left"></i>
+                                    </div>
+                                    <span class="metric-status-pill" id="profile-standing-pill">History</span>
+                                </div>
+                                <div class="metric-tile-body">
+                                    <div class="metric-value font-mono" id="profile-metric-history-count">0</div>
+                                    <div class="metric-label">Hardware Returned</div>
+                                </div>
+                                <div class="metric-sub-note" id="profile-metric-standing">Clear Standing</div>
+                            </div>
+
+                            <!-- Card 4: Vault Clearance -->
+                            <div class="profile-metric-tile stat-pink">
+                                <div class="metric-tile-top">
+                                    <div class="metric-icon-wrap icon-pink">
+                                        <i data-lucide="shield-check"></i>
+                                    </div>
+                                    <span class="metric-status-pill" id="profile-clearance-pill">Tier 1</span>
+                                </div>
+                                <div class="metric-tile-body">
+                                    <div class="metric-value" id="profile-metric-clearance">OPERATOR</div>
+                                    <div class="metric-label">Lab Clearance</div>
+                                </div>
+                                <div class="metric-sub-note" id="profile-clearance-sub">Hardware checkout authorized</div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Two-Column Clean Layout -->
                         <div class="profile-clean-grid">
                             <!-- Left: Institutional Identity Card -->
                             <div class="profile-clean-card glass">
@@ -874,11 +975,11 @@
                                         </div>
                                         <div>
                                             <h3 class="profile-card-heading">Member Details</h3>
-                                            <p class="profile-card-subheading">Verified student credentials & lab
-                                                authorization</p>
+                                            <p class="profile-card-subheading">Verified student credentials & lab authorization</p>
                                         </div>
                                     </div>
-                                                            <div class="profile-details-list">
+                                </div>
+                                <div class="profile-details-list">
                                     <div class="profile-detail-row">
                                         <span class="detail-label"><i data-lucide="user"></i> Full Name</span>
                                         <span class="detail-val" id="cred-full-name">—</span>
@@ -899,27 +1000,61 @@
                                         <span class="detail-label"><i data-lucide="shield"></i> Authorization</span>
                                         <span class="detail-val" id="cred-role">—</span>
                                     </div>
-                                </div>                    </div>
+                                    <div class="profile-detail-row">
+                                        <span class="detail-label"><i data-lucide="key"></i> Encryption</span>
+                                        <span class="detail-val text-green"><i data-lucide="lock" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i> 256-Bit SHA</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Right: Borrowed Components Desk -->
-                            <div class="profile-clean-card glass">
+                            <!-- Right: Hardware Operations Hub (Interactive Tabs) -->
+                            <div class="profile-clean-card glass profile-hub-card">
                                 <div class="profile-card-header">
                                     <div class="profile-card-header-left">
                                         <div class="profile-card-icon-box icon-purple">
-                                            <i data-lucide="package-check"></i>
+                                            <i data-lucide="cpu"></i>
                                         </div>
                                         <div>
-                                            <h3 class="profile-card-heading">Borrowed Components</h3>
-                                            <p class="profile-card-subheading">Hardware currently issued under your name
-                                            </p>
+                                            <h3 class="profile-card-heading">Hardware Operations Hub</h3>
+                                            <p class="profile-card-subheading">Manage active loans, pending verification & returns</p>
                                         </div>
                                     </div>
-                                    <span class="profile-badge-counter" id="profile-active-loans-badge">0 Active</span>
+                                    <!-- Dynamic Tab Switcher -->
+                                    <div class="profile-hub-tabs">
+                                        <button type="button" class="profile-hub-tab active" id="tab-btn-active-loans" data-hub-tab="loans">
+                                            <i data-lucide="package-check"></i>
+                                            <span>Issued (<span id="profile-tab-count-loans">0</span>)</span>
+                                        </button>
+                                        <button type="button" class="profile-hub-tab" id="tab-btn-pending-requests" data-hub-tab="requests">
+                                            <i data-lucide="clock"></i>
+                                            <span>Requests (<span id="profile-tab-count-requests">0</span>)</span>
+                                        </button>
+                                        <button type="button" class="profile-hub-tab" id="tab-btn-return-history" data-hub-tab="history">
+                                            <i data-lucide="history"></i>
+                                            <span>History</span>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div class="profile-active-loans-container" id="profile-active-loans-list">
-                                    <!-- Dynamic loans list or clean empty state injected here -->
+                                <!-- Tab Pane 1: Active Loans -->
+                                <div class="profile-tab-pane active" id="pane-active-loans">
+                                    <div class="profile-active-loans-container" id="profile-active-loans-list">
+                                        <!-- Dynamic loans injected here -->
+                                    </div>
+                                </div>
+
+                                <!-- Tab Pane 2: Pending Requests -->
+                                <div class="profile-tab-pane" id="pane-pending-requests" style="display: none;">
+                                    <div class="profile-active-loans-container" id="profile-pending-requests-list">
+                                        <!-- Dynamic pending requests injected here -->
+                                    </div>
+                                </div>
+
+                                <!-- Tab Pane 3: Return History -->
+                                <div class="profile-tab-pane" id="pane-return-history" style="display: none;">
+                                    <div class="profile-active-loans-container" id="profile-return-history-list">
+                                        <!-- Dynamic return history injected here -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1169,7 +1304,7 @@
                 </section>
 
                 <!-- Section: Component Issue & Return Ledger (Core Workspace - Just below Admin Portal - Admin Only) -->
-                <section class="hardware-logs-section reveal" id="hardware-logs-view">
+                <section class="hardware-logs-section reveal" id="hardware-logs-view" style="display: none;">
                     <div class="hw-ledger-container">
                         <!-- Top Banner Header -->
                         <div class="hw-ledger-header-card glass">
@@ -1383,9 +1518,161 @@
                     style="display: none;" title="Return all components issued to you in 1 go">
                     <i data-lucide="layers"></i> Return in 1 Go
                 </button>
-                <button class="btn btn-primary btn-borrow" id="btn-borrow">
-                    <i data-lucide="shopping-cart"></i> Checkout / Borrow
+                <button type="button" class="btn btn-primary btn-modal-cart" id="btn-modal-add-cart">
+                    <i data-lucide="shopping-bag"></i> Add to Request Cart
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hardware Request Cart Modal (Consolidated 1-Go Checkout) -->
+    <div class="modal-overlay" id="cart-modal">
+        <div class="modal-content modal-cart glass">
+            <!-- Glowing Cyber Accent Beam -->
+            <div class="cart-modal-accent-beam"></div>
+
+            <button class="close-modal btn-cart-close" id="btn-close-cart-modal" title="Close Cart">
+                <i data-lucide="x"></i>
+            </button>
+
+            <div class="modal-header cart-modal-header">
+                <div class="cart-header-title-group">
+                    <div class="cart-header-icon-box">
+                        <i data-lucide="shopping-bag"></i>
+                    </div>
+                    <div>
+                        <div class="cart-title-row">
+                            <h2 class="modal-title">Hardware Request Cart</h2>
+                            <span class="cart-count-pill" id="cart-manifest-badge">
+                                <span class="cart-badge-dot"></span> 0 items
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cart-modal-body">
+                <!-- Left: Selected components list -->
+                <div class="cart-left-pane">
+                    <div class="cart-pane-header">
+                        <span class="pane-title">
+                            <i data-lucide="layers" style="width:13px;height:13px;vertical-align:middle;color:#38bdf8;"></i> CONFIGURED COMPONENTS
+                        </span>
+                        <button type="button" class="btn-clear-cart-text" id="btn-clear-cart" title="Clear all items">
+                            <i data-lucide="trash-2"></i> Clear Cart
+                        </button>
+                    </div>
+
+                    <!-- Items container -->
+                    <div class="cart-items-scroll" id="cart-items-list">
+                        <!-- Injected dynamically via CartManager -->
+                    </div>
+
+                    <!-- Empty state -->
+                    <div class="cart-empty-box" id="cart-empty-state" style="display: none;">
+                        <div class="cart-empty-holo-ring">
+                            <div class="cart-empty-icon">
+                                <i data-lucide="shopping-bag"></i>
+                            </div>
+                        </div>
+                        <span class="cart-empty-tag">SYSTEM STANDBY &bull; 0 COMPONENTS LOADED</span>
+                        <h4 class="cart-empty-title">Your Request Manifest is Empty</h4>
+                        <p class="cart-empty-desc">Browse the Component Vault and click "+ Add to Cart" on any sensor, microcontroller, or robotics module you need.</p>
+                        <button type="button" class="btn btn-secondary btn-sm btn-empty-cart-cyber" id="btn-empty-cart-browse">
+                            <i data-lucide="layers"></i> Browse Vault Catalog
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Single Unified Checkout Manifest -->
+                <div class="cart-right-pane" id="cart-checkout-pane">
+                    <div class="cart-checkout-card">
+                        <div class="manifest-card-header">
+                            <h4 class="checkout-card-heading">
+                                <i data-lucide="clipboard-check"></i> REQUEST MANIFEST
+                            </h4>
+                        </div>
+
+                        <!-- Verified Borrower Strip -->
+                        <div class="cart-borrower-box">
+                            <div class="borrower-box-row">
+                                <span class="lbl"><i data-lucide="user" style="width:11px;height:11px;vertical-align:middle;"></i> Borrower</span>
+                                <strong class="val" id="cart-borrower-name">Member</strong>
+                            </div>
+                            <div class="borrower-box-row">
+                                <span class="lbl"><i data-lucide="hash" style="width:11px;height:11px;vertical-align:middle;"></i> Enrollment ID</span>
+                                <strong class="val text-cyan-mono" id="cart-borrower-roll">—</strong>
+                            </div>
+                            <div class="borrower-box-row">
+                                <span class="lbl"><i data-lucide="shield" style="width:11px;height:11px;vertical-align:middle;"></i> Routing</span>
+                                <span class="val text-neon-cyan"><i data-lucide="shield-check" style="width:12px;height:12px;vertical-align:middle;"></i> Admin Portal Review</span>
+                            </div>
+                        </div>
+
+                        <form id="cart-checkout-form">
+                            <div class="form-group" style="margin-top: 10px;">
+                                <label for="cart-purpose" class="cart-form-label">Project / Purpose of Issue <span class="text-rose">*</span></label>
+                                <input type="text" id="cart-purpose" class="cart-input-cyber" required placeholder="e.g. Line Follower Robot, Autonomous Drone, IoT Testing" autocomplete="off">
+                            </div>
+
+                            <div class="form-group" style="margin-top: 10px;">
+                                <div class="form-label-row">
+                                    <label for="cart-due-date" class="cart-form-label">Default Return Date <span class="text-rose">*</span></label>
+                                    <span class="form-label-badge badge-neon" id="cart-duration-badge">7 Days Loan</span>
+                                </div>
+                                <div class="date-picker-wrapper cart-date-picker-cyber" id="cart-calendar-wrapper">
+                                    <i data-lucide="calendar" class="date-icon text-cyan"></i>
+                                    <input type="date" id="cart-due-date" class="cart-input-cyber" required>
+                                </div>
+                                <div class="date-presets-row" style="margin-top: 6px;">
+                                    <button type="button" class="date-preset-pill cart-preset" data-days="3">3 Days</button>
+                                    <button type="button" class="date-preset-pill cart-preset active" data-days="7">7 Days</button>
+                                    <button type="button" class="date-preset-pill cart-preset" data-days="14">14 Days</button>
+                                    <button type="button" class="date-preset-pill cart-preset" data-days="30">30 Days</button>
+                                </div>
+                            </div>
+
+                            <!-- Cyber Telemetry Metrics HUD -->
+                            <div class="cart-manifest-metrics-hud">
+                                <div class="cart-hud-card">
+                                    <div class="hud-card-accent-bar"></div>
+                                    <div class="hud-card-meta">
+                                        <div class="hud-card-icon-box">
+                                            <i data-lucide="layers"></i>
+                                        </div>
+                                        <span class="hud-card-label">DISTINCT ITEMS</span>
+                                    </div>
+                                    <div class="hud-card-value-row">
+                                        <div id="cart-summary-count" class="hud-metric-val">
+                                            <span class="hud-number">0</span>
+                                            <span class="hud-suffix">components</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cart-hud-card accent-cyan">
+                                    <div class="hud-card-accent-bar"></div>
+                                    <div class="hud-card-meta">
+                                        <div class="hud-card-icon-box">
+                                            <i data-lucide="boxes"></i>
+                                        </div>
+                                        <span class="hud-card-label">TOTAL REQUESTED</span>
+                                    </div>
+                                    <div class="hud-card-value-row">
+                                        <div id="cart-summary-total-qty" class="hud-metric-val text-cyan">
+                                            <span class="hud-number">0</span>
+                                            <span class="hud-suffix">units</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block btn-cart-submit" id="btn-submit-cart-checkout">
+                                <i data-lucide="send"></i> Checkout & Submit Request
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

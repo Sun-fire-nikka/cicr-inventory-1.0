@@ -809,6 +809,64 @@ export const createHardwareRequestHandler = async (req: AuthRequest, res: Respon
   }
 };
 
+export const submitBulkHardwareRequestHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const userEmail = req.user?.email || req.body.email || req.body.borrowerEmail;
+    const userName = req.user?.name || req.body.name || req.body.borrowerName;
+    const rollNumber = req.user?.roll_number || req.body.roll || req.body.roll_number;
+    const purpose = req.body.purpose || 'Project Work';
+    const durationDays = Number(req.body.duration_days || req.body.durationDays) || 7;
+    const dueDate = req.body.dueDate || req.body.due_date;
+    const items = req.body.items || req.body.cart || [];
+
+    if (!userName || !userEmail) {
+      return res.status(400).json({ status: 'error', message: 'Borrower name and email are required.' });
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'No items provided in request cart.' });
+    }
+
+    const { createBulkHardwareRequest } = await import('./hardwareRequestService');
+    const result = await createBulkHardwareRequest({
+      userId,
+      userName,
+      userEmail,
+      rollNumber,
+      purpose,
+      durationDays,
+      dueDate,
+      items: items.map((it: any) => ({
+        itemId: it.itemId || it.inventory_id || it.item_id || it.id,
+        itemName: it.itemName || it.name,
+        quantity: Number(it.quantity || it.qty || 1)
+      }))
+    });
+
+    if (!result.success) {
+      return res.status(400).json({ status: 'error', message: result.message || 'Failed to submit hardware requests.' });
+    }
+
+    logAudit(
+      'Bulk Hardware Requested',
+      userId,
+      null,
+      `${userName} (${userEmail}) checked out cart with ${result.count} items for purpose: ${purpose}`
+    );
+
+    return res.status(201).json({
+      status: 'success',
+      message: result.message,
+      count: result.count,
+      data: result.requests
+    });
+  } catch (err: any) {
+    console.error('Error submitting bulk hardware request:', err);
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 export const getHardwareRequestsHandler = async (req: AuthRequest, res: Response) => {
   try {
     const force = req.query.force === 'true';
@@ -904,6 +962,64 @@ export const rejectHardwareRequestHandler = async (req: AuthRequest, res: Respon
       status: 'success',
       message: `Hardware request ${id} rejected.`,
       data: result.request
+    });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const returnAllLoansHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const nowIso = new Date().toISOString();
+    // 1. Mark all active borrow records as RETURNED
+    await dbWrite
+      .from('borrow_records')
+      .update({ status: 'RETURNED', returned_at: nowIso })
+      .neq('status', 'RETURNED');
+
+    // 2. Restock all items in inventory table
+    const { data: allItems } = await dbRead
+      .from('inventory')
+      .select('id, quantity, available_quantity');
+
+    if (allItems) {
+      for (const item of allItems) {
+        const total = Number(item.quantity) || 0;
+        if (Number(item.available_quantity) !== total) {
+          await dbWrite
+            .from('inventory')
+            .update({ available_quantity: total, updated_at: nowIso })
+            .eq('id', item.id);
+        }
+      }
+    }
+
+    // 3. Update active requests
+    try {
+      const { getAllHardwareRequests, invalidateHardwareRequestsCache } = await import('./hardwareRequestService');
+      const allReqs = await getAllHardwareRequests(true);
+      for (const r of allReqs) {
+        if (r.status === 'PENDING') {
+          (r as any).status = 'APPROVED';
+          r.reviewedAt = nowIso;
+          r.reviewedBy = req.user?.name || 'Administrator';
+        }
+      }
+      invalidateHardwareRequestsCache();
+    } catch {}
+
+    logAudit(
+      'All Loans Returned',
+      req.user?.id,
+      null,
+      `Admin ${req.user?.name || 'Administrator'} returned all active loans and restocked all components in Vault.`
+    );
+
+    invalidateBorrowHistoryCache().catch(() => {});
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'All loans have been returned and all inventory components are 100% restocked.'
     });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
