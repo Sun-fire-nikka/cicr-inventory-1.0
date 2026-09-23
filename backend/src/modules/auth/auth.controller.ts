@@ -789,48 +789,28 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     const normId = loginId.toLowerCase();
 
-    // Lookup user in DB by email, roll_number, name, or master admin aliases
+    // H-2.2: identifier resolution is restricted to the two UI-advertised
+    // forms. "@": exact email lookup (trimmed + lowercased). Otherwise:
+    // exact roll_number lookup (trimmed). Name, email-prefix, hardcoded
+    // aliases, and the approval-store fallback are intentionally not consulted.
+    // Login's broader identifier behavior is unchanged.
     let user: any = null;
-    const { data: byEmail } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', normId).maybeSingle();
-    if (byEmail) {
-      user = byEmail;
+    if (normId.includes('@')) {
+      const { data: byEmail } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', normId).maybeSingle();
+      if (byEmail) user = byEmail;
     } else {
       const { data: byRoll } = await dbRead.from('users').select('id, name, email, password_hash').eq('roll_number', loginId).maybeSingle();
       if (byRoll) user = byRoll;
     }
 
     if (!user) {
-      const { data: byName } = await dbRead.from('users').select('id, name, email, password_hash').ilike('name', normId).maybeSingle();
-      if (byName) user = byName;
-    }
-
-    if (!user && !normId.includes('@')) {
-      const { data: byEmailPrefix } = await dbRead.from('users').select('id, name, email, password_hash').ilike('email', `${normId}@%`).maybeSingle();
-      if (byEmailPrefix) user = byEmailPrefix;
-    }
-
-    // Master admin aliases
-    if (!user) {
-      if (['srvkiller09', 'vardaan', 'vardaansaxena'].includes(normId)) {
-        const { data } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', 'vardaansaxena096@gmail.com').maybeSingle();
-        if (data) user = data;
-      } else if (['cicradmin', 'cicrinventory', 'cicr admin'].includes(normId)) {
-        const { data } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', 'cicrinventory@gmail.com').maybeSingle();
-        if (data) user = data;
-      }
-    }
-
-    // Local approvals lookup fallback
-    if (!user) {
-      const match = findUserApprovalByIdentifier(loginId);
-      if (match) {
-        const { data } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', match.email).maybeSingle();
-        if (data) user = data;
-      }
-    }
-
-    if (!user) {
-      return res.status(404).json({ status: 'error', message: 'No registered user found with that email, enrollment number, or name.' });
+      // H-2.2 enumeration hardening: unknown identifiers receive the same
+      // generic credential-failure response as a wrong current password, and
+      // no canonical email is echoed.
+      return res.status(400).json({
+        status: 'error',
+        message: 'Current password is incorrect. Please verify and re-enter your existing password.'
+      });
     }
 
     // Security requirement: Current password must be provided to authenticate password change
