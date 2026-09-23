@@ -448,8 +448,14 @@ test('GET /api/audit without token returns 401', async () => {
   assert.equal(status, 401);
 });
 
-test('GET /api/audit with member token returns logs (any member sees all audits)', async () => {
+test('GET /api/audit with member token returns 403 (admin-only)', async () => {
   const { status, json } = await api('/api/audit', { token: memberToken });
+  assert.equal(status, 403);
+  assert.match(json.message, /Admin access required/);
+});
+
+test('GET /api/audit with admin token returns logs', async () => {
+  const { status, json } = await api('/api/audit', { token: adminToken });
   assert.equal(status, 200);
   assert.ok(Array.isArray(json.data));
 });
