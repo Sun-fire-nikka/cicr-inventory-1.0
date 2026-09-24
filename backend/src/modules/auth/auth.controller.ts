@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { dbWrite, dbRead, supabase } from '../../config/database';
 import { AuthRequest, AuthUser } from '../../middleware/auth.middleware';
 import { isValidEmail } from '../../validators/email.validator';
+import { escapeOrSegment } from '../../validators/postgrest';
 import {
   MASTER_ADMIN_EMAIL,
   SUPER_ADMIN_EMAILS,
@@ -76,7 +77,7 @@ export const register = async (req: Request, res: Response) => {
     const { data: existingMatches } = await dbRead
       .from('users')
       .select('id, email, roll_number')
-      .or(`email.ilike.${normEmail}${userRoll ? `,roll_number.eq.${userRoll}` : ''}`)
+      .or(`email.ilike.${escapeOrSegment(normEmail)}${userRoll ? `,roll_number.eq.${escapeOrSegment(userRoll)}` : ''}`)
       .limit(2);
 
     if (existingMatches && existingMatches.length > 0) {
@@ -231,7 +232,7 @@ export const login = async (req: Request, res: Response) => {
       const { data } = await dbRead
         .from('users')
         .select('*')
-        .or(`email.ilike.${loginId},name.ilike.${loginId}`)
+        .or(`email.ilike.${escapeOrSegment(loginId)},name.ilike.${escapeOrSegment(loginId)}`)
         .limit(1)
         .maybeSingle();
       if (data) user = data;
@@ -981,7 +982,7 @@ export const adminCreateUser = async (req: AuthRequest, res: Response) => {
     }
 
     // Check duplicate
-    const { data: existing } = await dbRead.from('users').select('id, email, roll_number').or(`email.ilike.${normEmail}${userRoll ? `,roll_number.eq.${userRoll}` : ''}`).limit(1).maybeSingle();
+    const { data: existing } = await dbRead.from('users').select('id, email, roll_number').or(`email.ilike.${escapeOrSegment(normEmail)}${userRoll ? `,roll_number.eq.${escapeOrSegment(userRoll)}` : ''}`).limit(1).maybeSingle();
     if (existing) {
       return res.status(400).json({ status: 'error', message: `An account with email ${normEmail} or enrollment number ${userRoll} already exists.` });
     }

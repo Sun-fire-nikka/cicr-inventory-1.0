@@ -4,6 +4,7 @@ import { AuthRequest } from '../../middleware/auth.middleware';
 import { cacheGetJSON, cacheSetJSON, cacheInvalidate, cacheInvalidatePattern } from '../../config/redis';
 import { sendAdminItemCreatedNotification, sendAdminItemDeletedNotification } from '../../services/emailService';
 import { logAuditEvent } from '../../services/auditService';
+import { escapeLikePattern, escapeOrSegment } from '../../validators/postgrest';
 
 const ITEMS_LIST_CACHE_TTL = 30; // seconds
 const ITEMS_ITEM_CACHE_TTL = 30;
@@ -45,12 +46,12 @@ export const getItems = async (req: Request, res: Response) => {
       if (catStr.toLowerCase() === 'microcontrollers' || catStr.toLowerCase() === 'mcu') {
         query = query.ilike('category', '%controller%');
       } else {
-        query = query.ilike('category', `%${catStr}%`);
+        query = query.ilike('category', `%${escapeLikePattern(catStr)}%`);
       }
     }
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,location.ilike.%${search}%`);
+      query = query.or(`name.ilike.%${escapeOrSegment(search)}%,description.ilike.%${escapeOrSegment(search)}%,location.ilike.%${escapeOrSegment(search)}%`);
     }
 
     const { data: items, error } = await query;

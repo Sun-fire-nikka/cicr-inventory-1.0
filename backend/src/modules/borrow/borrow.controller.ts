@@ -27,6 +27,7 @@ export const DEFAULT_RENTAL_DAYS = 5;
 
 // Fire-and-forget wrapper: catches and logs errors without blocking the response.
 import { logAuditEvent } from '../../services/auditService';
+import { escapeOrSegment } from '../../validators/postgrest';
 
 function dispatchBackground(label: string, promise: Promise<unknown>): void {
   promise.catch((err) => console.error(`[BACKGROUND] ${label} failed:`, err));
@@ -588,7 +589,7 @@ export const getBorrowHistory = async (req: AuthRequest, res: Response) => {
       const userRoll = req.user?.roll_number;
       const userName = req.user?.name;
       if (userId && userRoll) {
-        query = query.or(`user_id.eq.${userId},roll_number.eq.${userRoll}`);
+        query = query.or(`user_id.eq.${escapeOrSegment(userId)},roll_number.eq.${escapeOrSegment(userRoll)}`);
       } else if (userId) {
         query = query.eq('user_id', userId);
       } else if (userRoll) {
