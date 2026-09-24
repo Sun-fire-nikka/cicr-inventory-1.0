@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import './style.css';
-import { createIcons as lucideCreateIcons } from 'lucide';
+import { createIcons as lucideCreateIcons, icons as lucideIcons } from 'lucide';
 import type { InventoryItem, ActivityLog, RequestRecord, BorrowRecord } from './types';
 
 // Global declarations for CDN / bundled libraries
@@ -8,17 +8,47 @@ declare const lucide: {
     createIcons: (options?: any) => void;
 };
 
-if (typeof window !== 'undefined') {
-    (window as any).__rawLucideCreateIcons = (window as any).__rawLucideCreateIcons || lucideCreateIcons;
-    if (typeof (window as any).lucide === 'undefined') {
-        (window as any).lucide = { createIcons: lucideCreateIcons };
+// Safe, universal Lucide icon creator that never throws even if options or icons are omitted
+function safeCreateIcons(options?: any) {
+    const opts = options || {};
+    // 1. If CDN lucide is loaded and has createIcons
+    try {
+        const cdnLucide = (window as any).__cdnLucide || (window as any).lucide;
+        if (cdnLucide && typeof cdnLucide.createIcons === 'function' && cdnLucide.createIcons !== safeCreateIcons && (window as any).__hasCdnLucide) {
+            cdnLucide.createIcons(opts);
+            return;
+        }
+    } catch {
+        // Fall back to bundled NPM
     }
+
+    // 2. Bundled NPM icons (always has all 2,000+ Lucide icons)
+    try {
+        lucideCreateIcons({
+            icons: lucideIcons,
+            nameAttr: 'data-lucide',
+            ...(opts.root ? { root: opts.root } : {})
+        });
+    } catch (err) {
+        console.warn('Lucide icon rendering fallback notice:', err);
+    }
+}
+
+if (typeof window !== 'undefined') {
+    (window as any).__rawLucideCreateIcons = safeCreateIcons;
+    (window as any).lucide = {
+        createIcons: (options?: any) => {
+            try {
+                safeCreateIcons(options);
+            } catch (err) {
+                console.warn('Lucide createIcons notice:', err);
+            }
+        }
+    };
 }
 
 // Safe, idempotent Lucide icon renderer that NEVER destroys already-rendered SVGs
 function renderLucideIcons(root?: HTMLElement | Document | null) {
-    const rawCreateIcons = (window as any).__rawLucideCreateIcons || (typeof lucide !== 'undefined' ? lucide.createIcons : null);
-    if (!rawCreateIcons) return;
     const target = root || document;
 
     // Only select elements that need icon creation (not already rendered SVGs)
@@ -26,11 +56,11 @@ function renderLucideIcons(root?: HTMLElement | Document | null) {
     if (placeholders.length === 0) return;
 
     try {
-        rawCreateIcons({
+        safeCreateIcons({
             root: target instanceof HTMLElement ? target : undefined
         });
     } catch {
-        try { rawCreateIcons(); } catch {}
+        try { safeCreateIcons(); } catch {}
     }
 
     // Strip data-lucide from rendered SVGs to prevent future calls from destroying/re-rendering them
@@ -77,13 +107,11 @@ function getFastIconSvg(name: string, size: number = 13): string {
 // Intercept lucide.createIcons globally so ANY third-party or legacy call is automatically safe
 if (typeof window !== 'undefined') {
     const installLucideGuard = () => {
-        if (typeof lucide !== 'undefined' && lucide.createIcons && !(window as any).__rawLucideCreateIcons) {
-            (window as any).__rawLucideCreateIcons = lucide.createIcons.bind(lucide);
-            lucide.createIcons = (options?: any) => {
-                const root = options && options.root ? options.root : undefined;
-                renderLucideIcons(root);
-            };
-        }
+        (window as any).lucide = (window as any).lucide || {};
+        (window as any).lucide.createIcons = (options?: any) => {
+            const root = options && options.root ? options.root : undefined;
+            renderLucideIcons(root);
+        };
     };
     installLucideGuard();
     window.addEventListener('DOMContentLoaded', installLucideGuard);
@@ -10465,16 +10493,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Real-Time Sidebar Alignment Sync (Desktop Viewport-Fixed Positioning)
     const syncFixedSidebarPosition = () => {
-        const container = document.getElementById('app-container');
-        const sidebar = document.getElementById('app-sidebar');
-        if (!container || !sidebar || window.innerWidth <= 1100) {
-            document.documentElement.style.removeProperty('--sidebar-fixed-left');
-            return;
-        }
-        const containerRect = container.getBoundingClientRect();
-        // 20px aligns precisely with container's horizontal padding
-        const targetLeft = Math.round(containerRect.left + 20);
-        document.documentElement.style.setProperty('--sidebar-fixed-left', `${targetLeft}px`);
+        // Native CSS Grid sticky positioning provides zero-jitter, pixel-perfect alignment
     };
 
     (window as any).syncFixedSidebarPosition = syncFixedSidebarPosition;

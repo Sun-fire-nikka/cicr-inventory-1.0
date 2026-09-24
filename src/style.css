@@ -5439,7 +5439,7 @@ input:-webkit-autofill:active {
 /* ==========================================================
    Responsive Breakpoints Refitting
    ========================================================== */
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
     .explorer-layout-container {
         flex-direction: column;
     }
@@ -7838,22 +7838,20 @@ body.theme-light .drawer-bulk-return-banner .banner-title {
     box-sizing: border-box !important;
 }
 
-/* Global Sidebar Navigation styling - Viewport-Fixed on Desktop so it NEVER moves when scrolling */
-@media (min-width: 1101px) {
+/* Global Sidebar Navigation styling - Sticky on Desktop & Laptop so it stays in flow without clipping */
+@media (min-width: 901px) {
     .app-sidebar {
-        position: fixed !important;
+        position: -webkit-sticky !important;
+        position: sticky !important;
         top: 16px !important;
-        left: var(--sidebar-fixed-left, max(20px, calc((100vw - 1600px) / 2 + 20px))) !important;
-        width: 230px !important;
+        width: 240px !important;
         height: calc(100vh - 32px) !important;
         max-height: calc(100vh - 32px) !important;
         z-index: 100 !important;
         box-sizing: border-box !important;
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
-        will-change: transform;
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
+        transform: none !important;
+        -webkit-transform: none !important;
+        align-self: start !important;
     }
 
     .main-viewport-wrapper {
@@ -10042,8 +10040,8 @@ body.theme-light .no-results p,
     transform: scale(0.985);
 }
 
-/* 1. Large Screens & Desktop (> 1100px) */
-@media (min-width: 1101px) {
+/* 1. Large Screens & Desktop (> 900px: Laptops & Desktops) */
+@media (min-width: 901px) {
     .mobile-sidebar-toggle {
         display: none !important;
     }
@@ -10067,8 +10065,8 @@ body.theme-light .no-results p,
     }
 }
 
-/* 2. Tablet & Small Laptop (<= 1100px) */
-@media (max-width: 1100px) {
+/* 2. Tablet & Mobile Drawer (<= 900px) */
+@media (max-width: 900px) {
     .app-container {
         grid-template-columns: 1fr !important;
         padding: 16px 18px !important;
@@ -20272,19 +20270,20 @@ body.theme-light .edit-profile-security-card,
    across ALL themes: Robo Lab and Midnight Mono
    ======================================================== */
 
-/* 1. Global Shell & Desktop Grid Architecture (Min-Width 1101px) */
-@media (min-width: 1101px) {
-    .app-container {
+/* 1. Global Shell & Desktop Grid Architecture (Min-Width 901px: Laptops & Desktops) */
+@media (min-width: 901px) {
+    .app-container,
+    html[data-theme="mono"] .app-container,
+    body.theme-mono .app-container,
+    html[data-theme="light"] .app-container,
+    body.theme-light .app-container {
         display: grid !important;
-        grid-template-columns: 236px minmax(0, 1fr) !important;
-        gap: 26px !important;
-        width: calc(100vw - 36px) !important;
-        max-width: calc(100vw - 36px) !important;
-        margin-left: 18px !important;
-        margin-right: 18px !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        padding: 16px 0 28px 0 !important;
+        grid-template-columns: 240px minmax(0, 1fr) !important;
+        gap: 24px !important;
+        width: 100% !important;
+        max-width: 1540px !important;
+        margin: 0 auto !important;
+        padding: 16px 20px 32px 20px !important;
         box-sizing: border-box !important;
         min-height: 100vh !important;
         position: relative !important;
@@ -20296,10 +20295,10 @@ body.theme-light .edit-profile-security-card,
     body.theme-light .app-sidebar,
     html[data-theme="mono"] .app-sidebar,
     body.theme-mono .app-sidebar {
-        position: fixed !important;
+        position: -webkit-sticky !important;
+        position: sticky !important;
         top: 16px !important;
-        left: 18px !important;
-        width: 236px !important;
+        width: 240px !important;
         height: calc(100vh - 32px) !important;
         max-height: calc(100vh - 32px) !important;
         margin: 0 !important;
@@ -20310,9 +20309,16 @@ body.theme-light .edit-profile-security-card,
         will-change: auto !important;
         scrollbar-width: thin !important;
         scrollbar-color: rgba(130, 90, 210, 0.2) transparent !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-self: start !important;
     }
 
-    .main-viewport-wrapper {
+    .main-viewport-wrapper,
+    html[data-theme="mono"] .main-viewport-wrapper,
+    body.theme-mono .main-viewport-wrapper,
+    html[data-theme="light"] .main-viewport-wrapper,
+    body.theme-light .main-viewport-wrapper {
         grid-column: 2 !important;
         width: 100% !important;
         max-width: 100% !important;
@@ -20322,6 +20328,15 @@ body.theme-light .edit-profile-security-card,
         box-sizing: border-box !important;
         position: relative !important;
         z-index: 1 !important;
+    }
+
+    .mobile-sidebar-toggle,
+    .mobile-sidebar-backdrop {
+        display: none !important;
+    }
+
+    .floating-cart-fab {
+        display: none !important;
     }
 }
 
@@ -20569,9 +20584,6 @@ body.theme-light .inventory-grid {
     box-sizing: border-box !important;
     border-radius: 14px !important;
     position: relative !important;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 240px;
-    contain: layout style;
 }
 
 .inventory-card .card-header {
@@ -23464,39 +23476,24 @@ body.theme-mono .mono-bg-schematic-lower {
    3. LAYOUT & VIEWPORT ARCHITECTURE
    ======================================================== */
 
-/* Desktop Grid Layout (Min-Width 1101px) */
-@media (min-width: 1101px) {
-    html[data-theme="mono"] .app-container,
-    body.theme-mono .app-container {
-        display: grid !important;
-        grid-template-columns: 236px minmax(0, 1fr) !important;
-        gap: 26px !important;
-        width: calc(100vw - 36px) !important;
-        max-width: calc(100vw - 36px) !important;
-        margin-left: 18px !important;
-        margin-right: 18px !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        padding: 16px 0 !important;
-        box-sizing: border-box !important;
-        min-height: 100vh !important;
-        position: relative !important;
-        z-index: 1 !important;
-    }
-
+/* Desktop Grid Layout (Min-Width 901px: Laptops & Desktops) */
+@media (min-width: 901px) {
     html[data-theme="mono"] .app-sidebar,
     body.theme-mono .app-sidebar {
-        position: fixed !important;
+        position: -webkit-sticky !important;
+        position: sticky !important;
         top: 16px !important;
-        left: 18px !important;
-        width: 236px !important;
+        width: 240px !important;
         height: calc(100vh - 32px) !important;
         max-height: calc(100vh - 32px) !important;
         margin: 0 !important;
         z-index: 100 !important;
         box-sizing: border-box !important;
         background: #121211 !important;
-        border-right: 1px solid #262522 !important;
+        border: 1px solid #262522 !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        align-self: start !important;
     }
 
     html[data-theme="mono"] .main-viewport-wrapper,
@@ -23513,22 +23510,8 @@ body.theme-mono .mono-bg-schematic-lower {
     }
 }
 
-/* Tablet & Mobile Layout Adjustment */
-@media (max-width: 1100px) {
-    html[data-theme="mono"] .app-container,
-    body.theme-mono .app-container {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 16px !important;
-        box-sizing: border-box !important;
-        gap: 16px !important;
-        position: relative !important;
-        z-index: 1 !important;
-    }
-
+/* Tablet & Mobile Layout Adjustment (<= 900px) */
+@media (max-width: 900px) {
     html[data-theme="mono"] .app-sidebar,
     body.theme-mono .app-sidebar {
         position: fixed !important;
@@ -23537,14 +23520,24 @@ body.theme-mono .mono-bg-schematic-lower {
         bottom: 0 !important;
         width: min(300px, 86vw) !important;
         height: 100vh !important;
-        z-index: 1000 !important;
+        z-index: 3000 !important;
         background: #121211 !important;
         border-right: 1px solid #262522 !important;
+        transform: translate3d(-105%, 0, 0) !important;
+        -webkit-transform: translate3d(-105%, 0, 0) !important;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .app-container.sidebar-open html[data-theme="mono"] .app-sidebar,
+    .app-container.sidebar-open body.theme-mono .app-sidebar,
+    html[data-theme="mono"] .app-container.sidebar-open .app-sidebar,
+    body.theme-mono .app-container.sidebar-open .app-sidebar {
+        transform: translate3d(0, 0, 0) !important;
+        -webkit-transform: translate3d(0, 0, 0) !important;
     }
 
     html[data-theme="mono"] .main-viewport-wrapper,
     body.theme-mono .main-viewport-wrapper {
-        grid-column: 1 !important;
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
