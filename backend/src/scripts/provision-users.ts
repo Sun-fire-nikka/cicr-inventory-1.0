@@ -138,8 +138,8 @@ export async function provisionUsers(userList: UserProvisionData[]) {
       if (match) roll = match[1];
     }
 
-    // Role assignment: Gunjan Pal, Dhruvi Gupta & Aryan Varshney are ADMIN, others are MEMBER
-    const isSpecialAdmin = isDesignatedAdmin(normEmail, cleanName);
+    // H-1 FIX: Role assignment uses the exact allow-list email only; name never grants ADMIN.
+    const isSpecialAdmin = isDesignatedAdmin(normEmail);
     const assignedRole: 'ADMIN' | 'MEMBER' = user.role || (isSpecialAdmin ? 'ADMIN' : 'MEMBER');
 
     console.log(`[${i + 1}/${userList.length}] Provisioning ${cleanName} (${normEmail}) -> Role: ${assignedRole}`);

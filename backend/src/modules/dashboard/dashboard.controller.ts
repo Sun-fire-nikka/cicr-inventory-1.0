@@ -4,6 +4,7 @@ import { cacheGetJSON, cacheSetJSON } from '../../config/redis';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import { logAuditEvent } from '../../services/auditService';
 import { cleanupExpiredAuditLogs, RETENTION_DAYS } from '../../services/auditCleanupService';
+import { escapeOrSegment } from '../../validators/postgrest';
 
 const STATS_CACHE_KEY = 'cicr:cache:stats';
 const STATS_CACHE_TTL = 15; // seconds
@@ -165,7 +166,7 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
 
     if (search && typeof search === 'string' && search.trim()) {
       const term = search.trim();
-      query = query.or(`action.ilike.%${term}%,description.ilike.%${term}%`);
+      query = query.or(`action.ilike.%${escapeOrSegment(term)}%,description.ilike.%${escapeOrSegment(term)}%`);
     }
 
     const { data: logs, error } = await query;

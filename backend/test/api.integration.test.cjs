@@ -327,7 +327,7 @@ test('GET /api/borrow/history member sees own records', async () => {
 
 test('POST /api/borrow/return happy path returns 200 and restores stock', async () => {
   const { status, json } = await api('/api/borrow/return', {
-    method: 'POST', token: memberToken, body: { borrow_id: borrowId }
+    method: 'POST', token: adminToken, body: { borrow_id: borrowId }
   });
   assert.equal(status, 200);
   assert.equal(json.data.status, 'RETURNED');
@@ -339,7 +339,7 @@ test('POST /api/borrow/return happy path returns 200 and restores stock', async 
 
 test('POST /api/borrow/return double-return returns 400', async () => {
   const { status, json } = await api('/api/borrow/return', {
-    method: 'POST', token: memberToken, body: { borrow_id: borrowId }
+    method: 'POST', token: adminToken, body: { borrow_id: borrowId }
   });
   assert.equal(status, 400);
   assert.match(json.message, /already been returned/);
@@ -347,7 +347,7 @@ test('POST /api/borrow/return double-return returns 400', async () => {
 
 test('POST /api/borrow/return non-existent id returns 404', async () => {
   const { status } = await api('/api/borrow/return', {
-    method: 'POST', token: memberToken, body: { borrow_id: '00000000-0000-4000-8000-000000000000' }
+    method: 'POST', token: adminToken, body: { borrow_id: '00000000-0000-4000-8000-000000000000' }
   });
   assert.equal(status, 404);
 });
@@ -448,10 +448,36 @@ test('GET /api/audit without token returns 401', async () => {
   assert.equal(status, 401);
 });
 
-test('GET /api/audit with member token returns logs (any member sees all audits)', async () => {
+test('GET /api/audit with member token returns 403 (admin-only)', async () => {
   const { status, json } = await api('/api/audit', { token: memberToken });
+  assert.equal(status, 403);
+  assert.match(json.message, /Admin access required/);
+});
+
+test('GET /api/audit with admin token returns logs', async () => {
+  const { status, json } = await api('/api/audit', { token: adminToken });
   assert.equal(status, 200);
   assert.ok(Array.isArray(json.data));
+});
+
+test('POST /api/audit with member token returns 403 (admin-only)', async () => {
+  const { status, json } = await api('/api/audit', {
+    method: 'POST',
+    token: memberToken,
+    body: { action: 'System Event', description: 'member write attempt' }
+  });
+  assert.equal(status, 403);
+  assert.match(json.message, /Admin access required/);
+});
+
+test('POST /api/audit with admin token persists the event', async () => {
+  const { status, json } = await api('/api/audit', {
+    method: 'POST',
+    token: adminToken,
+    body: { action: 'System Event', description: 'admin write check' }
+  });
+  assert.equal(status, 201);
+  assert.equal(json.status, 'success');
 });
 
 // ---------- Cleanup ----------

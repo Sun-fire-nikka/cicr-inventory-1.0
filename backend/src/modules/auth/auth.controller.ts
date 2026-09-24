@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { dbWrite, dbRead, supabase } from '../../config/database';
 import { AuthRequest, AuthUser } from '../../middleware/auth.middleware';
 import { isValidEmail } from '../../validators/email.validator';
+import { escapeOrSegment } from '../../validators/postgrest';
 import {
   MASTER_ADMIN_EMAIL,
   SUPER_ADMIN_EMAILS,
@@ -76,7 +77,7 @@ export const register = async (req: Request, res: Response) => {
     const { data: existingMatches } = await dbRead
       .from('users')
       .select('id, email, roll_number')
-      .or(`email.ilike.${normEmail}${userRoll ? `,roll_number.eq.${userRoll}` : ''}`)
+      .or(`email.ilike.${escapeOrSegment(normEmail)}${userRoll ? `,roll_number.eq.${escapeOrSegment(userRoll)}` : ''}`)
       .limit(2);
 
     if (existingMatches && existingMatches.length > 0) {
@@ -97,7 +98,8 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const isMasterAdmin = isSuperAdminEmail(normEmail);
-    const isDesignated = isDesignatedAdmin(normEmail, name);
+    // H-1 FIX: ADMIN derives from the exact allow-list email only; name never grants ADMIN.
+    const isDesignated = isDesignatedAdmin(normEmail);
     const userRole = (isMasterAdmin || isDesignated) ? 'ADMIN' : 'MEMBER';
     // Auto-approve college accounts and designated admins!
     const initialStatus = 'APPROVED';
@@ -230,7 +232,7 @@ export const login = async (req: Request, res: Response) => {
       const { data } = await dbRead
         .from('users')
         .select('*')
-        .or(`email.ilike.${loginId},name.ilike.${loginId}`)
+        .or(`email.ilike.${escapeOrSegment(loginId)},name.ilike.${escapeOrSegment(loginId)}`)
         .limit(1)
         .maybeSingle();
       if (data) user = data;
@@ -282,7 +284,8 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ status: 'error', message: 'Invalid credentials. Incorrect password.' });
     }
 
-    const isDesignated = isDesignatedAdmin(user.email, user.name);
+    // H-1 FIX: ADMIN derives from the exact allow-list email only; stored name never grants ADMIN.
+    const isDesignated = isDesignatedAdmin(user.email);
 
     if ((isMasterAdmin || isDesignated) && user.role !== 'ADMIN') {
       try {
@@ -332,13 +335,23 @@ export const login = async (req: Request, res: Response) => {
       return res.status(500).json({ status: 'error', message: 'Server misconfiguration.' });
     }
 
-    // Strict role resolution: Dhruvi Gupta, Aryan Varshney, and master admins are ADMIN; normal users are MEMBER
+    // H-1 FIX: role resolution uses the exact allow-list email only; stored name never grants ADMIN.
     const effectiveRole = (isMasterAdmin || isDesignated || user.role === 'ADMIN' || approval.role === 'ADMIN')
       ? 'ADMIN'
       : 'MEMBER';
 
+    // H-3: bind the JWT to the row's token_version (1 for rows predating
+    // the migration). Any later password/role invalidation bumps the row,
+    // so this token stops verifying.
+    const tokenVersion =
+      typeof user.token_version === 'number' &&
+      Number.isInteger(user.token_version) &&
+      user.token_version > 0
+        ? user.token_version
+        : 1;
+
     const token = jwt.sign(
-      { id: user.id, name: user.name, email: user.email, role: effectiveRole },
+      { id: user.id, name: user.name, email: user.email, role: effectiveRole, tv: tokenVersion },
       secret,
       { expiresIn: '7d' }
     );
@@ -404,7 +417,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     if (error || !user) return res.status(404).json({ status: 'error', message: 'User not found.' });
 
-    const isMasterAdmin = isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email, user.name) || user.role === 'ADMIN';
+    const isMasterAdmin = isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email) || user.role === 'ADMIN';
     const approval = isMasterAdmin
       ? { status: 'APPROVED' as const, role: 'ADMIN' as const }
       : getUserApproval(user.email, user.role);
@@ -570,7 +583,7 @@ export const listUsersForAdmin = async (req: AuthRequest, res: Response) => {
       .filter((u: AuthUserRow) => !u.email.endsWith('.test'))
       .map((u: AuthUserRow) => {
         const normEmail = u.email.toLowerCase();
-        const isMaster = isSuperAdminEmail(normEmail) || isDesignatedAdmin(normEmail, u.name) || u.role === 'ADMIN';
+        const isMaster = isSuperAdminEmail(normEmail) || isDesignatedAdmin(normEmail) || u.role === 'ADMIN';
         const approval = allApprovals[normEmail] || getUserApproval(normEmail, u.role || 'MEMBER');
 
         const effectiveRole: 'ADMIN' | 'MEMBER' = isMaster ? 'ADMIN' : (approval.role || 'MEMBER');
@@ -681,7 +694,7 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
     const { data: user, error } = await dbRead.from('users').select('id, email, name, role').eq('id', id).single();
     if (error || !user) return res.status(404).json({ status: 'error', message: 'User not found.' });
 
-    if ((isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email, user.name) || user.role === 'ADMIN') && role !== 'ADMIN') {
+    if ((isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email) || user.role === 'ADMIN') && role !== 'ADMIN') {
       return res.status(400).json({ status: 'error', message: 'Cannot demote a Master Admin / Administrator.' });
     }
 
@@ -690,7 +703,8 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
     }
 
     const updated = setUserRole(user.email, role);
-    await supabase.from('users').update({ role }).eq('id', id);
+    // H-3: fresh token_version invalidates JWTs issued before this role change.
+    await supabase.from('users').update({ role, token_version: Date.now() }).eq('id', id);
 
     logAuditEvent({
       action: 'Role Changed',
@@ -711,7 +725,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     const { data: user, error } = await dbRead.from('users').select('id, email, name, role').eq('id', id).single();
     if (error || !user) return res.status(404).json({ status: 'error', message: 'User not found in database.' });
 
-    if (isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email, user.name) || user.role === 'ADMIN') {
+    if (isSuperAdminEmail(user.email) || isDesignatedAdmin(user.email) || user.role === 'ADMIN') {
       return res.status(400).json({ status: 'error', message: 'Cannot delete a Master Admin / Administrator.' });
     }
 
@@ -787,48 +801,28 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     const normId = loginId.toLowerCase();
 
-    // Lookup user in DB by email, roll_number, name, or master admin aliases
+    // H-2.2: identifier resolution is restricted to the two UI-advertised
+    // forms. "@": exact email lookup (trimmed + lowercased). Otherwise:
+    // exact roll_number lookup (trimmed). Name, email-prefix, hardcoded
+    // aliases, and the approval-store fallback are intentionally not consulted.
+    // Login's broader identifier behavior is unchanged.
     let user: any = null;
-    const { data: byEmail } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', normId).maybeSingle();
-    if (byEmail) {
-      user = byEmail;
+    if (normId.includes('@')) {
+      const { data: byEmail } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', normId).maybeSingle();
+      if (byEmail) user = byEmail;
     } else {
       const { data: byRoll } = await dbRead.from('users').select('id, name, email, password_hash').eq('roll_number', loginId).maybeSingle();
       if (byRoll) user = byRoll;
     }
 
     if (!user) {
-      const { data: byName } = await dbRead.from('users').select('id, name, email, password_hash').ilike('name', normId).maybeSingle();
-      if (byName) user = byName;
-    }
-
-    if (!user && !normId.includes('@')) {
-      const { data: byEmailPrefix } = await dbRead.from('users').select('id, name, email, password_hash').ilike('email', `${normId}@%`).maybeSingle();
-      if (byEmailPrefix) user = byEmailPrefix;
-    }
-
-    // Master admin aliases
-    if (!user) {
-      if (['srvkiller09', 'vardaan', 'vardaansaxena'].includes(normId)) {
-        const { data } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', 'vardaansaxena096@gmail.com').maybeSingle();
-        if (data) user = data;
-      } else if (['cicradmin', 'cicrinventory', 'cicr admin'].includes(normId)) {
-        const { data } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', 'cicrinventory@gmail.com').maybeSingle();
-        if (data) user = data;
-      }
-    }
-
-    // Local approvals lookup fallback
-    if (!user) {
-      const match = findUserApprovalByIdentifier(loginId);
-      if (match) {
-        const { data } = await dbRead.from('users').select('id, name, email, password_hash').eq('email', match.email).maybeSingle();
-        if (data) user = data;
-      }
-    }
-
-    if (!user) {
-      return res.status(404).json({ status: 'error', message: 'No registered user found with that email, enrollment number, or name.' });
+      // H-2.2 enumeration hardening: unknown identifiers receive the same
+      // generic credential-failure response as a wrong current password, and
+      // no canonical email is echoed.
+      return res.status(400).json({
+        status: 'error',
+        message: 'Current password is incorrect. Please verify and re-enter your existing password.'
+      });
     }
 
     // Security requirement: Current password must be provided to authenticate password change
@@ -839,14 +833,22 @@ export const resetPassword = async (req: Request, res: Response) => {
       });
     }
 
-    if (user.password_hash) {
-      const isMatch = await bcrypt.compare(current_password, user.password_hash);
-      if (!isMatch) {
-        return res.status(400).json({ 
-          status: 'error', 
-          message: 'Current password is incorrect. Please verify and re-enter your existing password.' 
-        });
-      }
+    // H-2 FIX (fail closed): a missing/invalid stored credential must NEVER
+    // bypass verification. Reject with the same generic message used for a
+    // wrong current password so hash state is not revealed.
+    if (typeof user.password_hash !== 'string' || user.password_hash.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Current password is incorrect. Please verify and re-enter your existing password.'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(current_password, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Current password is incorrect. Please verify and re-enter your existing password.'
+      });
     }
 
     // Hash new password with bcrypt
@@ -854,8 +856,11 @@ export const resetPassword = async (req: Request, res: Response) => {
     const password_hash = await bcrypt.hash(new_password, salt);
 
     // Direct update in Supabase database!
-    const { error: updateErr } = await dbWrite.from('users').update({ 
-      password_hash
+    // H-3: assign a fresh token_version (race-safe set, not read-modify-write)
+    // so JWTs issued before this reset stop verifying immediately.
+    const { error: updateErr } = await dbWrite.from('users').update({
+      password_hash,
+      token_version: Date.now()
     }).eq('id', user.id);
 
     if (updateErr) {
@@ -925,7 +930,8 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     const password_hash = await bcrypt.hash(new_password, salt);
 
     // Update in DB
-    const { error: updateErr } = await dbWrite.from('users').update({ password_hash }).eq('id', user.id);
+    // H-3: fresh token_version invalidates JWTs issued before this change.
+    const { error: updateErr } = await dbWrite.from('users').update({ password_hash, token_version: Date.now() }).eq('id', user.id);
     if (updateErr) {
       console.error('[CHANGE PASSWORD ERROR] DB update failed:', updateErr);
       return res.status(500).json({ status: 'error', message: 'Failed to update password.' });
@@ -964,10 +970,25 @@ export const adminCreateUser = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Name, college email, and temporary password are required.' });
     }
 
+    // M-7.1: temporary password must meet the registration length policy.
+    if (String(password).length < 6) {
+      return res.status(400).json({ status: 'error', message: 'Password must be at least 6 characters.' });
+    }
+
     const normEmail = email.trim().toLowerCase();
+    // M-7.2: syntactic email check only — no JIIT-domain restriction, so
+    // Gmail/superadmin provisioning keeps working.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normEmail)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid email format.' });
+    }
     const normUsername = (username || name).trim();
     const userBatch = batch ? String(batch).trim() : null;
     const userRole = role === 'ADMIN' ? 'ADMIN' : 'MEMBER';
+
+    // M-7.3: mirror the changeUserRole prohibition for this protected identity.
+    if (normEmail === 'mahakkatahara.mk@gmail.com' && userRole === 'ADMIN') {
+      return res.status(400).json({ status: 'error', message: 'User is not permitted to hold an ADMIN role.' });
+    }
 
     let userRoll = roll_number ? String(roll_number).trim() : null;
     if (!userRoll) {
@@ -976,7 +997,7 @@ export const adminCreateUser = async (req: AuthRequest, res: Response) => {
     }
 
     // Check duplicate
-    const { data: existing } = await dbRead.from('users').select('id, email, roll_number').or(`email.ilike.${normEmail}${userRoll ? `,roll_number.eq.${userRoll}` : ''}`).limit(1).maybeSingle();
+    const { data: existing } = await dbRead.from('users').select('id, email, roll_number').or(`email.ilike.${escapeOrSegment(normEmail)}${userRoll ? `,roll_number.eq.${escapeOrSegment(userRoll)}` : ''}`).limit(1).maybeSingle();
     if (existing) {
       return res.status(400).json({ status: 'error', message: `An account with email ${normEmail} or enrollment number ${userRoll} already exists.` });
     }
@@ -993,8 +1014,13 @@ export const adminCreateUser = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (insertError || !newUser) {
+      // M-7.4: map the check-then-insert duplicate race to the duplicate
+      // response; never leak raw driver/PostgREST error text.
+      if ((insertError as any)?.code === '23505') {
+        return res.status(400).json({ status: 'error', message: `An account with email ${normEmail} or enrollment number ${userRoll} already exists.` });
+      }
       console.error('[ADMIN CREATE USER ERROR]:', insertError);
-      return res.status(500).json({ status: 'error', message: `Failed to create user in database: ${insertError?.message || 'DB error'}` });
+      return res.status(500).json({ status: 'error', message: 'Failed to create user in database.' });
     }
 
     // Admin-created users are automatically APPROVED!

@@ -27,6 +27,7 @@ export const DEFAULT_RENTAL_DAYS = 5;
 
 // Fire-and-forget wrapper: catches and logs errors without blocking the response.
 import { logAuditEvent } from '../../services/auditService';
+import { escapeOrSegment } from '../../validators/postgrest';
 
 function dispatchBackground(label: string, promise: Promise<unknown>): void {
   promise.catch((err) => console.error(`[BACKGROUND] ${label} failed:`, err));
@@ -462,20 +463,54 @@ export const returnItem = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Item has already been returned or modified.' });
     }
 
-    // 3. Restore available_quantity
-    const { data: currentItem } = await dbRead
-      .from('inventory')
-      .select('quantity, available_quantity')
-      .eq('id', record.inventory_id)
-    const totalStock = Number(currentItem?.quantity) || 1;
-    const restoredQty = Math.min(totalStock, (currentItem?.available_quantity || 0) + qtyToReturn);
+    // 3. Restore available_quantity with the same concurrency-safe CAS retry
+    // loop used by finalizeBorrow: re-read the row, recompute the restore,
+    // and only write when available_quantity still equals the value read.
+    // This prevents concurrent returns/borrows from overwriting each other.
+    let restockAttempts = 0;
+    const maxRestockAttempts = 5;
+    let restockSuccess = false;
 
-    const { error: restoreErr } = await dbWrite
-      .from('inventory')
-      .update({ available_quantity: restoredQty, updated_at: new Date().toISOString() })
-      .eq('id', record.inventory_id);
+    while (restockAttempts < maxRestockAttempts && !restockSuccess) {
+      restockAttempts++;
+      const { data: currentItem, error: itemErr } = await dbRead
+        .from('inventory')
+        .select('quantity, available_quantity')
+        .eq('id', record.inventory_id)
+        .single();
 
-    if (restoreErr) throw restoreErr;
+      if (itemErr || !currentItem) {
+        return res.status(404).json({ status: 'error', message: 'Item not found.' });
+      }
+
+      const totalStock = Number(currentItem.quantity) || 1;
+      const currentAvail = Number(currentItem.available_quantity) || 0;
+      const restoredQty = Math.min(totalStock, currentAvail + qtyToReturn);
+
+      const { data: restoredRows, error: restoreErr } = await dbWrite
+        .from('inventory')
+        .update({ available_quantity: restoredQty, updated_at: new Date().toISOString() })
+        .eq('id', record.inventory_id)
+        .eq('available_quantity', currentAvail)
+        .select('available_quantity');
+
+      if (restoreErr) throw restoreErr;
+
+      if (restoredRows && restoredRows.length > 0) {
+        restockSuccess = true;
+        break;
+      }
+
+      // Brief jitter backoff before retrying CAS
+      await new Promise((restockRes) => setTimeout(restockRes, 15 + Math.random() * 25));
+    }
+
+    if (!restockSuccess) {
+      return res.status(409).json({
+        status: 'error',
+        message: 'High inventory contention detected. Please retry the return.'
+      });
+    }
 
     await invalidateItemsCache(record.inventory_id);
 
@@ -554,7 +589,7 @@ export const getBorrowHistory = async (req: AuthRequest, res: Response) => {
       const userRoll = req.user?.roll_number;
       const userName = req.user?.name;
       if (userId && userRoll) {
-        query = query.or(`user_id.eq.${userId},roll_number.eq.${userRoll}`);
+        query = query.or(`user_id.eq.${escapeOrSegment(userId)},roll_number.eq.${escapeOrSegment(userRoll)}`);
       } else if (userId) {
         query = query.eq('user_id', userId);
       } else if (userRoll) {

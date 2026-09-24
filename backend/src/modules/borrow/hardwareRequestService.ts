@@ -14,6 +14,7 @@ import {
   SUPER_ADMIN_EMAILS
 } from '../../services/emailService';
 import { dbRead, dbWrite, supabase } from '../../config/database';
+import { escapeOrSegment } from '../../validators/postgrest';
 
 export interface HardwareIssueRequest {
   id: string;
@@ -758,7 +759,7 @@ export const getUserHardwareRequests = async (identity: {
       .in('status', ['PENDING', 'RETURN_REQUESTED', 'BORROWED', 'RETURNED']);
 
     if (identity.userId && identity.rollNumber) {
-      query = query.or(`user_id.eq.${identity.userId},roll_number.eq.${identity.rollNumber}`);
+      query = query.or(`user_id.eq.${escapeOrSegment(identity.userId)},roll_number.eq.${escapeOrSegment(identity.rollNumber)}`);
     } else if (identity.userId) {
       query = query.eq('user_id', identity.userId);
     } else if (identity.rollNumber) {

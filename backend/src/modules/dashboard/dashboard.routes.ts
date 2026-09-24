@@ -5,8 +5,8 @@ import { authenticateToken, requireAdmin } from '../../middleware/auth.middlewar
 const router = Router();
 
 router.get('/stats', getDashboardStats);
-router.get('/audit', authenticateToken, getAuditLogs);
-router.post('/audit', authenticateToken, createAuditEvent);
+router.get('/audit', authenticateToken, requireAdmin, getAuditLogs);
+router.post('/audit', authenticateToken, requireAdmin, createAuditEvent);
 router.post('/audit/cleanup', authenticateToken, requireAdmin, triggerAuditCleanup);
 
 export default router;
