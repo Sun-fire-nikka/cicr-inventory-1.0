@@ -18,6 +18,8 @@ export const isSuperAdminEmail = (email: string): boolean => {
 };
 
 export const isDesignatedAdmin = (email: string, _name?: string): boolean => {
+  const norm = (email || '').trim().toLowerCase();
+  if (norm === '992501210090@mail.jiit.ac.in' || norm.includes('divyam')) return false;
   // H-1 FIX: exact normalized email allow-list only. The display name,
   // roll number, or any email substring must NEVER grant ADMIN.
   // _name is accepted for backward compatibility and intentionally ignored.
@@ -231,7 +233,7 @@ export const setUserRole = (
 
   purgedEmails.delete(normEmail);
 
-  if (normEmail === 'mahakkatahara.mk@gmail.com') {
+  if (normEmail === 'mahakkatahara.mk@gmail.com' || normEmail === '992501210090@mail.jiit.ac.in' || normEmail.includes('divyam')) {
     role = 'MEMBER';
   }
 

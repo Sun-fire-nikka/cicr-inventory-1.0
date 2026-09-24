@@ -352,6 +352,7 @@
                         </a>
                         <a href="#" class="sidebar-nav-link" id="side-nav-hardware-logs"
                             data-target="hardware-logs-view"
+                            style="display: none !important;"
                             onclick="event.preventDefault(); window.switchSection && window.switchSection('hardware-logs-view')">
                             <i data-lucide="clipboard-list"></i>
                             <span>Logs</span>
@@ -484,7 +485,7 @@
                         </button>
 
                         <!-- Recent Notifications Popover -->
-                        <div class="header-notif-dropdown glass glow-border" id="header-notif-dropdown" style="display: none;">
+                        <div class="header-notif-dropdown" id="header-notif-dropdown" style="display: none;">
                             <div class="notif-dropdown-header">
                                 <div class="notif-dropdown-title-row">
                                     <div class="notif-dropdown-icon-wrap">
@@ -563,6 +564,7 @@
 
 
                         <div class="dash-card card-yellow" id="dash-card-hardware-logs"
+                            style="display: none !important;"
                             onclick="window.switchSection && window.switchSection('hardware-logs-view')">
                             <div class="dash-card-header">
                                 <div class="dash-card-icon-wrapper">

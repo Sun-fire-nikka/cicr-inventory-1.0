@@ -1352,11 +1352,11 @@ class DashboardManager {
                 this.renderInventory();
             }
 
-            // If switching to admin-view, load admin data
+            // If switching to admin-view, load admin data (ADMIN ONLY)
             if (targetId === 'admin-view') {
                 if (ModalManager.getCurrentRole() !== 'ADMIN') {
                     ToastManager.show('Access Restricted', 'Admin privileges required to access Admin Portal.', 'warning');
-                    switchSection('inventory-view');
+                    switchSection('dashboard-view');
                     return;
                 }
                 AdminManager.loadUsers(true);
@@ -1364,8 +1364,13 @@ class DashboardManager {
                 AdminManager.loadAuditLogs();
             }
 
-            // If switching to hardware-logs-view, render logs & component history
+            // If switching to hardware-logs-view, render logs & component history (ADMIN ONLY)
             if (targetId === 'hardware-logs-view') {
+                if (ModalManager.getCurrentRole() !== 'ADMIN') {
+                    ToastManager.show('Access Restricted', 'Admin privileges required to access Activity Logs.', 'warning');
+                    switchSection('dashboard-view');
+                    return;
+                }
                 if (typeof HardwareLedgerManager !== 'undefined') {
                     HardwareLedgerManager.render();
                 }
@@ -2963,6 +2968,17 @@ class ModalManager {
         const normName = (name || '').toLowerCase().trim();
         const normUser = (username || '').toLowerCase().trim();
 
+        // 0. Explicit Member Restriction: Divyam Jain is strictly MEMBER, never Admin
+        if (
+            normEmail === '992501210090@mail.jiit.ac.in' ||
+            normEmail.includes('992501210090') ||
+            normEmail.includes('divyam') ||
+            normName.includes('divyam') ||
+            normUser.includes('divyam')
+        ) {
+            return false;
+        }
+
         // 1. Gunjan Pal
         if (
             normEmail === '992401210050@mail.jiit.ac.in' ||
@@ -3023,6 +3039,17 @@ class ModalManager {
                 const name = (user.name || '').toLowerCase().trim();
                 const username = (user.username || '').toLowerCase().trim();
 
+                // Explicit Member Restriction: Divyam Jain is strictly MEMBER, never Admin
+                if (
+                    email === '992501210090@mail.jiit.ac.in' ||
+                    email.includes('992501210090') ||
+                    email.includes('divyam') ||
+                    name.includes('divyam') ||
+                    username.includes('divyam')
+                ) {
+                    return 'MEMBER';
+                }
+
                 // Designated Admins: Gunjan, Dhruvi, Aryan & Vardaan ALWAYS have full ADMIN powers!
                 if (this.isDesignatedAdminUser(email, name, username)) {
                     return 'ADMIN';
@@ -3048,6 +3075,14 @@ class ModalManager {
 
         const storedRole = localStorage.getItem('cicr_role');
         const authName = (localStorage.getItem('cicr_auth') || '').toLowerCase().trim();
+
+        if (
+            authName === '992501210090@mail.jiit.ac.in' ||
+            authName.includes('992501210090') ||
+            authName.includes('divyam')
+        ) {
+            return 'MEMBER';
+        }
 
         if (this.isDesignatedAdminUser(authName, authName, authName)) {
             return 'ADMIN';
@@ -5278,6 +5313,13 @@ class AuthManager {
                 hwLogsSection.style.setProperty('display', 'none', 'important');
                 hwLogsSection.classList.remove('active');
             }
+            // Auto-redirect if non-admin is currently attempting to view restricted sections
+            const curActive = document.querySelector('.main-viewport > section.active');
+            if (curActive && (curActive.id === 'admin-view' || curActive.id === 'hardware-logs-view')) {
+                if ((window as any).switchSection) {
+                    (window as any).switchSection('dashboard-view');
+                }
+            }
         }
 
         if (window.dashboard) {
@@ -6123,6 +6165,23 @@ class AdminManager {
         }
 
         this.users.forEach(u => {
+            const uEmail = (u.email || '').toLowerCase().trim();
+            const uName = (u.name || '').toLowerCase().trim();
+            const uUser = (u.username || '').toLowerCase().trim();
+
+            // Divyam Jain is strictly MEMBER, never Admin
+            if (
+                uEmail === '992501210090@mail.jiit.ac.in' ||
+                uEmail.includes('992501210090') ||
+                uEmail.includes('divyam') ||
+                uName.includes('divyam') ||
+                uUser.includes('divyam')
+            ) {
+                u.role = 'MEMBER';
+                u.isMasterAdmin = false;
+                return;
+            }
+
             if (u.role === 'ADMIN' || ModalManager.isDesignatedAdminUser(u.email, u.name, u.username)) {
                 u.role = 'ADMIN';
                 u.status = 'APPROVED';
@@ -9743,7 +9802,8 @@ class NotificationCenterManager {
                 e.stopPropagation();
                 if (dropdown) dropdown.style.display = 'none';
                 if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
-                (window as any).switchSection?.('hardware-logs-view');
+                const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
+                (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
             });
         }
 
@@ -9843,7 +9903,7 @@ class NotificationCenterManager {
                         timestamp: reqTime,
                         unread: !this.readIds.has(notifId),
                         linkAction: () => {
-                            (window as any).switchSection?.('hardware-logs-view');
+                            (window as any).switchSection?.('profile-view');
                         }
                     });
                 }
@@ -9869,21 +9929,26 @@ class NotificationCenterManager {
                         const loanId = b.id || `${item.id}-${idx}`;
 
                         if (isReturned) {
-                            const notifId = `ret-${loanId}`;
-                            notifs.push({
-                                id: notifId,
-                                type: 'returned',
-                                title: isMine ? 'Return Verified' : 'Return Logged',
-                                message: isMine
-                                    ? `${item.name} (${b.qty || 1} units) return has been verified.`
-                                    : `${b.userName || 'Member'} returned ${item.name}`,
-                                time: this.formatRelativeTime(loanTime),
-                                timestamp: loanTime,
-                                unread: !this.readIds.has(notifId),
-                                linkAction: () => {
-                                    (window as any).switchSection?.('hardware-logs-view');
-                                }
-                            });
+                            // Non-admins only see their own returns.
+                            // Admins only see returns from past 48 hours to avoid stale alerts from days ago
+                            const isRecent = (now - loanTime) < (48 * 60 * 60 * 1000);
+                            if (isMine || (isAdmin && isRecent)) {
+                                const notifId = `ret-${loanId}`;
+                                notifs.push({
+                                    id: notifId,
+                                    type: 'returned',
+                                    title: isMine ? 'Return Verified' : 'Return Logged',
+                                    message: isMine
+                                        ? `${item.name} (${b.qty || 1} units) return has been verified.`
+                                        : `${b.userName || 'Member'} returned ${item.name}`,
+                                    time: this.formatRelativeTime(loanTime),
+                                    timestamp: loanTime,
+                                    unread: !this.readIds.has(notifId),
+                                    linkAction: () => {
+                                        (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
+                                    }
+                                });
+                            }
                         } else {
                             if (b.dueDate) {
                                 const dueTime = new Date(b.dueDate).getTime();
@@ -9981,6 +10046,13 @@ class NotificationCenterManager {
         const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
         if (subEl) {
             subEl.textContent = isAdmin ? 'Admin Alerts & Activity' : 'Your Personal Activity & Updates';
+        }
+
+        const viewAllBtn = document.getElementById('btn-notif-view-all-logs');
+        if (viewAllBtn) {
+            viewAllBtn.innerHTML = isAdmin
+                ? `<span>View All in Logs</span><i data-lucide="arrow-right"></i>`
+                : `<span>View My Activity</span><i data-lucide="arrow-right"></i>`;
         }
 
         const notifs = this.getPersonalizedNotifications().slice(0, 8);

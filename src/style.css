@@ -10116,19 +10116,18 @@ body.theme-light .mobile-sidebar-backdrop {
         max-width: 105px !important;
     }
 
-    /* Header Notification Dropdown Mobile Viewport Centering & Safety */
+    /* Header Notification Dropdown Mobile Viewport Anchoring & Safety */
     .header-notif-dropdown {
-        position: fixed !important;
-        top: 58px !important;
-        left: 12px !important;
-        right: 12px !important;
-        width: auto !important;
-        max-width: calc(100vw - 24px) !important;
+        position: absolute !important;
+        top: calc(100% + 8px) !important;
+        right: 0 !important;
+        left: auto !important;
+        width: min(340px, calc(100vw - 20px)) !important;
+        max-width: calc(100vw - 20px) !important;
         max-height: calc(100dvh - 76px) !important;
         margin: 0 !important;
         transform: none !important;
-        z-index: 100000 !important;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 240, 255, 0.25) !important;
+        z-index: 999999 !important;
     }
 
     .notif-dropdown-list {
@@ -21752,8 +21751,6 @@ body.theme-light .pending-card-actions {
    11. NOTIFICATIONS SCREEN, DRAWER & HEADER DROPDOWN
    ======================================================== */
 
-html[data-theme="light"] .header-notif-dropdown,
-body.theme-light .header-notif-dropdown,
 html[data-theme="light"] #logs-drawer .modal-content,
 html[data-theme="light"] .notif-drawer,
 body.theme-light #logs-drawer .modal-content,
@@ -25878,4 +25875,285 @@ body.theme-light .header-notif-badge {
         font-size: 10px !important;
     }
 }
+
+/* ==========================================================================
+   STRICT ADMIN-ONLY ACCESS & SOLID NOTIFICATION DROPDOWN POPUP ENFORCEMENT
+   ========================================================================== */
+
+/* Non-Admin Access Control: Completely hide Admin & Logs UI elements */
+body:not(.user-is-admin) #side-nav-admin,
+body:not(.user-is-admin) #dash-card-admin,
+body:not(.user-is-admin) #admin-view,
+body:not(.user-is-admin) #side-nav-hardware-logs,
+body:not(.user-is-admin) #dash-card-hardware-logs,
+body:not(.user-is-admin) #nav-hardware-logs,
+body:not(.user-is-admin) #hardware-logs-view {
+    display: none !important;
+}
+
+/* Base Notification Dropdown: High z-index, anchor-aligned, 100% solid background (no bleeding) */
+.header-notif-wrapper {
+    position: relative !important;
+}
+
+.header-notif-dropdown {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 0 !important;
+    left: auto !important;
+    width: 380px !important;
+    max-width: min(380px, calc(100vw - 24px)) !important;
+    border-radius: 16px !important;
+    background: #141416 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    z-index: 999999 !important;
+    overflow: hidden !important;
+}
+
+.header-notif-dropdown .notif-dropdown-header {
+    background: #18191E !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.header-notif-dropdown .notif-dropdown-list {
+    background: #141416 !important;
+    max-height: 340px !important;
+    overflow-y: auto !important;
+}
+
+.header-notif-dropdown .notif-dropdown-footer {
+    background: #18191E !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.header-notif-dropdown .notif-item-card {
+    background: #141416 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.header-notif-dropdown .notif-item-card:hover {
+    background: #1C1D22 !important;
+    transform: none !important;
+}
+
+.header-notif-dropdown .notif-item-card.unread {
+    background: #181D26 !important;
+}
+
+/* Light Theme (Robo Lab): 100% Solid Crisp White Background with Opaque Cards */
+html[data-theme="light"] .header-notif-dropdown,
+body.theme-light .header-notif-dropdown {
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18), 0 4px 14px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #0F172A !important;
+    z-index: 999999 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-dropdown-header,
+body.theme-light .header-notif-dropdown .notif-dropdown-header {
+    background: #F8FAFC !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-dropdown-title,
+body.theme-light .header-notif-dropdown .notif-dropdown-title {
+    color: #0F172A !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-dropdown-sub,
+body.theme-light .header-notif-dropdown .notif-dropdown-sub {
+    color: #64748B !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .btn-clear-notifs,
+body.theme-light .header-notif-dropdown .btn-clear-notifs {
+    background: #F1F5F9 !important;
+    border: 1px solid #CBD5E1 !important;
+    color: #334155 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .btn-clear-notifs:hover,
+body.theme-light .header-notif-dropdown .btn-clear-notifs:hover {
+    background: #E2E8F0 !important;
+    color: #0F172A !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-dropdown-list,
+body.theme-light .header-notif-dropdown .notif-dropdown-list {
+    background: #FFFFFF !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-item-card,
+body.theme-light .header-notif-dropdown .notif-item-card {
+    background: #FFFFFF !important;
+    border-bottom: 1px solid #F1F5F9 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-item-card:hover,
+body.theme-light .header-notif-dropdown .notif-item-card:hover {
+    background: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+    transform: none !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-item-card.unread,
+body.theme-light .header-notif-dropdown .notif-item-card.unread {
+    background: #F1F5F9 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-item-card.unread::before,
+body.theme-light .header-notif-dropdown .notif-item-card.unread::before {
+    background: #0284c7 !important;
+    box-shadow: 0 0 6px rgba(2, 132, 199, 0.4) !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-item-title,
+body.theme-light .header-notif-dropdown .notif-item-title {
+    color: #0F172A !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-item-desc,
+body.theme-light .header-notif-dropdown .notif-item-desc {
+    color: #475569 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-item-time,
+body.theme-light .header-notif-dropdown .notif-item-time {
+    color: #64748B !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-dropdown-footer,
+body.theme-light .header-notif-dropdown .notif-dropdown-footer {
+    background: #F8FAFC !important;
+    border-top: 1px solid #E2E8F0 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-view-all-btn,
+body.theme-light .header-notif-dropdown .notif-view-all-btn {
+    background: #E0F2FE !important;
+    border: 1px solid #7DD3FC !important;
+    color: #0284C7 !important;
+}
+
+html[data-theme="light"] .header-notif-dropdown .notif-view-all-btn:hover,
+body.theme-light .header-notif-dropdown .notif-view-all-btn:hover {
+    background: #BAE6FD !important;
+    color: #0369A1 !important;
+}
+
+/* Midnight Mono Theme Solid Opaque Styles */
+html[data-theme="mono"] .header-notif-dropdown,
+body.theme-mono .header-notif-dropdown {
+    background: #141416 !important;
+    border: 1px solid #302F2B !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.90) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #F2F0E9 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-dropdown-header,
+body.theme-mono .header-notif-dropdown .notif-dropdown-header {
+    background: #1C1B19 !important;
+    border-bottom: 1px solid #262522 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-dropdown-title,
+body.theme-mono .header-notif-dropdown .notif-dropdown-title {
+    color: #F2F0E9 !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-dropdown-sub,
+body.theme-mono .header-notif-dropdown .notif-dropdown-sub {
+    color: #74716B !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .btn-clear-notifs,
+body.theme-mono .header-notif-dropdown .btn-clear-notifs {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid #35332E !important;
+    color: #A3A099 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .btn-clear-notifs:hover,
+body.theme-mono .header-notif-dropdown .btn-clear-notifs:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #FFFFFF !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-dropdown-list,
+body.theme-mono .header-notif-dropdown .notif-dropdown-list {
+    background: #141416 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-item-card,
+body.theme-mono .header-notif-dropdown .notif-item-card {
+    background: #141416 !important;
+    border-bottom: 1px solid #262522 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-item-card:hover,
+body.theme-mono .header-notif-dropdown .notif-item-card:hover {
+    background: #1C1B19 !important;
+    transform: none !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-item-card.unread,
+body.theme-mono .header-notif-dropdown .notif-item-card.unread {
+    background: #1A1A18 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-item-title,
+body.theme-mono .header-notif-dropdown .notif-item-title {
+    color: #F2F0E9 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-item-desc,
+body.theme-mono .header-notif-dropdown .notif-item-desc {
+    color: #A3A099 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-item-time,
+body.theme-mono .header-notif-dropdown .notif-item-time {
+    color: #74716B !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-dropdown-footer,
+body.theme-mono .header-notif-dropdown .notif-dropdown-footer {
+    background: #1C1B19 !important;
+    border-top: 1px solid #262522 !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-view-all-btn,
+body.theme-mono .header-notif-dropdown .notif-view-all-btn {
+    background: #1E1D1A !important;
+    border: 1px solid #383630 !important;
+    color: #E6E4DD !important;
+}
+
+html[data-theme="mono"] .header-notif-dropdown .notif-view-all-btn:hover,
+body.theme-mono .header-notif-dropdown .notif-view-all-btn:hover {
+    background: #282622 !important;
+    color: #FFFFFF !important;
+}
+
 
