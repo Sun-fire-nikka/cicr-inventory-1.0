@@ -446,6 +446,9 @@ class Background3D {
         requestAnimationFrame(() => this.animate());
         if (typeof document !== 'undefined' && document.hidden) return;
 
+        const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReducedMotion) return;
+
         const isScrolling = !!(window as any).isUserScrolling;
         if (isScrolling) {
             return;
@@ -1515,13 +1518,9 @@ class DashboardManager {
                 closeMobileSidebar();
                 const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
                 if (!isLoggedIn) {
-                    const authOverlay = document.getElementById('auth-overlay');
-                    if (authOverlay) {
-                        authOverlay.style.display = 'flex';
-                        authOverlay.classList.remove('hidden');
-                        document.getElementById('tab-login-btn')?.click();
-                        ToastManager.show('Authentication Required', 'Please sign in to view your hardware requests and approval status.', 'info');
-                    }
+                    AuthManager.showLoginOverlay();
+                    document.getElementById('tab-login-btn')?.click();
+                    ToastManager.show('Authentication Required', 'Please sign in to view your hardware requests and approval status.', 'info');
                     return;
                 }
                 const role = ModalManager.getCurrentRole();
@@ -2202,6 +2201,18 @@ class CartManager {
         }
     }
 
+    public static clearCart() {
+        this.items = [];
+        this.itemMap.clear();
+        localStorage.removeItem('cicr_cart_items');
+        this.updateCartBadges();
+    }
+
+    public static reloadFromStorage() {
+        this.loadFromStorage();
+        this.updateCartBadges();
+    }
+
     public static updateCartBadges() {
         const count = this.getCount();
 
@@ -2241,12 +2252,8 @@ class CartManager {
         const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
         if (!isLoggedIn) {
             ToastManager.show('Login Required', 'Please log in to review your hardware request cart.', 'warning');
-            const authOverlay = document.getElementById('auth-overlay');
-            if (authOverlay) {
-                authOverlay.style.display = 'flex';
-                authOverlay.classList.remove('hidden');
-                document.getElementById('tab-login-btn')?.click();
-            }
+            AuthManager.showLoginOverlay();
+            document.getElementById('tab-login-btn')?.click();
             return;
         }
 
@@ -4972,11 +4979,14 @@ class AuthManager {
         }
     }
 
-    private static showLoginOverlay() {
-        this.globalNavbar.style.display = 'none';
+    public static showLoginOverlay() {
+        document.body.classList.remove('authenticated');
+        document.body.classList.add('auth-overlay-active');
+        this.globalNavbar.style.setProperty('display', 'none', 'important');
         this.authOverlay.classList.remove('hidden');
-        this.authOverlay.style.display = 'flex';
-        this.appContainer.style.display = 'none';
+        this.authOverlay.style.setProperty('display', 'flex', 'important');
+        this.appContainer.classList.add('hidden');
+        this.appContainer.style.setProperty('display', 'none', 'important');
         this.updateAdminVisibility('MEMBER');
 
         // Reset to default sign-in state
@@ -4989,21 +4999,16 @@ class AuthManager {
 
     private static isAllowedEmail(email: string): boolean {
         const norm = email.trim().toLowerCase();
-        const currentAdmins = [
-            'vardaansaxena096@gmail.com',
-            'cicrinventory@gmail.com'
-        ];
-        if (currentAdmins.includes(norm)) return true;
-        // JIIT student email with enrollment number or institutional domain
-        return /^\d+@mail\.jiit\.ac\.in$/i.test(norm) ||
-            /^[a-zA-Z0-9._%+-]+@mail\.jiit\.ac\.in$/i.test(norm) ||
-            /^[a-zA-Z0-9._%+-]+@jiit\.ac\.in$/i.test(norm);
+        // Allow valid email addresses through to backend authentication API
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm);
     }
 
     private static async handleLogin() {
         const identifier = this.loginUserInp.value.trim();
         const password = this.loginPassInp.value;
 
+        // Clear sensitive plaintext password from DOM memory immediately
+        this.loginPassInp.value = '';
         this.loginErr.style.display = 'none';
 
         if (!identifier || !password) {
@@ -5011,9 +5016,12 @@ class AuthManager {
             return;
         }
 
-        if (identifier.includes('@') && !this.isAllowedEmail(identifier)) {
-            this.showLoginError("Access Restricted: Only JIIT accounts (enrollmentnumber@mail.jiit.ac.in) and authorized administrators can log in.");
-            return;
+        const btnSubmit = document.getElementById('btn-submit-login') as HTMLButtonElement | null;
+        const origSubmitHtml = btnSubmit ? btnSubmit.innerHTML : '';
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Signing In...';
+            if ((window as any).lucide) (window as any).lucide.createIcons();
         }
 
         try {
@@ -5051,6 +5059,12 @@ class AuthManager {
             this.showLoginError(data.message || "Invalid credentials. Please check your email, username, or name and password.");
         } catch (err) {
             this.showLoginError("Unable to reach backend server. Please verify your connection.");
+        } finally {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = origSubmitHtml;
+                if ((window as any).lucide) (window as any).lucide.createIcons();
+            }
         }
     }
 
@@ -5096,6 +5110,7 @@ class AuthManager {
                 sidebarAvatarImg.style.display = 'block';
                 profileAvatarInitial.style.display = 'none';
             } else {
+                sidebarAvatarImg.src = '';
                 sidebarAvatarImg.style.display = 'none';
                 profileAvatarInitial.style.display = 'flex';
                 const initialTextEl = document.getElementById('sidebar-avatar-initial-text');
@@ -5128,9 +5143,16 @@ class AuthManager {
         const welcomeScreen = document.getElementById('welcome-screen');
         if (welcomeScreen) welcomeScreen.style.display = 'none';
 
+        document.body.classList.remove('auth-overlay-active');
+        document.body.classList.add('authenticated');
+
         // Directly transition: hide auth form, show app container
-        this.authOverlay.style.display = 'none';
-        this.appContainer.style.display = 'grid';
+        this.authOverlay.classList.add('hidden');
+        this.authOverlay.style.setProperty('display', 'none', 'important');
+        this.appContainer.classList.remove('hidden');
+        this.appContainer.style.setProperty('display', 'grid', 'important');
+        this.globalNavbar.style.removeProperty('display');
+        (window as any).syncFixedSidebarPosition?.();
 
         // Show/Hide Admin Portal navigation & cards based strictly on role
         this.updateAdminVisibility(effectiveRole);
@@ -5297,13 +5319,24 @@ class AuthManager {
         }
 
         if (!batch) {
-            this.showSignupError("Please enter your lab section batch (e.g. F1, F2, B3).");
+            this.showSignupError("Please enter your academic branch (e.g. CSE / ECE / IT).");
             return;
         }
 
         if (password.length < 6) {
             this.showSignupError("Password must be at least 6 characters.");
             return;
+        }
+
+        // Clear sensitive plaintext password from DOM memory immediately
+        this.signupPassInp.value = '';
+
+        const btnSubmit = document.getElementById('btn-submit-signup') as HTMLButtonElement | null;
+        const origSubmitHtml = btnSubmit ? btnSubmit.innerHTML : '';
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Registering...';
+            if ((window as any).lucide) (window as any).lucide.createIcons();
         }
 
         try {
@@ -5326,7 +5359,7 @@ class AuthManager {
                 this.signupSuccess.innerText = data.message || "Registration request submitted! Your account is pending CICR Admin approval.";
                 this.signupSuccess.style.display = 'block';
 
-                DatabaseManager.addLog('system', `Registration requested: <span>${name}</span> (@${username}, ${email}, Batch: ${batch}).`);
+                DatabaseManager.addLog('system', `Registration requested: <span>${name}</span> (@${username}, ${email}, Branch: ${batch}).`);
 
                 setTimeout(() => {
                     document.getElementById('go-to-login')!.click();
@@ -5337,6 +5370,12 @@ class AuthManager {
             this.showSignupError(data.message || "Registration failed. Please check your information.");
         } catch (err) {
             this.showSignupError("Unable to reach backend server. Please verify your connection.");
+        } finally {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = origSubmitHtml;
+                if ((window as any).lucide) (window as any).lucide.createIcons();
+            }
         }
     }
 
@@ -5409,18 +5448,28 @@ class AuthManager {
         }
     }
 
-    private static handleLogout(isTimeout: boolean = false) {
+    public static handleLogout(isTimeout: boolean = false) {
         localStorage.removeItem('cicr_auth');
         localStorage.removeItem('cicr_role');
         localStorage.removeItem('cicr_token');
         localStorage.removeItem('cicr_user');
         localStorage.removeItem('cicr_last_active');
+        localStorage.removeItem('cicr_cart_items');
+        localStorage.removeItem('cicr_pending_returns');
         sessionStorage.clear();
+
+        if (typeof CartManager !== 'undefined') {
+            CartManager.clearCart();
+        }
+
+        document.body.classList.remove('authenticated');
+        document.body.classList.add('auth-overlay-active');
 
         this.updateAdminVisibility('MEMBER');
 
-        this.appContainer.style.display = 'none';
-        this.globalNavbar.style.display = 'none';
+        this.appContainer.classList.add('hidden');
+        this.appContainer.style.setProperty('display', 'none', 'important');
+        this.globalNavbar.style.setProperty('display', 'none', 'important');
 
         const welcomeScreen = document.getElementById('welcome-screen');
         if (welcomeScreen) {
@@ -5428,7 +5477,7 @@ class AuthManager {
             welcomeScreen.style.transform = 'translateY(0)';
         }
 
-        this.authOverlay.style.display = 'flex';
+        this.authOverlay.style.setProperty('display', 'flex', 'important');
         setTimeout(() => {
             this.authOverlay.classList.remove('hidden');
         }, 50);
@@ -6485,7 +6534,7 @@ class AdminManager {
                 ...(reqSnapshot || {}),
                 adminName: currentAdminName,
                 admin_name: currentAdminName,
-                admin_approved_by: `${currentAdminName} (Admin)`,
+                admin_approved_by: currentAdminName,
                 reviewedBy: currentAdminName
             };
             const res = await fetch(`${API_BASE}/borrow/requests/${id}/approve`, {
@@ -9188,8 +9237,8 @@ class HardwareLedgerManager {
                         }
                         if (!adminApprover || adminApprover === 'Admin Team' || adminApprover === 'ADMIN' || adminApprover === 'Admin') {
                             adminApprover = 'Vardaan Saxena';
-                        } else if (!adminApprover.toLowerCase().includes('admin') && !adminApprover.toLowerCase().includes('awaiting')) {
-                            adminApprover = `${adminApprover} (Admin)`;
+                        } else {
+                            adminApprover = adminApprover.replace(/\s*\([Aa]dmin\)/gi, '').trim();
                         }
                         localRecords.push({
                             id: b.id || `local-${item.id}-${idx}`,
@@ -9274,8 +9323,8 @@ class HardwareLedgerManager {
 
                 if (!adminApprover || adminApprover === 'Admin Team' || adminApprover === 'ADMIN' || adminApprover === 'Admin') {
                     adminApprover = isPending ? 'Awaiting Admin Review' : 'Vardaan Saxena';
-                } else if (!adminApprover.toLowerCase().includes('admin') && !adminApprover.toLowerCase().includes('awaiting')) {
-                    adminApprover = `${adminApprover} (Admin)`;
+                } else {
+                    adminApprover = adminApprover.replace(/\s*\([Aa]dmin\)/gi, '').trim();
                 }
                 const normalized: LedgerEntry = {
                     id: String(r.id),
@@ -9429,9 +9478,6 @@ class HardwareLedgerManager {
             const dateStr = rawDate
                 ? rawDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
                 : '—';
-            const timeStr = rawDate
-                ? rawDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()
-                : '—';
 
             const rawDueDate = this.parseDateSafe(r.due_date);
             const isOverdue = !isReturned && !isPending && rawDueDate && rawDueDate < now;
@@ -9475,7 +9521,8 @@ class HardwareLedgerManager {
                     : `<button type="button" class="btn-ledger-return-action" data-borrow-id="${r.id}" data-comp-id="${r.component_id}" data-comp-name="${AdminManager.escapeHtml(r.component_name)}" title="Initiate Component Return"><i data-lucide="corner-down-left"></i> <span>Return</span></button>`;
             }
 
-            const approverName = r.admin_approved_by || (isPending ? 'Awaiting Admin Review' : 'Vardaan Saxena');
+            const rawApprover = r.admin_approved_by || (isPending ? 'Awaiting Admin Review' : 'Vardaan Saxena');
+            const approverName = rawApprover.replace(/\s*\([Aa]dmin\)/gi, '').trim();
 
             return `
                 <tr class="hw-ledger-row ${isOverdue ? 'row-overdue' : ''}">
@@ -9498,7 +9545,7 @@ class HardwareLedgerManager {
                         </div>
                     </td>
 
-                    <!-- Approved By (Admin) -->
+                    <!-- Approved By -->
                     <td>
                         <div class="hw-td-admin">
                             <div class="hw-admin-badge-pill">
@@ -9522,11 +9569,6 @@ class HardwareLedgerManager {
                     <!-- Date -->
                     <td>
                         <span class="hw-date-val"><i data-lucide="calendar"></i> ${dateStr}</span>
-                    </td>
-
-                    <!-- Time -->
-                    <td>
-                        <span class="hw-time-val"><i data-lucide="clock"></i> ${timeStr}</span>
                     </td>
 
                     <!-- Purpose / Reason -->
@@ -10125,6 +10167,16 @@ class ThemeManager {
                 this.applyTheme('mono');
             });
         }
+
+        const authThemeToggle = document.getElementById('auth-theme-toggle');
+        if (authThemeToggle) {
+            authThemeToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const cur = document.documentElement.getAttribute('data-theme') || 'mono';
+                const next = cur === 'light' ? 'mono' : 'light';
+                this.applyTheme(next);
+            });
+        }
     }
 
     public static applyTheme(theme: string) {
@@ -10155,6 +10207,11 @@ class ThemeManager {
         document.body.classList.add(`theme-${theme}`);
         localStorage.setItem('cicr_vault_theme', theme);
         localStorage.setItem('cicr_theme', theme);
+
+        const authThemeLabel = document.querySelector('.auth-theme-label');
+        if (authThemeLabel) {
+            authThemeLabel.textContent = theme === 'light' ? 'Robo Lab' : 'Midnight Mono';
+        }
 
         if (this.themeSelectEl && this.themeSelectEl.value !== theme) {
             this.themeSelectEl.value = theme;
@@ -10251,11 +10308,23 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('orientationchange', syncFixedSidebarPosition, { passive: true });
     syncFixedSidebarPosition();
 
-    if (typeof ResizeObserver !== 'undefined') {
-        const container = document.getElementById('app-container');
-        if (container) {
-            const ro = new ResizeObserver(() => syncFixedSidebarPosition());
-            ro.observe(container);
+    // Cross-Tab Synchronization via Window Storage Event (Issue #48)
+    window.addEventListener('storage', (e: StorageEvent) => {
+        if (e.key === 'cicr_token') {
+            if (!e.newValue && document.body.classList.contains('authenticated')) {
+                AuthManager.handleLogout();
+            } else if (e.newValue && !document.body.classList.contains('authenticated')) {
+                window.location.reload();
+            }
+        } else if (e.key === 'cicr_vault_theme' || e.key === 'cicr_theme') {
+            const newTheme = e.newValue;
+            if (newTheme && (newTheme === 'mono' || newTheme === 'light')) {
+                ThemeManager.applyTheme(newTheme);
+            }
+        } else if (e.key === 'cicr_cart_items') {
+            if (typeof CartManager !== 'undefined') {
+                CartManager.reloadFromStorage();
+            }
         }
-    }
+    });
 });

@@ -429,11 +429,11 @@ body::before {
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    background: rgba(4, 7, 5, 0.76);
+    background: #0B0B0A;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 50000 !important;
     padding: 10px;
     overflow: hidden;
     /* Fix: eliminates outer page scrollbar completely */
@@ -441,10 +441,109 @@ body::before {
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+html[data-theme="mono"] .auth-overlay,
+body.theme-mono .auth-overlay {
+    background: #0B0B0A !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="light"] .auth-overlay,
+body.theme-light .auth-overlay {
+    background: linear-gradient(135deg, #F1EDFF 0%, #EEE7FA 45%, #E5D8F7 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
 .auth-overlay.hidden {
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    display: none !important;
     transform: scale(1.02);
+}
+
+/* Strict isolation: When auth overlay is active or user is unauthenticated, strictly hide app-container, sidebar, navbars, and background layers */
+#auth-overlay:not(.hidden) ~ #app-container,
+#auth-overlay:not(.hidden) ~ #global-navbar,
+#auth-overlay:not(.hidden) ~ .app-accent-line,
+body.auth-overlay-active #app-container,
+body.auth-overlay-active #global-navbar,
+body.auth-overlay-active .app-accent-line,
+body.auth-overlay-active #canvas-3d,
+body.auth-overlay-active .mono-viewport-bg,
+body.auth-overlay-active .robolab-viewport-bg,
+body:not(.authenticated) #app-container,
+body:not(.authenticated) #global-navbar,
+body:not(.authenticated) .app-accent-line,
+body:not(.authenticated) #canvas-3d,
+body:not(.authenticated) .mono-viewport-bg,
+body:not(.authenticated) .robolab-viewport-bg,
+.app-container.hidden,
+#app-container.hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.auth-overlay-active,
+body:has(#auth-overlay:not(.hidden)) {
+    overflow: hidden !important;
+}
+
+body.auth-overlay-active .app-sidebar,
+body:not(.authenticated) .app-sidebar,
+#auth-overlay:not(.hidden) ~ #app-container .app-sidebar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Auth Theme Toggle Button */
+.auth-theme-toggle {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+}
+
+html[data-theme="mono"] .auth-theme-toggle,
+body.theme-mono .auth-theme-toggle {
+    background: #1C1B19 !important;
+    border: 1px solid #302F2B !important;
+    color: #AAA79F !important;
+}
+
+html[data-theme="mono"] .auth-theme-toggle:hover,
+body.theme-mono .auth-theme-toggle:hover {
+    background: #262522 !important;
+    color: #F2F0E9 !important;
+    border-color: #756E60 !important;
+}
+
+html[data-theme="light"] .auth-theme-toggle,
+body.theme-light .auth-theme-toggle {
+    background: rgba(156, 120, 237, 0.12) !important;
+    border: 1px solid rgba(156, 120, 237, 0.3) !important;
+    color: #553399 !important;
+}
+
+html[data-theme="light"] .auth-theme-toggle:hover,
+body.theme-light .auth-theme-toggle:hover {
+    background: rgba(156, 120, 237, 0.22) !important;
+    color: #2F1766 !important;
 }
 
 .auth-card {
@@ -531,7 +630,7 @@ body::before {
 .auth-tab-switch {
     display: flex;
     background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 9px;
     padding: 4px;
     margin-bottom: 16px;
@@ -548,7 +647,7 @@ body::before {
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.4px;
-    color: var(--text-muted);
+    color: #A0A5B5;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 7px;
@@ -557,15 +656,15 @@ body::before {
 }
 
 .auth-tab-btn:hover {
-    color: var(--white);
-    background: rgba(255, 255, 255, 0.04);
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .auth-tab-btn.active {
     color: #ffffff;
-    background: linear-gradient(135deg, rgba(0, 240, 255, 0.22), rgba(168, 85, 247, 0.28));
-    border-color: rgba(0, 240, 255, 0.4);
-    box-shadow: 0 2px 8px rgba(0, 240, 255, 0.15);
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.35), rgba(168, 85, 247, 0.45));
+    border-color: rgba(0, 240, 255, 0.6);
+    box-shadow: 0 2px 8px rgba(0, 240, 255, 0.25);
 }
 
 .auth-tab-btn i,
@@ -8035,30 +8134,6 @@ body.theme-light .sidebar-scroll-content::-webkit-scrollbar-thumb {
     letter-spacing: 0.5px;
 }
 
-.profile-logout-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.profile-logout-btn i {
-    width: 13px;
-    height: 13px;
-}
-
-.profile-logout-btn:hover {
-    color: var(--neon-pink);
-    background: rgba(255, 0, 122, 0.08);
-}
-
 /* Right Viewport Workspace Layout */
 .main-viewport-wrapper {
     display: flex;
@@ -10017,6 +10092,20 @@ body.theme-light .mobile-sidebar-backdrop {
         height: 15px !important;
     }
 
+    /* Mobile Navbar Compact Ergonomics: Keep Cart & Notif as Sleek Icon Badges */
+    .header-cart-text,
+    .header-notif-text {
+        display: none !important;
+    }
+
+    .header-cart-btn,
+    .header-notif-btn {
+        padding: 6px 10px !important;
+        min-height: 36px !important;
+        border-radius: 10px !important;
+        gap: 4px !important;
+    }
+
     .header-theme-box {
         padding: 4px 8px !important;
         border-radius: 10px !important;
@@ -10024,7 +10113,7 @@ body.theme-light .mobile-sidebar-backdrop {
 
     .header-theme-box select {
         font-size: 11px !important;
-        max-width: 110px !important;
+        max-width: 105px !important;
     }
 
     /* Header Notification Dropdown Mobile Viewport Centering & Safety */
@@ -14306,12 +14395,6 @@ body:not(.user-is-admin) #btn-modal-delete-item {
     margin-bottom: 8px;
 }
 
-.profile-key-btn:hover {
-    color: var(--neon-cyan) !important;
-    background: rgba(0, 240, 255, 0.1) !important;
-    transform: scale(1.1);
-}
-
 /* ===================================================
    SEGMENTED ROLE-BASED NOTIFICATIONS & TELEMETRY DRAWER
    =================================================== */
@@ -17371,20 +17454,23 @@ body.theme-light .date-preset-pill.active {
 .profile-telemetry-hud {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    gap: 16px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .profile-metric-tile {
-    padding: 16px 18px;
+    padding: 18px 20px;
     border-radius: 16px;
     background: rgba(13, 17, 30, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    justify-content: space-between;
+    min-height: 140px;
     position: relative;
     overflow: hidden;
+    box-sizing: border-box;
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     transform: translateZ(0);
 }
@@ -17412,6 +17498,7 @@ body.theme-light .date-preset-pill.active {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
 }
 
 .metric-icon-wrap {
@@ -17467,7 +17554,8 @@ body.theme-light .date-preset-pill.active {
 .metric-tile-body {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
+    margin: 6px 0;
 }
 
 .profile-metric-tile .metric-value {
@@ -17476,6 +17564,11 @@ body.theme-light .date-preset-pill.active {
     color: #ffffff;
     line-height: 1.1;
     letter-spacing: -0.5px;
+}
+
+#profile-metric-clearance {
+    font-size: 19px;
+    letter-spacing: 0.4px;
 }
 
 .profile-metric-tile .metric-label {
@@ -17512,9 +17605,10 @@ body.theme-light .date-preset-pill.active {
 /* 3. Two-Column Clean Workspace Grid */
 .profile-clean-grid {
     display: grid;
-    grid-template-columns: 1fr 1.35fr;
-    gap: 20px;
+    grid-template-columns: minmax(320px, 1fr) minmax(440px, 1.45fr);
+    gap: 16px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .profile-clean-card {
@@ -17534,6 +17628,8 @@ body.theme-light .date-preset-pill.active {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
     padding-bottom: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -17542,6 +17638,8 @@ body.theme-light .date-preset-pill.active {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .profile-card-icon-box {
@@ -20017,34 +20115,37 @@ body.theme-light .edit-profile-security-card,
 }
 
 .sidebar-profile-actions {
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
-    gap: 4px !important;
+    gap: 6px !important;
     flex-shrink: 0 !important;
 }
 
 .profile-key-btn,
 .profile-logout-btn {
-    width: 28px !important;
-    height: 28px !important;
+    width: 30px !important;
+    height: 30px !important;
     padding: 0 !important;
-    border-radius: 7px !important;
-    background: transparent !important;
-    border: none !important;
+    border-radius: 9px !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: all 0.18s ease !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     flex-shrink: 0 !important;
+    outline: none !important;
+    position: relative !important;
 }
 
 .profile-key-btn svg,
 .profile-key-btn i,
 .profile-logout-btn svg,
 .profile-logout-btn i {
-    width: 14px !important;
-    height: 14px !important;
+    width: 15px !important;
+    height: 15px !important;
+    stroke-width: 2px !important;
+    display: block !important;
+    transition: transform 0.2s ease, stroke 0.2s ease !important;
 }
 
 /* 2. Global Unified Left Boundary for All Content Sections */
@@ -20664,11 +20765,101 @@ body.theme-light .sidebar-theme-section {
 
 html[data-theme="light"] .sidebar-profile-box,
 body.theme-light .sidebar-profile-box {
-    background: rgba(255, 255, 255, 0.75) !important;
-    border: 1px solid rgba(130, 90, 210, 0.18) !important;
-    border-radius: 14px !important;
-    padding: 8px 10px !important;
+    background: #FFFFFF !important;
+    border: 1.5px solid rgba(130, 90, 210, 0.22) !important;
+    border-radius: 16px !important;
+    padding: 10px 12px !important;
+    box-shadow: 0 4px 18px rgba(80, 50, 140, 0.08) !important;
     margin-top: auto !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-theme="light"] .sidebar-profile-box:hover,
+body.theme-light .sidebar-profile-box:hover {
+    border-color: rgba(121, 86, 232, 0.38) !important;
+    box-shadow: 0 6px 22px rgba(80, 50, 140, 0.12) !important;
+}
+
+html[data-theme="light"] .sidebar-profile-box .profile-avatar,
+body.theme-light .sidebar-profile-box .profile-avatar {
+    background: linear-gradient(135deg, #7956E8 0%, #9C77F8 100%) !important;
+    color: #FFFFFF !important;
+    border: 2px solid #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(121, 86, 232, 0.3) !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="light"] .sidebar-profile-box .profile-name,
+body.theme-light .sidebar-profile-box .profile-name {
+    color: #17152B !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="light"] .sidebar-profile-box .profile-role,
+body.theme-light .sidebar-profile-box .profile-role {
+    color: #7956E8 !important;
+    font-weight: 800 !important;
+    font-size: 8.5px !important;
+    letter-spacing: 0.06em !important;
+}
+
+html[data-theme="light"] .profile-key-btn,
+body.theme-light .profile-key-btn {
+    background: rgba(130, 90, 210, 0.09) !important;
+    border: 1px solid rgba(130, 90, 210, 0.22) !important;
+    color: #5D4D7F !important;
+}
+
+html[data-theme="light"] .profile-key-btn:hover,
+body.theme-light .profile-key-btn:hover {
+    background: rgba(121, 86, 232, 0.16) !important;
+    border-color: rgba(121, 86, 232, 0.45) !important;
+    color: #6C42D6 !important;
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 4px 12px rgba(121, 86, 232, 0.22) !important;
+}
+
+html[data-theme="light"] .profile-key-btn:hover svg,
+html[data-theme="light"] .profile-key-btn:hover i,
+body.theme-light .profile-key-btn:hover svg,
+body.theme-light .profile-key-btn:hover i {
+    transform: rotate(-12deg) scale(1.08) !important;
+    stroke: #6C42D6 !important;
+}
+
+html[data-theme="light"] .profile-key-btn:active,
+body.theme-light .profile-key-btn:active {
+    transform: translateY(0) scale(0.96) !important;
+}
+
+html[data-theme="light"] .profile-logout-btn,
+body.theme-light .profile-logout-btn {
+    background: rgba(130, 90, 210, 0.09) !important;
+    border: 1px solid rgba(130, 90, 210, 0.22) !important;
+    color: #5D4D7F !important;
+}
+
+html[data-theme="light"] .profile-logout-btn:hover,
+body.theme-light .profile-logout-btn:hover {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.38) !important;
+    color: #DC2626 !important;
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.20) !important;
+}
+
+html[data-theme="light"] .profile-logout-btn:hover svg,
+html[data-theme="light"] .profile-logout-btn:hover i,
+body.theme-light .profile-logout-btn:hover svg,
+body.theme-light .profile-logout-btn:hover i {
+    transform: translateX(2px) scale(1.08) !important;
+    stroke: #DC2626 !important;
+}
+
+html[data-theme="light"] .profile-logout-btn:active,
+body.theme-light .profile-logout-btn:active {
+    transform: translateY(0) scale(0.96) !important;
 }
 
 html[data-theme="light"] .brand-title,
@@ -21733,6 +21924,123 @@ body.theme-light .profile-clean-card {
     color: #17152B !important;
 }
 
+/* Photo 3: Light Theme HUD Metrics Tiles (Robo Lab) */
+html[data-theme="light"] .profile-metric-tile,
+body.theme-light .profile-metric-tile {
+    background: linear-gradient(145deg, rgba(252, 249, 255, 0.96) 0%, rgba(244, 238, 253, 0.94) 100%) !important;
+    border: 1px solid rgba(130, 90, 210, 0.22) !important;
+    box-shadow: 0 4px 18px rgba(100, 70, 160, 0.07) !important;
+}
+
+html[data-theme="light"] .profile-metric-tile:hover,
+body.theme-light .profile-metric-tile:hover {
+    border-color: rgba(130, 90, 210, 0.45) !important;
+    box-shadow: 0 8px 26px rgba(100, 70, 160, 0.14) !important;
+}
+
+html[data-theme="light"] .profile-metric-tile.stat-cyan,
+body.theme-light .profile-metric-tile.stat-cyan {
+    border-left: 3.5px solid #0284c7 !important;
+}
+html[data-theme="light"] .profile-metric-tile.stat-purple,
+body.theme-light .profile-metric-tile.stat-purple {
+    border-left: 3.5px solid #8b5cf6 !important;
+}
+html[data-theme="light"] .profile-metric-tile.stat-green,
+body.theme-light .profile-metric-tile.stat-green {
+    border-left: 3.5px solid #059669 !important;
+}
+html[data-theme="light"] .profile-metric-tile.stat-pink,
+body.theme-light .profile-metric-tile.stat-pink {
+    border-left: 3.5px solid #db2777 !important;
+}
+
+html[data-theme="light"] .profile-metric-tile .metric-value,
+body.theme-light .profile-metric-tile .metric-value {
+    color: #17152B !important;
+}
+
+html[data-theme="light"] .profile-metric-tile .metric-label,
+body.theme-light .profile-metric-tile .metric-label {
+    color: #64748b !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="light"] .profile-metric-tile .metric-status-pill,
+body.theme-light .profile-metric-tile .metric-status-pill {
+    background: rgba(130, 90, 210, 0.10) !important;
+    border: 1px solid rgba(130, 90, 210, 0.22) !important;
+    color: #5B32A8 !important;
+}
+
+html[data-theme="light"] .profile-metric-tile .metric-sub-note,
+body.theme-light .profile-metric-tile .metric-sub-note {
+    color: #64748b !important;
+}
+
+html[data-theme="light"] .metric-progress-track,
+body.theme-light .metric-progress-track {
+    background: rgba(130, 90, 210, 0.18) !important;
+}
+
+/* Light Mode Hardware Operations Hub Tabs & Details */
+html[data-theme="light"] .profile-hub-tabs,
+body.theme-light .profile-hub-tabs {
+    background: rgba(234, 224, 252, 0.85) !important;
+    border: 1px solid rgba(130, 90, 210, 0.25) !important;
+}
+
+html[data-theme="light"] .profile-hub-tab,
+body.theme-light .profile-hub-tab {
+    color: #585170 !important;
+}
+
+html[data-theme="light"] .profile-hub-tab:hover,
+body.theme-light .profile-hub-tab:hover {
+    color: #17152B !important;
+    background: rgba(130, 90, 210, 0.14) !important;
+}
+
+html[data-theme="light"] .profile-hub-tab.active,
+body.theme-light .profile-hub-tab.active {
+    color: #ffffff !important;
+    background: #6366F1 !important;
+    border-color: #6366F1 !important;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35) !important;
+}
+
+html[data-theme="light"] .profile-card-heading,
+body.theme-light .profile-card-heading {
+    color: #17152B !important;
+}
+
+html[data-theme="light"] .profile-card-subheading,
+body.theme-light .profile-card-subheading {
+    color: #64748b !important;
+}
+
+html[data-theme="light"] .profile-detail-row,
+body.theme-light .profile-detail-row {
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 1px solid rgba(130, 90, 210, 0.16) !important;
+}
+
+html[data-theme="light"] .profile-detail-row:hover,
+body.theme-light .profile-detail-row:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(130, 90, 210, 0.40) !important;
+}
+
+html[data-theme="light"] .detail-label,
+body.theme-light .detail-label {
+    color: #585170 !important;
+}
+
+html[data-theme="light"] .detail-val,
+body.theme-light .detail-val {
+    color: #17152B !important;
+}
+
 html[data-theme="light"] .profile-hero-name,
 body.theme-light .profile-hero-name,
 html[data-theme="light"] .profile-hero-display-name,
@@ -21944,9 +22252,7 @@ body.theme-light .admin-table tr:hover td {
    ======================================================== */
 
 html[data-theme="light"] .modal-overlay,
-body.theme-light .modal-overlay,
-html[data-theme="light"] .auth-overlay,
-body.theme-light .auth-overlay {
+body.theme-light .modal-overlay {
     background: rgba(23, 21, 43, 0.42) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
@@ -21973,6 +22279,137 @@ body.theme-light .modal-delete-confirm {
     border-radius: 18px !important;
     box-shadow: 0 24px 60px rgba(80, 50, 140, 0.18) !important;
     color: #17152B !important;
+}
+
+/* Robo Lab / Light Theme Auth Card & Form Typography */
+html[data-theme="light"] .auth-header h2,
+body.theme-light .auth-header h2 {
+    color: #17152B !important;
+    -webkit-text-fill-color: #17152B !important;
+    background: none !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="light"] .auth-header p,
+body.theme-light .auth-header p,
+html[data-theme="light"] #auth-subtitle,
+body.theme-light #auth-subtitle {
+    color: #4C3C6E !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="light"] .auth-tab-switch,
+body.theme-light .auth-tab-switch {
+    background: #EDE8F8 !important;
+    border: 1px solid rgba(130, 90, 210, 0.22) !important;
+}
+
+html[data-theme="light"] .auth-tab-btn,
+body.theme-light .auth-tab-btn {
+    color: #3F335C !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+}
+
+html[data-theme="light"] .auth-tab-btn:hover,
+body.theme-light .auth-tab-btn:hover {
+    color: #17152B !important;
+    background: rgba(130, 90, 210, 0.12) !important;
+}
+
+html[data-theme="light"] .auth-tab-btn.active,
+body.theme-light .auth-tab-btn.active {
+    background: #7956E8 !important;
+    color: #FFFFFF !important;
+    border-color: #7956E8 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(121, 86, 232, 0.35) !important;
+}
+
+html[data-theme="light"] .auth-card .form-group label,
+body.theme-light .auth-card .form-group label {
+    color: #261F3B !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="light"] .auth-card .form-group input,
+body.theme-light .auth-card .form-group input {
+    background: #FFFFFF !important;
+    border: 1.5px solid rgba(130, 90, 210, 0.32) !important;
+    color: #17152B !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] .auth-card .form-group input:focus,
+body.theme-light .auth-card .form-group input:focus {
+    border-color: #7956E8 !important;
+    box-shadow: 0 0 0 3px rgba(121, 86, 232, 0.22) !important;
+    background: #FFFFFF !important;
+    color: #17152B !important;
+}
+
+html[data-theme="light"] .auth-card input::placeholder,
+body.theme-light .auth-card input::placeholder {
+    color: #8378A6 !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="light"] .auth-card .input-icon-wrapper .input-icon,
+body.theme-light .auth-card .input-icon-wrapper .input-icon {
+    color: #7956E8 !important;
+}
+
+html[data-theme="light"] .auth-card .password-toggle-btn,
+body.theme-light .auth-card .password-toggle-btn {
+    color: #7956E8 !important;
+}
+
+html[data-theme="light"] .auth-card .password-toggle-btn:hover,
+body.theme-light .auth-card .password-toggle-btn:hover {
+    color: #553399 !important;
+}
+
+html[data-theme="light"] .auth-forgot-link,
+body.theme-light .auth-forgot-link {
+    color: #6C42D6 !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="light"] .auth-forgot-link:hover,
+body.theme-light .auth-forgot-link:hover {
+    color: #4C26B6 !important;
+    text-shadow: none !important;
+    text-decoration: underline !important;
+}
+
+html[data-theme="light"] .auth-card .btn-primary,
+body.theme-light .auth-card .btn-primary {
+    background: linear-gradient(135deg, #7956E8 0%, #6036D8 100%) !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 16px rgba(121, 86, 232, 0.35) !important;
+    border: none !important;
+}
+
+html[data-theme="light"] .auth-card .btn-primary:hover,
+body.theme-light .auth-card .btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(121, 86, 232, 0.5) !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="light"] .auth-switch-prompt,
+body.theme-light .auth-switch-prompt {
+    color: #4C3C6E !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] .auth-switch-prompt a,
+body.theme-light .auth-switch-prompt a {
+    color: #6C42D6 !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
 }
 
 html[data-theme="light"] .modal-header,
@@ -22274,6 +22711,121 @@ body.theme-light .toast-close-btn {
 html[data-theme="light"] .toast-close-btn:hover,
 body.theme-light .toast-close-btn:hover {
     color: #17152B !important;
+}
+
+/* Robo Lab / Light Theme — Specialized Welcome Toast Window */
+html[data-theme="light"] .cyber-toast.toast-welcome,
+body.theme-light .cyber-toast.toast-welcome {
+    background: linear-gradient(145deg, #FFFFFF 0%, #F5EEFC 100%) !important;
+    border: 1.5px solid rgba(130, 90, 210, 0.32) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 20px 48px rgba(80, 50, 140, 0.16), 0 4px 12px rgba(80, 50, 140, 0.08) !important;
+    padding: 16px 20px !important;
+}
+
+html[data-theme="light"] .cyber-toast.toast-welcome::before,
+body.theme-light .cyber-toast.toast-welcome::before {
+    background: linear-gradient(180deg, #7956E8, #A855F7) !important;
+    box-shadow: 0 0 10px rgba(121, 86, 232, 0.4) !important;
+    width: 4px !important;
+}
+
+html[data-theme="light"] .welcome-toast-glow,
+body.theme-light .welcome-toast-glow {
+    background: radial-gradient(circle, rgba(121, 86, 232, 0.12) 0%, transparent 70%) !important;
+}
+
+html[data-theme="light"] .welcome-avatar-wrap,
+body.theme-light .welcome-avatar-wrap {
+    background: linear-gradient(135deg, #7956E8 0%, #9C77F8 100%) !important;
+    border: 2px solid #FFFFFF !important;
+    box-shadow: 0 6px 18px rgba(121, 86, 232, 0.35) !important;
+    border-radius: 14px !important;
+}
+
+html[data-theme="light"] .welcome-avatar-letter,
+body.theme-light .welcome-avatar-letter {
+    color: #FFFFFF !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="light"] .welcome-status-dot,
+body.theme-light .welcome-status-dot {
+    background: #10B981 !important;
+    border: 2px solid #FFFFFF !important;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.5) !important;
+}
+
+html[data-theme="light"] .welcome-badge,
+body.theme-light .welcome-badge {
+    color: #6C42D6 !important;
+    background: rgba(121, 86, 232, 0.10) !important;
+    border: 1px solid rgba(121, 86, 232, 0.25) !important;
+    border-radius: 6px !important;
+    padding: 2px 8px !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="light"] .welcome-role-pill.admin,
+body.theme-light .welcome-role-pill.admin {
+    background: rgba(236, 72, 153, 0.12) !important;
+    border: 1px solid rgba(236, 72, 153, 0.35) !important;
+    color: #DB2777 !important;
+    font-weight: 800 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="light"] .welcome-role-pill.member,
+body.theme-light .welcome-role-pill.member {
+    background: rgba(121, 86, 232, 0.10) !important;
+    border: 1px solid rgba(121, 86, 232, 0.28) !important;
+    color: #7956E8 !important;
+    font-weight: 800 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="light"] .welcome-headline,
+body.theme-light .welcome-headline {
+    color: #17152B !important;
+    font-weight: 800 !important;
+    font-size: 15px !important;
+}
+
+html[data-theme="light"] .welcome-highlight-name,
+body.theme-light .welcome-highlight-name {
+    background: linear-gradient(135deg, #7956E8 0%, #A855F7 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    filter: none !important;
+    font-weight: 900 !important;
+}
+
+html[data-theme="light"] .welcome-subtext,
+body.theme-light .welcome-subtext {
+    color: #585170 !important;
+    font-weight: 500 !important;
+}
+
+html[data-theme="light"] .cyber-toast.toast-welcome .toast-close-btn,
+body.theme-light .cyber-toast.toast-welcome .toast-close-btn {
+    color: #8C84A8 !important;
+}
+
+html[data-theme="light"] .cyber-toast.toast-welcome .toast-close-btn:hover,
+body.theme-light .cyber-toast.toast-welcome .toast-close-btn:hover {
+    color: #17152B !important;
+}
+
+html[data-theme="light"] .welcome-progress-track,
+body.theme-light .welcome-progress-track {
+    background: rgba(130, 90, 210, 0.12) !important;
+}
+
+html[data-theme="light"] .welcome-progress-fill,
+body.theme-light .welcome-progress-fill {
+    background: linear-gradient(90deg, #7956E8, #A855F7) !important;
+    box-shadow: 0 0 8px rgba(121, 86, 232, 0.4) !important;
 }
 
 /* ========================================
@@ -23517,41 +24069,101 @@ body.theme-mono .sidebar-action-btn:hover {
 
 html[data-theme="mono"] .sidebar-profile-box,
 body.theme-mono .sidebar-profile-box {
-    background: #10100F !important;
-    border-top: 1px solid #262522 !important;
-    position: relative !important;
+    background: #141412 !important;
+    border: 1px solid #2B2A27 !important;
+    border-radius: 14px !important;
+    padding: 10px 12px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+    margin-top: auto !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-html[data-theme="mono"] .profile-avatar,
-body.theme-mono .profile-avatar {
+html[data-theme="mono"] .sidebar-profile-box:hover,
+body.theme-mono .sidebar-profile-box:hover {
+    border-color: #3A3833 !important;
+}
+
+html[data-theme="mono"] .sidebar-profile-box .profile-avatar,
+body.theme-mono .sidebar-profile-box .profile-avatar {
     background: #1C1B19 !important;
     border: 1px solid #3A3833 !important;
     color: #F2F0E9 !important;
     box-shadow: none !important;
+    font-weight: 700 !important;
 }
 
-html[data-theme="mono"] .profile-name,
-body.theme-mono .profile-name {
+html[data-theme="mono"] .sidebar-profile-box .profile-name,
+body.theme-mono .sidebar-profile-box .profile-name {
     color: #F2F0E9 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
 }
 
-html[data-theme="mono"] .profile-role,
-body.theme-mono .profile-role {
-    color: #74716B !important;
+html[data-theme="mono"] .sidebar-profile-box .profile-role,
+body.theme-mono .sidebar-profile-box .profile-role {
+    color: #C8BFA8 !important;
     font-family: ui-monospace, monospace !important;
     font-size: 8.5px !important;
-    letter-spacing: 0.1em !important;
+    letter-spacing: 0.08em !important;
+}
+
+html[data-theme="mono"] .profile-key-btn,
+body.theme-mono .profile-key-btn {
+    background: #171715 !important;
+    border: 1px solid #2B2A27 !important;
+    color: #AAA79F !important;
+}
+
+html[data-theme="mono"] .profile-key-btn:hover,
+body.theme-mono .profile-key-btn:hover {
+    background: #22211F !important;
+    border-color: #756E60 !important;
+    color: #F2F0E9 !important;
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme="mono"] .profile-key-btn:hover svg,
+html[data-theme="mono"] .profile-key-btn:hover i,
+body.theme-mono .profile-key-btn:hover svg,
+body.theme-mono .profile-key-btn:hover i {
+    transform: rotate(-12deg) scale(1.08) !important;
+    color: #C8BFA8 !important;
+    stroke: #C8BFA8 !important;
+}
+
+html[data-theme="mono"] .profile-key-btn:active,
+body.theme-mono .profile-key-btn:active {
+    transform: translateY(0) scale(0.96) !important;
 }
 
 html[data-theme="mono"] .profile-logout-btn,
 body.theme-mono .profile-logout-btn {
-    color: #74716B !important;
-    transition: color 0.2s ease !important;
+    background: #171715 !important;
+    border: 1px solid #2B2A27 !important;
+    color: #AAA79F !important;
 }
 
 html[data-theme="mono"] .profile-logout-btn:hover,
 body.theme-mono .profile-logout-btn:hover {
-    color: #F2F0E9 !important;
+    background: rgba(184, 92, 92, 0.18) !important;
+    border-color: rgba(184, 92, 92, 0.45) !important;
+    color: #E58B8B !important;
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 4px 10px rgba(184, 92, 92, 0.2) !important;
+}
+
+html[data-theme="mono"] .profile-logout-btn:hover svg,
+html[data-theme="mono"] .profile-logout-btn:hover i,
+body.theme-mono .profile-logout-btn:hover svg,
+body.theme-mono .profile-logout-btn:hover i {
+    transform: translateX(2px) scale(1.08) !important;
+    stroke: #E58B8B !important;
+}
+
+html[data-theme="mono"] .profile-logout-btn:active,
+body.theme-mono .profile-logout-btn:active {
+    transform: translateY(0) scale(0.96) !important;
 }
 
 html[data-theme="mono"] .sidebar-scroll-content::after,
@@ -24496,6 +25108,128 @@ body.theme-mono .toast-desc {
     color: #AAA79F !important;
 }
 
+/* Midnight Mono — Specialized Welcome Toast Window */
+html[data-theme="mono"] .cyber-toast.toast-welcome,
+body.theme-mono .cyber-toast.toast-welcome {
+    background: #141412 !important;
+    border: 1px solid #2B2A27 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+    padding: 16px 20px !important;
+}
+
+html[data-theme="mono"] .cyber-toast.toast-welcome::before,
+body.theme-mono .cyber-toast.toast-welcome::before {
+    background: #C8BFA8 !important;
+    box-shadow: none !important;
+    width: 3px !important;
+}
+
+html[data-theme="mono"] .welcome-toast-glow,
+body.theme-mono .welcome-toast-glow {
+    display: none !important;
+}
+
+html[data-theme="mono"] .welcome-avatar-wrap,
+body.theme-mono .welcome-avatar-wrap {
+    background: #1C1B19 !important;
+    border: 1px solid #3A3833 !important;
+    box-shadow: none !important;
+    border-radius: 12px !important;
+}
+
+html[data-theme="mono"] .welcome-avatar-letter,
+body.theme-mono .welcome-avatar-letter {
+    color: #F2F0E9 !important;
+    text-shadow: none !important;
+    font-family: Inter, sans-serif !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="mono"] .welcome-status-dot,
+body.theme-mono .welcome-status-dot {
+    background: #7EA98B !important;
+    border: 2px solid #141412 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="mono"] .welcome-badge,
+body.theme-mono .welcome-badge {
+    color: #C8BFA8 !important;
+    background: #1C1B19 !important;
+    border: 1px solid #302F2B !important;
+    border-radius: 4px !important;
+    padding: 2px 7px !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    font-family: ui-monospace, monospace !important;
+    letter-spacing: 0.05em !important;
+}
+
+html[data-theme="mono"] .welcome-role-pill.admin,
+body.theme-mono .welcome-role-pill.admin {
+    background: rgba(184, 92, 92, 0.15) !important;
+    border: 1px solid rgba(184, 92, 92, 0.35) !important;
+    color: #E58B8B !important;
+    font-family: ui-monospace, monospace !important;
+    font-size: 8px !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="mono"] .welcome-role-pill.member,
+body.theme-mono .welcome-role-pill.member {
+    background: rgba(200, 191, 168, 0.12) !important;
+    border: 1px solid rgba(200, 191, 168, 0.30) !important;
+    color: #C8BFA8 !important;
+    font-family: ui-monospace, monospace !important;
+    font-size: 8px !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="mono"] .welcome-headline,
+body.theme-mono .welcome-headline {
+    color: #F2F0E9 !important;
+    font-family: Inter, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+}
+
+html[data-theme="mono"] .welcome-highlight-name,
+body.theme-mono .welcome-highlight-name {
+    color: #C8BFA8 !important;
+    background: none !important;
+    -webkit-text-fill-color: #C8BFA8 !important;
+    filter: none !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="mono"] .welcome-subtext,
+body.theme-mono .welcome-subtext {
+    color: #AAA79F !important;
+    font-weight: 500 !important;
+}
+
+html[data-theme="mono"] .cyber-toast.toast-welcome .toast-close-btn,
+body.theme-mono .cyber-toast.toast-welcome .toast-close-btn {
+    color: #74716B !important;
+}
+
+html[data-theme="mono"] .cyber-toast.toast-welcome .toast-close-btn:hover,
+body.theme-mono .cyber-toast.toast-welcome .toast-close-btn:hover {
+    color: #F2F0E9 !important;
+}
+
+html[data-theme="mono"] .welcome-progress-track,
+body.theme-mono .welcome-progress-track {
+    background: #1C1B19 !important;
+}
+
+html[data-theme="mono"] .welcome-progress-fill,
+body.theme-mono .welcome-progress-fill {
+    background: #C8BFA8 !important;
+    box-shadow: none !important;
+}
+
 /* 19. Auth Overlay & Card */
 html[data-theme="mono"] .auth-card,
 body.theme-mono .auth-card {
@@ -24520,21 +25254,121 @@ body.theme-mono .auth-card::before {
     pointer-events: none !important;
 }
 
-html[data-theme="mono"] .auth-tabs,
-body.theme-mono .auth-tabs {
+html[data-theme="mono"] .auth-header h2,
+body.theme-mono .auth-header h2 {
+    color: #F2F0E9 !important;
+    -webkit-text-fill-color: #F2F0E9 !important;
+    background: none !important;
+}
+
+html[data-theme="mono"] .auth-header p,
+body.theme-mono .auth-header p,
+html[data-theme="mono"] #auth-subtitle,
+body.theme-mono #auth-subtitle {
+    color: #AAA79F !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="mono"] .auth-tab-switch,
+body.theme-mono .auth-tab-switch {
     background: #121211 !important;
     border: 1px solid #262522 !important;
 }
 
 html[data-theme="mono"] .auth-tab-btn,
 body.theme-mono .auth-tab-btn {
-    color: #74716B !important;
+    color: #AAA79F !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+}
+
+html[data-theme="mono"] .auth-tab-btn:hover,
+body.theme-mono .auth-tab-btn:hover {
+    color: #F2F0E9 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
 }
 
 html[data-theme="mono"] .auth-tab-btn.active,
 body.theme-mono .auth-tab-btn.active {
     background: #E1DCCF !important;
     color: #11110F !important;
+    border-color: #E1DCCF !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme="mono"] .auth-card .form-group label,
+body.theme-mono .auth-card .form-group label {
+    color: #CBC7BD !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="mono"] .auth-card .form-group input,
+body.theme-mono .auth-card .form-group input {
+    background: #121211 !important;
+    border: 1px solid #2B2A27 !important;
+    color: #F2F0E9 !important;
+}
+
+html[data-theme="mono"] .auth-card .form-group input:focus,
+body.theme-mono .auth-card .form-group input:focus {
+    border-color: #756E60 !important;
+    box-shadow: 0 0 0 2px rgba(200, 191, 168, 0.15) !important;
+    color: #F2F0E9 !important;
+}
+
+html[data-theme="mono"] .auth-card input::placeholder,
+body.theme-mono .auth-card input::placeholder {
+    color: #65625D !important;
+}
+
+html[data-theme="mono"] .auth-card .input-icon-wrapper .input-icon,
+body.theme-mono .auth-card .input-icon-wrapper .input-icon {
+    color: #74716B !important;
+}
+
+html[data-theme="mono"] .auth-card .password-toggle-btn,
+body.theme-mono .auth-card .password-toggle-btn {
+    color: #AAA79F !important;
+}
+
+html[data-theme="mono"] .auth-forgot-link,
+body.theme-mono .auth-forgot-link {
+    color: #C8BFA8 !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="mono"] .auth-forgot-link:hover,
+body.theme-mono .auth-forgot-link:hover {
+    color: #F2F0E9 !important;
+    text-decoration: underline !important;
+}
+
+html[data-theme="mono"] .auth-card .btn-primary,
+body.theme-mono .auth-card .btn-primary {
+    background: #E1DCCF !important;
+    color: #11110F !important;
+    font-weight: 700 !important;
+    border: 1px solid #E1DCCF !important;
+}
+
+html[data-theme="mono"] .auth-card .btn-primary:hover,
+body.theme-mono .auth-card .btn-primary:hover {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+}
+
+html[data-theme="mono"] .auth-switch-prompt,
+body.theme-mono .auth-switch-prompt {
+    color: #AAA79F !important;
+}
+
+html[data-theme="mono"] .auth-switch-prompt a,
+body.theme-mono .auth-switch-prompt a {
+    color: #C8BFA8 !important;
+    font-weight: 600 !important;
+    text-decoration: underline !important;
 }
 
 /* 20. Responsiveness & Viewport Scalability */

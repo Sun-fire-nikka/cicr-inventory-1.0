@@ -45,6 +45,21 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Playfair+Display:wght@500;700;800;900&family=Rajdhani:wght@500;600;700&display=swap"
         rel="stylesheet">
+    <!-- Synchronous FOUC prevention: Restore stored theme before CSS parse -->
+    <script>
+        (function() {
+            try {
+                const t = localStorage.getItem('cicr_vault_theme') || localStorage.getItem('cicr_theme');
+                if (t === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.classList.add('theme-light');
+                } else if (t === 'mono' || t === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'mono');
+                    document.documentElement.classList.remove('theme-light');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <!-- Stylesheets & Essential Preload -->
     <link rel="stylesheet" href="/src/style.css">
     <style>
@@ -72,7 +87,7 @@
     <script type="module" src="/src/main.ts"></script>
 </head>
 
-<body class="theme-mono">
+<body class="theme-mono auth-overlay-active">
     <!-- 3D Canvas Background -->
     <canvas id="canvas-3d"></canvas>
 
@@ -100,6 +115,10 @@
     <!-- Auth Overlay (Login/Signup) -->
     <div class="auth-overlay" id="auth-overlay">
         <div class="auth-card glass">
+            <button type="button" class="auth-theme-toggle" id="auth-theme-toggle" title="Switch Theme (Midnight Mono / Robo Lab)">
+                <i data-lucide="palette"></i>
+                <span class="auth-theme-label">Theme</span>
+            </button>
             <div class="auth-header">
                 <img src="logo.png" class="auth-logo" alt="CICR Logo" width="44" height="44">
                 <h2>CICR Inventory</h2>
@@ -271,7 +290,7 @@
 
 
     <!-- App Container (Hidden by default, shown when logged in) -->
-    <div class="app-container" id="app-container" style="display: none;">
+    <div class="app-container hidden" id="app-container" style="display: none !important;">
         <!-- Left Sidebar Navigation -->
         <aside class="app-sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -1383,11 +1402,10 @@
                                         <tr>
                                             <th>COMPONENT</th>
                                             <th>BORROWER</th>
-                                            <th>APPROVED BY (ADMIN)</th>
+                                            <th>APPROVED BY</th>
                                             <th>EVENT TYPE</th>
                                             <th>QTY</th>
                                             <th>DATE</th>
-                                            <th>TIME</th>
                                             <th>PURPOSE / REASON</th>
                                             <th>STATUS / RETURN LOG</th>
                                             <th>ACTION</th>
