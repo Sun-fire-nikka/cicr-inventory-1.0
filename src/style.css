@@ -8155,8 +8155,8 @@ body.theme-light .sidebar-scroll-content::-webkit-scrollbar-thumb {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+    gap: 12px;
+    flex-wrap: nowrap;
 }
 
 .status-toast {
@@ -17453,7 +17453,7 @@ body.theme-light .date-preset-pill.active {
 /* 2. Cyber Telemetry Metrics HUD */
 .profile-telemetry-hud {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     width: 100%;
     box-sizing: border-box;
@@ -20994,7 +20994,7 @@ body.theme-light .viewport-header {
     border: 1px solid rgba(130, 90, 210, 0.20) !important;
     border-radius: 18px !important;
     box-shadow: 0 8px 25px rgba(100, 70, 160, 0.06) !important;
-    padding: 12px 20px !important;
+    padding: 0 16px !important;
 }
 
 html[data-theme="light"] .breadcrumb-btn,
@@ -25383,96 +25383,230 @@ body.theme-mono .auth-switch-prompt a {
 
 /* ========================================================
    UNIFIED TOP HEADER BAR & PILLS SYSTEM
-   Aligns Cart, Notifications, Theme Selector, and Breadcrumbs
+   Aligns Menu Toggle, Breadcrumbs, Cart, Notifications, & Theme Selector
+   Single horizontal axis baseline for both Robo Lab & Midnight Mono
    ======================================================== */
 .viewport-header {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     height: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
     padding: 0 16px !important;
     box-sizing: border-box !important;
     margin-bottom: 20px !important;
     width: 100% !important;
     max-width: 100% !important;
-    overflow-x: clip !important;
-    overflow-y: visible !important;
-}
-
-.header-left {
-    display: flex !important;
-    align-items: center !important;
+    overflow: visible !important;
+    flex-wrap: nowrap !important;
     gap: 12px !important;
 }
 
-.header-right {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-}
-
-/* 1. Breadcrumbs Capsule */
-.breadcrumbs,
-html[data-theme="mono"] .breadcrumbs,
-body.theme-mono .breadcrumbs {
+.header-left {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 8px !important;
-    height: 36px !important;
-    padding: 0 14px !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+}
+
+.header-right {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+}
+
+/* Base Unified Pill Standards for ALL Header Controls */
+.mobile-sidebar-toggle,
+.breadcrumbs,
+.header-cart-btn,
+.header-notif-btn,
+.header-theme-box {
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
     border-radius: 9999px !important;
-    background: #171715 !important;
-    border: 1px solid #2B2A27 !important;
-    color: #AAA79F !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+    font-family: inherit !important;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* 1. Mobile Sidebar Toggle Button */
+.mobile-sidebar-toggle {
+    padding: 0 12px !important;
+    cursor: pointer !important;
+    gap: 6px !important;
+    justify-content: center !important;
+}
+
+.mobile-sidebar-toggle i,
+.mobile-sidebar-toggle svg {
+    width: 16px !important;
+    height: 16px !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+}
+
+.mobile-sidebar-toggle span {
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1 !important;
+}
+
+/* 2. Breadcrumbs Capsule */
+.breadcrumbs {
+    padding: 0 14px !important;
+    gap: 8px !important;
     font-size: 11px !important;
     font-weight: 700 !important;
     letter-spacing: 0.05em !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
 }
 
-.breadcrumbs .breadcrumb-root {
-    color: #85817A !important;
+.breadcrumbs .breadcrumb-btn {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    font-family: inherit !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1 !important;
 }
 
 .breadcrumbs .breadcrumb-separator {
-    color: #55534F !important;
+    opacity: 0.5 !important;
+    line-height: 1 !important;
+    user-select: none !important;
 }
 
-.breadcrumbs .breadcrumb-active {
-    color: #F2F0E9 !important;
-}
-
-/* 2. Top Bar Right Controls (Cart, Notifications, Theme Selector) */
+/* 3. Cart & Notifications Buttons */
 .header-cart-btn,
-.header-notif-btn,
-.header-theme-box,
+.header-notif-btn {
+    padding: 0 12px 0 6px !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+}
+
+.header-cart-icon-box,
+.header-notif-icon-box {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+}
+
+.header-cart-icon-box svg,
+.header-cart-icon-box i,
+.header-notif-icon-box svg,
+.header-notif-icon-box i {
+    width: 13px !important;
+    height: 13px !important;
+}
+
+.header-cart-text,
+.header-notif-text {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.6px !important;
+    line-height: 1 !important;
+}
+
+.header-notif-dot {
+    display: none !important;
+}
+
+.header-cart-badge,
+.header-notif-badge {
+    min-width: 18px !important;
+    height: 18px !important;
+    border-radius: 9999px !important;
+    padding: 0 5px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+}
+
+/* 4. Theme Selector Box */
+.header-theme-box {
+    padding: 0 10px !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+}
+
+.header-theme-box .header-theme-icon {
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    flex-shrink: 0 !important;
+}
+
+.header-theme-box select {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-family: inherit !important;
+}
+
+/* --------------------------------------------------------
+   MIDNIGHT MONO THEME (DARK) SPECIFICS
+   -------------------------------------------------------- */
+html[data-theme="mono"] .viewport-header,
+body.theme-mono .viewport-header {
+    background: #10100F !important;
+    border: 1px solid #262522 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme="mono"] .mobile-sidebar-toggle,
+body.theme-mono .mobile-sidebar-toggle,
+html[data-theme="mono"] .breadcrumbs,
+body.theme-mono .breadcrumbs,
 html[data-theme="mono"] .header-cart-btn,
 body.theme-mono .header-cart-btn,
 html[data-theme="mono"] .header-notif-btn,
 body.theme-mono .header-notif-btn,
 html[data-theme="mono"] .header-theme-box,
 body.theme-mono .header-theme-box {
-    height: 36px !important;
-    padding: 0 12px 0 6px !important;
-    border-radius: 9999px !important;
     background: #171715 !important;
     border: 1px solid #2B2A27 !important;
     color: #F2F0E9 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    box-sizing: border-box !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
-    transition: all 0.18s ease !important;
-    cursor: pointer !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.6px !important;
 }
 
-.header-cart-btn:hover,
-.header-notif-btn:hover,
-.header-theme-box:hover,
+html[data-theme="mono"] .mobile-sidebar-toggle:hover,
+body.theme-mono .mobile-sidebar-toggle:hover,
 html[data-theme="mono"] .header-cart-btn:hover,
 body.theme-mono .header-cart-btn:hover,
 html[data-theme="mono"] .header-notif-btn:hover,
@@ -25484,79 +25618,86 @@ body.theme-mono .header-theme-box:hover {
     transform: translateY(-1px) !important;
 }
 
-.header-cart-icon-box,
-.header-notif-icon-box,
+html[data-theme="mono"] .mobile-sidebar-toggle i,
+html[data-theme="mono"] .mobile-sidebar-toggle svg,
+body.theme-mono .mobile-sidebar-toggle i,
+body.theme-mono .mobile-sidebar-toggle svg {
+    color: #72C7D5 !important;
+}
+
+html[data-theme="mono"] .mobile-sidebar-toggle span,
+body.theme-mono .mobile-sidebar-toggle span {
+    color: #F2F0E9 !important;
+}
+
+html[data-theme="mono"] .breadcrumbs .breadcrumb-root,
+body.theme-mono .breadcrumbs .breadcrumb-root {
+    color: #85817A !important;
+}
+
+html[data-theme="mono"] .breadcrumbs .breadcrumb-separator,
+body.theme-mono .breadcrumbs .breadcrumb-separator {
+    color: #55534F !important;
+}
+
+html[data-theme="mono"] .breadcrumbs .breadcrumb-active,
+body.theme-mono .breadcrumbs .breadcrumb-active {
+    color: #F2F0E9 !important;
+}
+
 html[data-theme="mono"] .header-cart-icon-box,
 body.theme-mono .header-cart-icon-box,
 html[data-theme="mono"] .header-notif-icon-box,
 body.theme-mono .header-notif-icon-box {
-    width: 26px !important;
-    height: 26px !important;
-    border-radius: 50% !important;
     background: #20201E !important;
     border: 1px solid #33322E !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     color: #72C7D5 !important;
-    position: relative !important;
 }
 
-.header-cart-icon-box svg,
-.header-cart-icon-box i,
-.header-notif-icon-box svg,
-.header-notif-icon-box i {
-    width: 13px !important;
-    height: 13px !important;
+html[data-theme="mono"] .header-cart-text,
+body.theme-mono .header-cart-text,
+html[data-theme="mono"] .header-notif-text,
+body.theme-mono .header-notif-text,
+html[data-theme="mono"] .header-theme-box select,
+body.theme-mono .header-theme-box select {
+    color: #F2F0E9 !important;
 }
 
-.header-theme-box {
-    padding: 0 10px !important;
-}
-
-.header-theme-box .header-theme-icon {
-    width: 14px !important;
-    height: 14px !important;
+html[data-theme="mono"] .header-theme-box .header-theme-icon,
+body.theme-mono .header-theme-box .header-theme-icon {
     color: #AAA79F !important;
 }
 
-.header-theme-box select {
+html[data-theme="mono"] .header-theme-box select option,
+body.theme-mono .header-theme-box select option {
+    background: #171715 !important;
     color: #F2F0E9 !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.3px !important;
-    cursor: pointer !important;
 }
 
-/* Remove awkward overlapping beige dot over bell */
-.header-notif-dot,
-html[data-theme="mono"] .header-notif-dot,
-body.theme-mono .header-notif-dot {
-    display: none !important;
-}
-
-/* Badges */
-.header-cart-badge,
-.header-notif-badge,
 html[data-theme="mono"] .header-cart-badge,
 body.theme-mono .header-cart-badge,
 html[data-theme="mono"] .header-notif-badge,
 body.theme-mono .header-notif-badge {
-    min-width: 18px !important;
-    height: 18px !important;
-    border-radius: 9999px !important;
-    padding: 0 5px !important;
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     background: #E1DCCF !important;
     color: #11110F !important;
     border: 1px solid #E1DCCF !important;
 }
 
-/* Robo Lab Light Theme for Navbar Header */
+/* --------------------------------------------------------
+   ROBO LAB THEME (LIGHT) SPECIFICS
+   -------------------------------------------------------- */
+html[data-theme="light"] .viewport-header,
+body.theme-light .viewport-header {
+    background: linear-gradient(145deg, rgba(250, 246, 255, 0.94) 0%, rgba(244, 238, 254, 0.94) 100%) !important;
+    border: 1px solid rgba(130, 90, 210, 0.20) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 25px rgba(100, 70, 160, 0.06) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+}
+
+html[data-theme="light"] .mobile-sidebar-toggle,
+body.theme-light .mobile-sidebar-toggle,
 html[data-theme="light"] .breadcrumbs,
 body.theme-light .breadcrumbs,
 html[data-theme="light"] .header-cart-btn,
@@ -25565,20 +25706,50 @@ html[data-theme="light"] .header-notif-btn,
 body.theme-light .header-notif-btn,
 html[data-theme="light"] .header-theme-box,
 body.theme-light .header-theme-box {
-    background: rgba(255, 255, 255, 0.92) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
     border: 1px solid rgba(130, 90, 210, 0.22) !important;
     color: #17152B !important;
     box-shadow: 0 2px 8px rgba(100, 70, 160, 0.05) !important;
 }
 
+html[data-theme="light"] .mobile-sidebar-toggle:hover,
+body.theme-light .mobile-sidebar-toggle:hover,
+html[data-theme="light"] .header-cart-btn:hover,
+body.theme-light .header-cart-btn:hover,
+html[data-theme="light"] .header-notif-btn:hover,
+body.theme-light .header-notif-btn:hover,
+html[data-theme="light"] .header-theme-box:hover,
+body.theme-light .header-theme-box:hover {
+    background: #ffffff !important;
+    border-color: rgba(130, 90, 210, 0.40) !important;
+    box-shadow: 0 4px 14px rgba(100, 70, 160, 0.12) !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="light"] .mobile-sidebar-toggle i,
+html[data-theme="light"] .mobile-sidebar-toggle svg,
+body.theme-light .mobile-sidebar-toggle i,
+body.theme-light .mobile-sidebar-toggle svg {
+    color: #8058D7 !important;
+}
+
+html[data-theme="light"] .mobile-sidebar-toggle span,
+body.theme-light .mobile-sidebar-toggle span {
+    color: #17152B !important;
+}
+
+html[data-theme="light"] .breadcrumbs .breadcrumb-root,
+body.theme-light .breadcrumbs .breadcrumb-root {
+    color: #585170 !important;
+}
+
+html[data-theme="light"] .breadcrumbs .breadcrumb-separator,
+body.theme-light .breadcrumbs .breadcrumb-separator {
+    color: #827A9C !important;
+}
+
 html[data-theme="light"] .breadcrumbs .breadcrumb-active,
-body.theme-light .breadcrumbs .breadcrumb-active,
-html[data-theme="light"] .header-cart-text,
-body.theme-light .header-cart-text,
-html[data-theme="light"] .header-notif-text,
-body.theme-light .header-notif-text,
-html[data-theme="light"] #header-theme-select,
-body.theme-light #header-theme-select {
+body.theme-light .breadcrumbs .breadcrumb-active {
     color: #17152B !important;
 }
 
@@ -25587,8 +25758,28 @@ body.theme-light .header-cart-icon-box,
 html[data-theme="light"] .header-notif-icon-box,
 body.theme-light .header-notif-icon-box {
     background: rgba(156, 120, 237, 0.12) !important;
-    border-color: rgba(156, 120, 237, 0.25) !important;
+    border: 1px solid rgba(156, 120, 237, 0.25) !important;
     color: #8058D7 !important;
+}
+
+html[data-theme="light"] .header-cart-text,
+body.theme-light .header-cart-text,
+html[data-theme="light"] .header-notif-text,
+body.theme-light .header-notif-text,
+html[data-theme="light"] .header-theme-box select,
+body.theme-light .header-theme-box select {
+    color: #17152B !important;
+}
+
+html[data-theme="light"] .header-theme-box .header-theme-icon,
+body.theme-light .header-theme-box .header-theme-icon {
+    color: #8058D7 !important;
+}
+
+html[data-theme="light"] .header-theme-box select option,
+body.theme-light .header-theme-box select option {
+    background: #ffffff !important;
+    color: #17152B !important;
 }
 
 html[data-theme="light"] .header-cart-badge,
@@ -25597,5 +25788,94 @@ html[data-theme="light"] .header-notif-badge,
 body.theme-light .header-notif-badge {
     background: #8058D7 !important;
     color: #ffffff !important;
-    border-color: #8058D7 !important;
+    border: 1px solid #8058D7 !important;
 }
+
+/* --------------------------------------------------------
+   RESPONSIVE NAVBAR RULES: NEVER WRAP, KEEP HORIZONTAL
+   -------------------------------------------------------- */
+@media (max-width: 768px) {
+    .viewport-header {
+        height: 52px !important;
+        min-height: 52px !important;
+        max-height: 52px !important;
+        padding: 0 10px !important;
+        gap: 8px !important;
+        margin-bottom: 14px !important;
+    }
+
+    .header-left {
+        gap: 6px !important;
+    }
+
+    .header-right {
+        gap: 6px !important;
+    }
+
+    .mobile-sidebar-toggle,
+    .breadcrumbs,
+    .header-cart-btn,
+    .header-notif-btn,
+    .header-theme-box {
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+    }
+
+    .mobile-sidebar-toggle {
+        width: 34px !important;
+        min-width: 34px !important;
+        padding: 0 !important;
+    }
+
+    .mobile-sidebar-toggle span {
+        display: none !important;
+    }
+
+    .breadcrumbs {
+        padding: 0 10px !important;
+        font-size: 10px !important;
+    }
+
+    .breadcrumbs .breadcrumb-root,
+    .breadcrumbs .breadcrumb-separator {
+        display: none !important;
+    }
+
+    .header-cart-text,
+    .header-notif-text {
+        display: none !important;
+    }
+
+    .header-cart-btn,
+    .header-notif-btn {
+        padding: 0 8px 0 4px !important;
+        gap: 4px !important;
+    }
+
+    .header-cart-icon-box,
+    .header-notif-icon-box {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+    }
+
+    .header-cart-icon-box svg,
+    .header-cart-icon-box i,
+    .header-notif-icon-box svg,
+    .header-notif-icon-box i {
+        width: 12px !important;
+        height: 12px !important;
+    }
+
+    .header-theme-box {
+        padding: 0 6px !important;
+        gap: 4px !important;
+    }
+
+    .header-theme-box select {
+        max-width: 82px !important;
+        font-size: 10px !important;
+    }
+}
+

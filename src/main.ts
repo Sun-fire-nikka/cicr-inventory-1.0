@@ -491,7 +491,7 @@ class Background3D {
 class DatabaseManager {
     static init() {
         // Enforce clean fresh start across all browsers and users
-        const CURRENT_STATE_EPOCH = 'cicr_v7_clean_reset_all_sync';
+        const CURRENT_STATE_EPOCH = 'cicr_v8_clean_reset_returned_ss3';
         if (localStorage.getItem('cicr_fresh_epoch') !== CURRENT_STATE_EPOCH) {
             localStorage.removeItem('cicr_requests');
             localStorage.removeItem('cicr_logs');
@@ -517,6 +517,9 @@ class DatabaseManager {
                     const nm = (item.name || '').toLowerCase();
                     if (nm.includes('model unclear') || nm === 'arduino board') {
                         item.name = 'Arduino Uno R3';
+                    }
+                    if (Array.isArray(item.borrowedBy)) {
+                        item.borrowedBy = item.borrowedBy.filter((b: any) => !b.returned && b.status !== 'RETURNED');
                     }
                 });
             } catch {
@@ -8369,20 +8372,7 @@ class ProfileViewManager {
         const heroBranchTag = document.getElementById('profile-hero-branch-text');
         if (heroBranchTag) heroBranchTag.textContent = branch ? `Branch: ${branch}` : 'Branch: CSE';
 
-        // Role & Status Badges
-        const roleBadgeText = document.getElementById('profile-badge-role-text');
-        if (roleBadgeText) {
-            roleBadgeText.textContent = role === 'ADMIN' ? 'SYSADMIN' : 'MEMBER';
-        }
 
-        const roleBadge = document.getElementById('profile-hero-role-badge');
-        if (roleBadge) {
-            if (role === 'ADMIN') {
-                roleBadge.classList.add('badge-role-admin');
-            } else {
-                roleBadge.classList.remove('badge-role-admin');
-            }
-        }
 
         // Institutional Credentials
         const credName = document.getElementById('cred-full-name');
@@ -8419,14 +8409,6 @@ class ProfileViewManager {
                 }
             });
         });
-
-        // Add history count from backend history if larger
-        if (this.cachedHistory.length > 0) {
-            const histReturned = this.cachedHistory.filter(h => h.status === 'RETURNED').length;
-            if (histReturned > totalReturnedCount) {
-                totalReturnedCount = histReturned;
-            }
-        }
 
         const MAX_LOAN_QUOTA = 5;
         const activeCount = activeLoans.length;
@@ -8487,21 +8469,7 @@ class ProfileViewManager {
             }
         }
 
-        // 4. Metric: Vault Clearance
-        const metricClearance = document.getElementById('profile-metric-clearance');
-        const clearancePill = document.getElementById('profile-clearance-pill');
-        const clearanceSub = document.getElementById('profile-clearance-sub');
-        if (metricClearance) {
-            if (role === 'ADMIN') {
-                metricClearance.textContent = 'SYSADMIN';
-                if (clearancePill) clearancePill.textContent = 'Tier 4';
-                if (clearanceSub) clearanceSub.textContent = 'Full telemetry & write clearance';
-            } else {
-                metricClearance.textContent = 'OPERATOR';
-                if (clearancePill) clearancePill.textContent = 'Tier 1';
-                if (clearanceSub) clearanceSub.textContent = 'Hardware checkout authorized';
-            }
-        }
+
 
         // Tab count badges
         const tabCountLoans = document.getElementById('profile-tab-count-loans');
