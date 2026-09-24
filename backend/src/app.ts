@@ -8,6 +8,7 @@ import borrowRoutes from './modules/borrow/borrow.routes';
 import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import { dbRead, dbWrite } from './config/database';
 import { buildHealthPayload } from './config/healthMonitor';
+import { authenticateToken, requireAdmin } from './middleware/auth.middleware';
 dotenv.config();
 
 export const supabase = dbWrite;
@@ -62,8 +63,8 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(statusCode).json(payload);
 });
 
-// SMTP diagnostics endpoint
-app.get('/api/smtp-debug', async (req: Request, res: Response) => {
+// SMTP diagnostics endpoint (M-5: admin-only — exposes network/config presence oracles)
+app.get('/api/smtp-debug', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
   const net = await import('net');
   const dns = await import('dns');
 
