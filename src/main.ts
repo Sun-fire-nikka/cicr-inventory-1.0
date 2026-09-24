@@ -6218,7 +6218,8 @@ class AdminManager {
             { id: 'mem-utsavi', name: 'Utsavi Sinha', email: '992501210022@mail.jiit.ac.in', roll_number: '992501210022', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'E1 ECM', created_at: '2026-09-08T17:05:00.000Z' },
             { id: 'mem-tanisha', name: 'Tanisha', email: '992501040037@mail.jiit.ac.in', roll_number: '992501040037', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' },
             { id: 'mem-kushagra', name: 'Kushagra Garg', email: '992501030406@mail.jiit.ac.in', roll_number: '992501030406', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F7 CSE', created_at: '2026-09-08T17:05:00.000Z' },
-            { id: 'mem-parivisha', name: 'Parivisha Midha', email: '992501040035@mail.jiit.ac.in', roll_number: '992501040035', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' }
+            { id: 'mem-parivisha', name: 'Parivisha Midha', email: '992501040035@mail.jiit.ac.in', roll_number: '992501040035', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-juhi', name: 'Juhi Singh', email: 'jeg262274@mail.jiit.ac.in', roll_number: 'JEG262274', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F27 AI & ML', created_at: '2026-09-24T18:00:00.000Z' }
         ];
 
         for (const mem of defaultMembers) {
