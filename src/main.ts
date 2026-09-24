@@ -491,19 +491,25 @@ class Background3D {
 class DatabaseManager {
     static init() {
         // Enforce clean fresh start across all browsers and users
-        const CURRENT_STATE_EPOCH = 'cicr_v8_clean_reset_returned_ss3';
+        const CURRENT_STATE_EPOCH = 'cicr_v9_purge_all_logs_complete';
         if (localStorage.getItem('cicr_fresh_epoch') !== CURRENT_STATE_EPOCH) {
             localStorage.removeItem('cicr_requests');
             localStorage.removeItem('cicr_logs');
             localStorage.removeItem('cicr_inventory');
             localStorage.removeItem('cicr_dismissed_requests');
             localStorage.removeItem('cicr_pending_returns');
+            localStorage.removeItem('cicr_read_notifs');
+            localStorage.removeItem('cicr_cart_items');
             localStorage.setItem('cicr_notifs_cleared', 'true');
             localStorage.setItem('cicr_fresh_epoch', CURRENT_STATE_EPOCH);
             DatabaseManager.isNotificationsCleared = true;
             inventory = [];
             logs = [];
             requests = [];
+            if (typeof AdminManager !== 'undefined') {
+                AdminManager.hardwareRequests = [];
+                AdminManager.userHardwareRequests = [];
+            }
             if ((window as any).dashboard) {
                 (window as any).dashboard.renderStats();
             }
@@ -1323,6 +1329,17 @@ class DashboardManager {
                 }
             });
 
+            // Auto-expand parent section if it's currently collapsed so active link is visible
+            const currentActiveLink = document.querySelector(`.sidebar-nav-link[data-target="${targetId}"]`);
+            if (currentActiveLink) {
+                const parentSection = currentActiveLink.closest('.sidebar-section');
+                if (parentSection && parentSection.classList.contains('is-collapsed')) {
+                    parentSection.classList.remove('is-collapsed');
+                    const hdr = parentSection.querySelector('.sidebar-section-header');
+                    if (hdr) hdr.setAttribute('aria-expanded', 'true');
+                }
+            }
+
             // Update breadcrumbs text
             if (breadcrumbActive) {
                 const nameMap: Record<string, string> = {
@@ -1398,6 +1415,34 @@ class DashboardManager {
                 if (target) {
                     switchSection(target);
                     closeMobileSidebar();
+                }
+            });
+        });
+
+        // Interactive Collapsible Sidebar Sections (CORE WORKSPACE, MISCELLANEOUS)
+        const sidebarSectionHeaders = document.querySelectorAll('.sidebar-section-header');
+        sidebarSectionHeaders.forEach(header => {
+            header.setAttribute('role', 'button');
+            header.setAttribute('tabindex', '0');
+            header.setAttribute('aria-expanded', 'true');
+
+            const toggleSection = () => {
+                const section = header.closest('.sidebar-section');
+                if (!section) return;
+                const isCollapsed = section.classList.toggle('is-collapsed');
+                header.setAttribute('aria-expanded', String(!isCollapsed));
+            };
+
+            header.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleSection();
+            });
+
+            header.addEventListener('keydown', (e: Event) => {
+                const keyEvent = e as KeyboardEvent;
+                if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+                    keyEvent.preventDefault();
+                    toggleSection();
                 }
             });
         });
@@ -6061,19 +6106,22 @@ class AdminManager {
 
     static async loadUsers(force = false) {
         const token = localStorage.getItem('cicr_token');
-        if (!token) return;
 
-        try {
-            const res = await fetch(`${API_BASE}/auth/admin/users${force ? '?force=true' : ''}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+        if (token) {
+            try {
+                const res = await fetch(`${API_BASE}/auth/admin/users${force ? '?force=true' : ''}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-            if (res.ok) {
-                const result = await res.json();
-                this.users = result.data || [];
+                if (res.ok) {
+                    const result = await res.json();
+                    if (Array.isArray(result.data) && result.data.length > 0) {
+                        this.users = result.data;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch admin users:', err);
             }
-        } catch (err) {
-            console.error('Failed to fetch admin users:', err);
         }
 
         // Ensure All Admins have full Master Admin powers in directory
@@ -6153,6 +6201,30 @@ class AdminManager {
                 if (!existing.batch && m.batch) existing.batch = m.batch;
             } else {
                 this.users.push(m);
+            }
+        }
+
+        const defaultMembers: AdminUserRecord[] = [
+            { id: 'mem-dhairya', name: 'Dhairya Mittal', email: 'jeg262612@mail.jiit.ac.in', roll_number: '992501030400', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F7 CSE', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-gourav', name: 'GOURAV MANDAL', email: '992501210003@mail.jiit.ac.in', roll_number: '992501210003', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'E1 ECM', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-arsh', name: 'mohammad arsh', email: 'bcg26260@mail.jiit.ac.in', roll_number: '992501040050', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-gungun', name: 'Gungun Yadav', email: 'njg262503@mail.jiit.ac.in', roll_number: '992501030380', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F6 CSE', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-kanan', name: 'Kanan Goyal', email: '992510170013@mail.jiit.ac.in', roll_number: '992510170013', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'MCA1', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-pulkit', name: 'Pulkit Sukhija', email: '992501220058@mail.jiit.ac.in', roll_number: '992501220058', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'E2 ECM', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-shaurya', name: 'Kumar Shaurya', email: '992501040097@mail.jiit.ac.in', roll_number: '992501040097', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H3 IT', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-arohan', name: 'Arohan', email: '992501210016@mail.jiit.ac.in', roll_number: '992501210016', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'E1 ECM', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-tushar', name: 'Tushar Goyal', email: '992501210081@mail.jiit.ac.in', roll_number: '992501210081', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'E3 ECM', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-agamjot', name: 'Agamjot Singh', email: '992501030404@mail.jiit.ac.in', roll_number: '992501030404', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F7 CSE', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-utsavi', name: 'Utsavi Sinha', email: '992501210022@mail.jiit.ac.in', roll_number: '992501210022', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'E1 ECM', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-tanisha', name: 'Tanisha', email: '992501040037@mail.jiit.ac.in', roll_number: '992501040037', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-kushagra', name: 'Kushagra Garg', email: '992501030406@mail.jiit.ac.in', roll_number: '992501030406', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F7 CSE', created_at: '2026-09-08T17:05:00.000Z' },
+            { id: 'mem-parivisha', name: 'Parivisha Midha', email: '992501040035@mail.jiit.ac.in', roll_number: '992501040035', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' }
+        ];
+
+        for (const mem of defaultMembers) {
+            const existing = this.users.find(u => u.email.toLowerCase() === mem.email.toLowerCase());
+            if (!existing) {
+                this.users.push(mem);
             }
         }
 

@@ -11,6 +11,7 @@
     "build": "tsc && vite build",
     "build:backend": "npm run build --prefix backend",
     "start": "npm start --prefix backend",
+    "purge-logs": "npm run purge-logs --prefix backend",
     "preview": "vite preview"
   },
   "dependencies": {

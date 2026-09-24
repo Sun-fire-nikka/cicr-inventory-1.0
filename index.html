@@ -82,12 +82,488 @@
             object-fit: contain;
         }
     </style>
+
+    <!-- ========================================================
+         CICR QUANTUM LASER MONOLITH PRELOADER (NON-CIRCULAR)
+         ======================================================== -->
+    <style id="cicr-preloader-styles">
+        .cicr-preloader {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #050608;
+            z-index: 99999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: 'Orbitron', 'Rajdhani', sans-serif;
+            color: #ffffff;
+            transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .cicr-preloader.preloader-exiting {
+            opacity: 0;
+            transform: scale(1.04);
+            filter: blur(14px);
+            pointer-events: none;
+        }
+
+        .cicr-preloader.preloader-hidden {
+            display: none !important;
+        }
+
+        /* Subtle Linear Cyber Grid Background (Zero Circles) */
+        .preloader-grid-layer {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            mask-image: linear-gradient(180deg, transparent 0%, #000 35%, #000 65%, transparent 100%);
+            -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 35%, #000 65%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* Subtle Ambient Horizon Beam (Zero Circles) */
+        .preloader-ambient-horizon {
+            position: absolute;
+            width: 600px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, rgba(0, 240, 255, 0.3) 30%, rgba(139, 92, 246, 0.4) 50%, rgba(0, 240, 255, 0.3) 70%, transparent 100%);
+            filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.6));
+            animation: horizonPulse 4s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes horizonPulse {
+            0% { opacity: 0.4; transform: scaleX(0.85); }
+            100% { opacity: 0.9; transform: scaleX(1.15); }
+        }
+
+        /* Central Architecture */
+        .preloader-center-assembly {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Laser Monolith Card (Rectangular with Moving Perimeter Laser) */
+        .preloader-monolith-wrapper {
+            position: relative;
+            width: 104px;
+            height: 104px;
+            margin-bottom: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .monolith-card {
+            position: relative;
+            width: 96px;
+            height: 96px;
+            border-radius: 20px;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 24px rgba(0, 240, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            animation: monolithFloat 3.2s ease-in-out infinite alternate;
+        }
+
+        @keyframes monolithFloat {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-4px); }
+        }
+
+        /* Continuous Rectangular Perimeter Laser Tracer */
+        .monolith-laser-svg {
+            position: absolute;
+            inset: 0;
+            width: 104px;
+            height: 104px;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .monolith-laser-track {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 1.5;
+        }
+
+        .monolith-laser-beam {
+            fill: none;
+            stroke: url(#laserBeamGrad);
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-dasharray: 85 275;
+            animation: laserRectRun 2.8s linear infinite;
+            filter: drop-shadow(0 0 6px #00f0ff) drop-shadow(0 0 12px #8b5cf6);
+        }
+
+        @keyframes laserRectRun {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -360; }
+        }
+
+        .monolith-logo-img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.5));
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Typography Matching the Dark Theme Brand Style */
+        .preloader-title-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+        }
+
+        .preloader-title {
+            margin: 0;
+            padding: 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            line-height: 1.15;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preloader-brand-cicr {
+            color: #ffffff;
+            letter-spacing: 1.5px;
+            text-shadow:
+                -1.5px 0 0 rgba(255, 45, 85, 0.8),
+                1.5px 0 0 rgba(0, 240, 255, 0.9),
+                0 0 18px rgba(0, 240, 255, 0.45);
+        }
+
+        .preloader-brand-inventory {
+            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-shadow: 0 0 16px rgba(255, 255, 255, 0.4), 0 0 24px rgba(0, 240, 255, 0.25);
+        }
+
+        .preloader-subtitle {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 0;
+        }
+
+        /* Unique Non-Circular Progress Assembly */
+        .preloader-progress-assembly {
+            width: 230px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Continuous Progress Rail */
+        .preloader-progress-track {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            overflow: visible;
+            position: relative;
+        }
+
+        .preloader-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00f0ff 0%, #8b5cf6 100%);
+            border-radius: 2px;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.85), 0 0 20px rgba(139, 92, 246, 0.5);
+            position: relative;
+            transition: width 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .preloader-progress-bar::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 1px;
+            background: #ffffff;
+            box-shadow: 0 0 8px #00f0ff, 0 0 16px #00f0ff;
+        }
+
+        /* Segmented Energy Cells Matrix (10 Cells) */
+        .preloader-energy-matrix {
+            display: flex;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .matrix-cell {
+            flex: 1;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 1px;
+            transition: background 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .matrix-cell.cell-active {
+            background: #00f0ff;
+            box-shadow: 0 0 8px #00f0ff, 0 0 14px rgba(0, 240, 255, 0.6);
+        }
+
+        .preloader-counter {
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: rgba(0, 240, 255, 0.95);
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+            margin-top: 2px;
+        }
+
+        /* Light Theme Adaptation (Robo Lab) */
+        html[data-theme="light"] .cicr-preloader,
+        body.theme-light .cicr-preloader {
+            background: #F8FAFD;
+            color: #0F172A;
+        }
+
+        html[data-theme="light"] .preloader-grid-layer {
+            background-image: 
+                linear-gradient(rgba(2, 132, 199, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(2, 132, 199, 0.06) 1px, transparent 1px);
+        }
+
+        html[data-theme="light"] .preloader-ambient-horizon {
+            background: linear-gradient(90deg, transparent 0%, rgba(2, 132, 199, 0.25) 30%, rgba(99, 102, 241, 0.3) 50%, rgba(2, 132, 199, 0.25) 70%, transparent 100%);
+            filter: drop-shadow(0 0 12px rgba(2, 132, 199, 0.4));
+        }
+
+        html[data-theme="light"] .monolith-card {
+            background: #FFFFFF;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08), 0 0 18px rgba(2, 132, 199, 0.12);
+        }
+
+        html[data-theme="light"] .monolith-laser-track {
+            stroke: rgba(15, 23, 42, 0.08);
+        }
+
+        html[data-theme="light"] .preloader-brand-cicr,
+        body.theme-light .preloader-brand-cicr,
+        html[data-theme="light"] .preloader-brand-inventory,
+        body.theme-light .preloader-brand-inventory {
+            color: #0F172A;
+            text-shadow: none;
+        }
+
+        html[data-theme="light"] .preloader-subtitle,
+        body.theme-light .preloader-subtitle {
+            color: #64748B;
+        }
+
+        html[data-theme="light"] .preloader-progress-track {
+            background: rgba(15, 23, 42, 0.08);
+        }
+
+        html[data-theme="light"] .matrix-cell {
+            background: rgba(15, 23, 42, 0.08);
+        }
+
+        html[data-theme="light"] .matrix-cell.cell-active {
+            background: #0284c7;
+            box-shadow: 0 0 8px rgba(2, 132, 199, 0.5);
+        }
+
+        html[data-theme="light"] .preloader-progress-bar {
+            background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%);
+            box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+        }
+
+        html[data-theme="light"] .preloader-progress-bar::after {
+            background: #0284c7;
+            box-shadow: 0 0 8px #0284c7;
+        }
+
+        html[data-theme="light"] .preloader-counter {
+            color: #0284c7;
+            text-shadow: none;
+        }
+    </style>
     <!-- Lucide Icons CDN (for dynamic runtime parsing, deferred to not block initial render) -->
     <script defer src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="/src/main.ts"></script>
 </head>
 
 <body class="theme-mono auth-overlay-active">
+    <!-- ========================================================
+         CICR QUANTUM LASER MONOLITH PRELOADER (NON-CIRCULAR)
+         ======================================================== -->
+    <div id="cicr-preloader" class="cicr-preloader" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Loading Application">
+        <!-- Linear Cyber Grid Background -->
+        <div class="preloader-grid-layer"></div>
+        <div class="preloader-ambient-horizon"></div>
+
+        <!-- Central Assembly -->
+        <div class="preloader-center-assembly">
+            <!-- Non-Circular Laser Monolith Card with Traveling Beam -->
+            <div class="preloader-monolith-wrapper">
+                <svg class="monolith-laser-svg" viewBox="0 0 104 104">
+                    <defs>
+                        <linearGradient id="laserBeamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00f0ff" />
+                            <stop offset="50%" stop-color="#8b5cf6" />
+                            <stop offset="100%" stop-color="#00f0ff" />
+                        </linearGradient>
+                    </defs>
+                    <rect class="monolith-laser-track" x="4" y="4" width="96" height="96" rx="20" ry="20" pathLength="360" />
+                    <rect class="monolith-laser-beam" x="4" y="4" width="96" height="96" rx="20" ry="20" pathLength="360" />
+                </svg>
+
+                <div class="monolith-card">
+                    <img src="/logo.png" alt="CICR Logo" class="monolith-logo-img">
+                </div>
+            </div>
+
+            <!-- Brand Typography (Preserving exact dark-theme font) -->
+            <div class="preloader-title-box">
+                <h1 class="preloader-title">
+                    <span class="preloader-brand-cicr">CICR</span>
+                    <span class="preloader-brand-inventory">Inventory</span>
+                </h1>
+                <p class="preloader-subtitle">Creative &amp; Innovative Cell in Robotics</p>
+            </div>
+
+            <!-- Unique Non-Circular Progress System: Dual-Tier Rail + Segmented Cells -->
+            <div class="preloader-progress-assembly">
+                <div class="preloader-progress-track">
+                    <div class="preloader-progress-bar" id="preloader-progress-bar"></div>
+                </div>
+                
+                <!-- Segmented Energy Matrix (10 High-Tech Quantum Cells) -->
+                <div class="preloader-energy-matrix" id="preloader-energy-matrix">
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                </div>
+
+                <span class="preloader-counter" id="preloader-counter">[ 00% ]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preloader Engine (Immediate Self-Executing Driver) -->
+    <script>
+        (function() {
+            const preloader = document.getElementById('cicr-preloader');
+            const bar = document.getElementById('preloader-progress-bar');
+            const counter = document.getElementById('preloader-counter');
+            const cells = document.querySelectorAll('.matrix-cell');
+            if (!preloader || !bar || !counter) return;
+
+            let currentProgress = 0;
+            let isLoaded = false;
+            let isDismissed = false;
+
+            function updateProgress(val) {
+                currentProgress = Math.min(100, Math.round(val));
+                bar.style.width = currentProgress + '%';
+                const formatted = String(currentProgress).padStart(2, '0');
+                counter.textContent = `[ ${formatted}% ]`;
+                preloader.setAttribute('aria-valuenow', String(currentProgress));
+
+                const activeCount = Math.floor((currentProgress / 100) * cells.length);
+                cells.forEach((cell, idx) => {
+                    if (idx < activeCount) {
+                        cell.classList.add('cell-active');
+                    } else {
+                        cell.classList.remove('cell-active');
+                    }
+                });
+            }
+
+            function dismiss() {
+                if (isDismissed) return;
+                isDismissed = true;
+                updateProgress(100);
+
+                setTimeout(() => {
+                    preloader.classList.add('preloader-exiting');
+                    setTimeout(() => {
+                        preloader.classList.add('preloader-hidden');
+                        preloader.remove();
+                    }, 650);
+                }, 220);
+            }
+
+            const startTime = Date.now();
+            const minDuration = 950;
+            const timer = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                if (!isLoaded) {
+                    const target = Math.min(92, Math.floor((elapsed / minDuration) * 90));
+                    if (currentProgress < target) {
+                        updateProgress(currentProgress + 2);
+                    }
+                } else {
+                    updateProgress(currentProgress + 6);
+                    if (currentProgress >= 100) {
+                        clearInterval(timer);
+                        dismiss();
+                    }
+                }
+            }, 20);
+
+            window.addEventListener('load', () => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, minDuration - elapsed);
+                setTimeout(() => {
+                    isLoaded = true;
+                }, remaining);
+            });
+
+            setTimeout(() => {
+                isLoaded = true;
+                dismiss();
+            }, 2200);
+        })();
+    </script>
+
     <!-- 3D Canvas Background -->
     <canvas id="canvas-3d"></canvas>
 
@@ -328,12 +804,12 @@
                 </button>
 
                 <!-- Navigation Links Section -->
-                <div class="sidebar-section">
-                    <div class="sidebar-section-header">
+                <div class="sidebar-section" id="sidebar-section-core">
+                    <div class="sidebar-section-header" id="sidebar-header-core" role="button" tabindex="0" aria-expanded="true" title="Toggle Core Workspace">
                         <span>CORE WORKSPACE</span>
                         <i data-lucide="chevron-down" class="section-arrow"></i>
                     </div>
-                    <div class="sidebar-nav-links">
+                    <div class="sidebar-nav-links" id="sidebar-nav-links-core">
                         <a href="#" class="sidebar-nav-link active" id="side-nav-dashboard"
                             data-target="dashboard-view">
                             <i data-lucide="layout-dashboard"></i>
@@ -360,8 +836,8 @@
                                 style="display: none; background: var(--neon-cyan, #00f0ff); color: #000; margin-left: auto; font-size: 7.5px; padding: 1px 5px; border-radius: 9999px; font-weight: 800;">0</span>
                         </a>
 
-                        <details class="vault-dropdown" open>
-                            <summary class="sidebar-nav-title">
+                        <details class="vault-dropdown" id="sidebar-vault-dropdown" open>
+                            <summary class="sidebar-nav-title" title="Toggle Vault Index">
                                 <span>VAULT INDEX</span>
                                 <i data-lucide="chevron-down"></i>
                             </summary>
@@ -396,12 +872,12 @@
                 </div>
 
                 <!-- Miscellaneous Section -->
-                <div class="sidebar-section" style="margin-top: 14px;">
-                    <div class="sidebar-section-header">
+                <div class="sidebar-section" id="sidebar-section-misc" style="margin-top: 14px;">
+                    <div class="sidebar-section-header" id="sidebar-header-misc" role="button" tabindex="0" aria-expanded="true" title="Toggle Miscellaneous">
                         <span>MISCELLANEOUS</span>
                         <i data-lucide="chevron-down" class="section-arrow"></i>
                     </div>
-                    <div class="sidebar-nav-links">
+                    <div class="sidebar-nav-links" id="sidebar-nav-links-misc">
                         <a href="#" class="sidebar-nav-link" id="side-nav-developers" data-target="developers-view"
                             onclick="event.preventDefault(); window.switchSection && window.switchSection('developers-view')">
                             <i data-lucide="code-2"></i>

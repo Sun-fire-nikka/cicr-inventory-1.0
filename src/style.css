@@ -6165,6 +6165,12 @@ input:-webkit-autofill:active {
     transform: rotate(180deg);
 }
 
+/* Ensure closed vault-dropdown hides its items even if child has !important */
+.vault-dropdown:not([open]) .sidebar-items-group,
+details.vault-dropdown:not([open]) > *:not(summary) {
+    display: none !important;
+}
+
 /* Pristine vertical list in app-sidebar on all devices */
 .app-sidebar .sidebar-items-group {
     display: flex !important;
@@ -7930,19 +7936,57 @@ body.theme-light .sidebar-scroll-content::-webkit-scrollbar-thumb {
     letter-spacing: 0.1em;
     color: #74716B;
     margin-bottom: 6px;
-    padding: 4px 6px 2px 6px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
-.sidebar-section-header .section-arrow {
-    width: 10px;
-    height: 10px;
-    opacity: 0.6;
+.sidebar-section-header:hover {
+    color: var(--text-main, #ffffff);
+    background: rgba(255, 255, 255, 0.05);
 }
 
-.sidebar-nav-links {
+body.theme-light .sidebar-section-header:hover,
+html[data-theme="light"] .sidebar-section-header:hover {
+    color: #0F172A;
+    background: rgba(15, 23, 42, 0.06);
+}
+
+.sidebar-section-header .section-arrow,
+.sidebar-section-header svg.section-arrow {
+    width: 12px;
+    height: 12px;
+    opacity: 0.7;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    transform-origin: center center;
+}
+
+.sidebar-section.is-collapsed .sidebar-section-header .section-arrow,
+.sidebar-section.is-collapsed .sidebar-section-header svg.section-arrow {
+    transform: rotate(-90deg);
+    opacity: 0.5;
+}
+
+.sidebar-section .sidebar-nav-links {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    overflow: hidden;
+    transition: max-height 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, margin 0.22s ease;
+    max-height: 800px;
+    opacity: 1;
+}
+
+.sidebar-section.is-collapsed .sidebar-nav-links {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    pointer-events: none !important;
 }
 
 .sidebar-nav-link {
@@ -25402,6 +25446,8 @@ body.theme-mono .auth-switch-prompt a {
     overflow: visible !important;
     flex-wrap: nowrap !important;
     gap: 12px !important;
+    position: relative !important;
+    z-index: 99999 !important;
 }
 
 .header-left {
@@ -25420,6 +25466,7 @@ body.theme-mono .auth-switch-prompt a {
     gap: 10px !important;
     flex-shrink: 0 !important;
     position: relative !important;
+    z-index: 100000 !important;
 }
 
 /* Base Unified Pill Standards for ALL Header Controls */
@@ -26194,5 +26241,36 @@ body.theme-mono .header-notif-dropdown .notif-view-all-btn:hover {
     }
 }
 
+/* ========================================================
+   CRITICAL FIX: Header Notification & Popover Stacking Context
+   Ensures notifications dropdown ALWAYS renders in front of dashboard cards,
+   greeting headers, and clock widgets
+   ======================================================== */
+.viewport-header {
+    position: relative !important;
+    z-index: 99999 !important;
+}
 
+.header-right {
+    position: relative !important;
+    z-index: 100000 !important;
+}
 
+.header-notif-wrapper {
+    position: relative !important;
+    z-index: 100001 !important;
+}
+
+.header-notif-dropdown {
+    position: absolute !important;
+    z-index: 100002 !important;
+}
+
+.main-content,
+#app-main-content,
+.dashboard-section,
+.dashboard-greeting-card,
+.dashboard-grid,
+.dash-card {
+    z-index: 1 !important;
+}
