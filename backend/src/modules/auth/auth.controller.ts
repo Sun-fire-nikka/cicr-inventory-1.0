@@ -970,10 +970,25 @@ export const adminCreateUser = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Name, college email, and temporary password are required.' });
     }
 
+    // M-7.1: temporary password must meet the registration length policy.
+    if (String(password).length < 6) {
+      return res.status(400).json({ status: 'error', message: 'Password must be at least 6 characters.' });
+    }
+
     const normEmail = email.trim().toLowerCase();
+    // M-7.2: syntactic email check only — no JIIT-domain restriction, so
+    // Gmail/superadmin provisioning keeps working.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normEmail)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid email format.' });
+    }
     const normUsername = (username || name).trim();
     const userBatch = batch ? String(batch).trim() : null;
     const userRole = role === 'ADMIN' ? 'ADMIN' : 'MEMBER';
+
+    // M-7.3: mirror the changeUserRole prohibition for this protected identity.
+    if (normEmail === 'mahakkatahara.mk@gmail.com' && userRole === 'ADMIN') {
+      return res.status(400).json({ status: 'error', message: 'User is not permitted to hold an ADMIN role.' });
+    }
 
     let userRoll = roll_number ? String(roll_number).trim() : null;
     if (!userRoll) {
@@ -999,8 +1014,13 @@ export const adminCreateUser = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (insertError || !newUser) {
+      // M-7.4: map the check-then-insert duplicate race to the duplicate
+      // response; never leak raw driver/PostgREST error text.
+      if ((insertError as any)?.code === '23505') {
+        return res.status(400).json({ status: 'error', message: `An account with email ${normEmail} or enrollment number ${userRoll} already exists.` });
+      }
       console.error('[ADMIN CREATE USER ERROR]:', insertError);
-      return res.status(500).json({ status: 'error', message: `Failed to create user in database: ${insertError?.message || 'DB error'}` });
+      return res.status(500).json({ status: 'error', message: 'Failed to create user in database.' });
     }
 
     // Admin-created users are automatically APPROVED!
