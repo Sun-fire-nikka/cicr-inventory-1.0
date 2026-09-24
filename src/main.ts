@@ -915,24 +915,16 @@ class DatabaseManager {
                 if (navBadge.innerText !== alertStr) navBadge.innerText = alertStr;
                 if (navBadge.style.display !== 'inline-flex') navBadge.style.display = 'inline-flex';
             }
-        } else if (allUserReqs.length > 0) {
-            const totalStr = String(allUserReqs.length);
-            if (sidebarBadge) {
-                if (sidebarBadge.innerText !== totalStr) sidebarBadge.innerText = totalStr;
-                if (sidebarBadge.style.display !== 'inline-flex') sidebarBadge.style.display = 'inline-flex';
-                sidebarBadge.classList.remove('pulse');
-            }
-            if (sidebarBeacon) {
-                sidebarBeacon.style.display = 'none';
-            }
-            if (navBadge) {
-                if (navBadge.innerText !== totalStr) navBadge.innerText = totalStr;
-                if (navBadge.style.display !== 'inline-flex') navBadge.style.display = 'inline-flex';
-            }
         } else {
-            if (sidebarBadge) sidebarBadge.style.display = 'none';
+            if (sidebarBadge) {
+                sidebarBadge.style.display = 'none';
+                sidebarBadge.innerText = '0';
+            }
             if (sidebarBeacon) sidebarBeacon.style.display = 'none';
-            if (navBadge) navBadge.style.display = 'none';
+            if (navBadge) {
+                navBadge.style.display = 'none';
+                navBadge.innerText = '0';
+            }
         }
 
         if (typeof NotificationCenterManager !== 'undefined' && typeof NotificationCenterManager.updateNotifications === 'function') {

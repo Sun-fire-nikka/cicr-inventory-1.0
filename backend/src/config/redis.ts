@@ -79,11 +79,16 @@ export const redisClient: Redis | null = isRedisEnabled
     })
   : null;
 
+let hasLoggedRedisError = false;
 if (redisClient) {
   redisClient.on('error', (err: Error) => {
-    console.warn('[REDIS] connection error (falling back to in-memory store):', err.message);
+    if (!hasLoggedRedisError) {
+      console.warn('[REDIS] connection error (falling back to in-memory store):', err.message);
+      hasLoggedRedisError = true;
+    }
   });
   redisClient.on('ready', () => {
+    hasLoggedRedisError = false;
     console.log('⚡ Connected to Redis at ' + REDIS_URL.replace(/\/\/.*@/, '//***@'));
   });
 }

@@ -91,6 +91,8 @@ export const getDbHealthSnapshot = (): DbHealthSnapshot => ({
  * keys are seeded from the current cache. On Redis failure the cache is left
  * untouched (fail-safe).
  */
+let hasLoggedDbHealthErr = false;
+
 export async function refreshDbContext(): Promise<void> {
   if (!redisClient) return;
   try {
@@ -108,8 +110,12 @@ export async function refreshDbContext(): Promise<void> {
 
     if (r === null) await redisClient.set(KEY_RECOVERING, boolToStr(recovering));
     else recovering = r === '1';
+    hasLoggedDbHealthErr = false;
   } catch (err: any) {
-    console.warn('[DBHEALTH] Shared-state refresh failed (keeping last known state):', err?.message);
+    if (!hasLoggedDbHealthErr) {
+      console.warn('[DBHEALTH] Shared-state refresh failed (keeping last known state):', err?.message);
+      hasLoggedDbHealthErr = true;
+    }
   }
 }
 

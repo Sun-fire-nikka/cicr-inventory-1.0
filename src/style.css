@@ -8423,19 +8423,20 @@ body.theme-light .sidebar-scroll-content::-webkit-scrollbar-thumb {
 
 /* Notification Dropdown Popover */
 .header-notif-dropdown {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    width: 360px;
-    max-width: min(360px, calc(100vw - 24px));
-    border-radius: 16px;
-    background: rgba(11, 15, 28, 0.96);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 240, 255, 0.25);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 25px rgba(0, 240, 255, 0.15);
-    z-index: 1200;
-    overflow: hidden;
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 0 !important;
+    left: auto !important;
+    width: 380px !important;
+    max-width: min(380px, calc(100vw - 24px)) !important;
+    border-radius: 16px !important;
+    background: #141416 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    z-index: 999999 !important;
+    overflow: hidden !important;
     animation: notifDropdownSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -8719,10 +8720,13 @@ body.theme-light .sidebar-scroll-content::-webkit-scrollbar-thumb {
 }
 
 /* Light Theme Dropdown */
-[data-theme="light"] .header-notif-dropdown {
-    background: #ffffff;
-    border-color: #cbd5e1;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 25px rgba(2, 132, 199, 0.1);
+[data-theme="light"] .header-notif-dropdown,
+body.theme-light .header-notif-dropdown {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 [data-theme="light"] .notif-dropdown-header,
@@ -25419,7 +25423,6 @@ body.theme-mono .auth-switch-prompt a {
 }
 
 /* Base Unified Pill Standards for ALL Header Controls */
-.mobile-sidebar-toggle,
 .breadcrumbs,
 .header-cart-btn,
 .header-notif-btn,
@@ -25437,12 +25440,29 @@ body.theme-mono .auth-switch-prompt a {
     transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* 1. Mobile Sidebar Toggle Button */
+/* 1. Mobile Sidebar Toggle Button - Strictly Hidden on Desktop / PC */
 .mobile-sidebar-toggle {
-    padding: 0 12px !important;
-    cursor: pointer !important;
-    gap: 6px !important;
-    justify-content: center !important;
+    display: none !important;
+}
+
+@media (max-width: 900px) {
+    .mobile-sidebar-toggle {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        border-radius: 9999px !important;
+        box-sizing: border-box !important;
+        vertical-align: middle !important;
+        margin: 0 !important;
+        font-family: inherit !important;
+        padding: 0 12px !important;
+        cursor: pointer !important;
+        gap: 6px !important;
+        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
 }
 
 .mobile-sidebar-toggle i,
@@ -26155,5 +26175,24 @@ body.theme-mono .header-notif-dropdown .notif-view-all-btn:hover {
     background: #282622 !important;
     color: #FFFFFF !important;
 }
+
+/* Authoritative Menu Button Removal on Laptops & Desktop PCs (> 900px) */
+@media (min-width: 901px) {
+    .mobile-sidebar-toggle,
+    #mobile-sidebar-toggle,
+    button.mobile-sidebar-toggle,
+    .viewport-header .mobile-sidebar-toggle {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 0 !important;
+        border: none !important;
+    }
+}
+
 
 

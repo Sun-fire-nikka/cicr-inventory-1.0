@@ -27,16 +27,31 @@ if (isRedisEnabled && REDIS_URL) {
     tls: REDIS_URL.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined
   };
 
-  // Dedicated separate connections: BullMQ worker runs blocking commands,
-  // so Queue and Worker must NEVER share the same ioredis client instance.
+  let hasLoggedQueueError = false;
   const queueConnection = new Redis(REDIS_URL, redisOptions);
-  queueConnection.on('error', (err: Error) => console.warn('[EMAIL QUEUE] Queue Redis error:', err.message));
+  queueConnection.on('error', (err: Error) => {
+    if (!hasLoggedQueueError) {
+      console.warn('[EMAIL QUEUE] Queue Redis error:', err.message);
+      hasLoggedQueueError = true;
+    }
+  });
 
+  let hasLoggedWorkerError = false;
   const workerConnection = new Redis(REDIS_URL, redisOptions);
-  workerConnection.on('error', (err: Error) => console.warn('[EMAIL QUEUE] Worker Redis error:', err.message));
+  workerConnection.on('error', (err: Error) => {
+    if (!hasLoggedWorkerError) {
+      console.warn('[EMAIL QUEUE] Worker Redis error:', err.message);
+      hasLoggedWorkerError = true;
+    }
+  });
 
   emailQueue = new Queue<EmailJobData>(QUEUE_NAME, { connection: queueConnection });
-  emailQueue.on('error', (err: Error) => console.warn('[EMAIL QUEUE] Queue instance error:', err.message));
+  emailQueue.on('error', (err: Error) => {
+    if (!hasLoggedQueueError) {
+      console.warn('[EMAIL QUEUE] Queue instance error:', err.message);
+      hasLoggedQueueError = true;
+    }
+  });
 
   // Lazily created on first job: emailService imports enqueueEmail from this
   // module, so resolving SMTP credentials at module top-level would read a
