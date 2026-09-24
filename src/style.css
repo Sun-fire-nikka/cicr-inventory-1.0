@@ -1808,12 +1808,220 @@ body.theme-light .auth-card input::placeholder,
    ============================================================ */
 .header-cart-wrapper {
     position: relative;
-    display: none !important;
+    display: inline-flex;
     align-items: center;
 }
 
-body.view-inventory-view .header-cart-wrapper {
+/* Vault Top Bar & Primary Cart Action */
+.vault-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.vault-heading-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vault-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #a8a29e;
+    letter-spacing: 0.3px;
+}
+
+.vault-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+}
+
+.btn-vault-cart-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 42px;
+    padding: 4px 16px 4px 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1C1B18 0%, #262420 100%);
+    border: 1px solid rgba(114, 199, 213, 0.35);
+    color: #F2F0E9;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.btn-vault-cart-top:hover {
+    background: linear-gradient(135deg, #24221E 0%, #302E28 100%);
+    border-color: #72C7D5;
+    box-shadow: 0 8px 24px rgba(114, 199, 213, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transform: translateY(-1.5px);
+    color: #ffffff;
+}
+
+.btn-vault-cart-top.has-items {
+    border-color: rgba(114, 199, 213, 0.6);
+    box-shadow: 0 0 20px rgba(114, 199, 213, 0.18);
+}
+
+.vault-cart-icon-box {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(114, 199, 213, 0.12);
+    color: #72C7D5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vault-cart-icon-box svg {
+    width: 15px;
+    height: 15px;
+}
+
+.vault-cart-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00f0ff;
+    box-shadow: 0 0 8px #00f0ff;
+}
+
+.vault-cart-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 9999px;
+    background: #72C7D5;
+    color: #141413;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+/* Catalog header quick cart button */
+.btn-vault-cart-quick {
     display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: rgba(114, 199, 213, 0.1) !important;
+    border: 1px solid rgba(114, 199, 213, 0.3) !important;
+    color: #72C7D5 !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-vault-cart-quick:hover {
+    background: rgba(114, 199, 213, 0.2) !important;
+    border-color: #72C7D5 !important;
+    color: #ffffff !important;
+}
+
+/* Floating Cart Capsule FAB */
+.floating-cart-fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 10000;
+    pointer-events: auto;
+    animation: fabSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fabSlideUp {
+    from { transform: translateY(30px) scale(0.9); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.btn-floating-cart {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    padding: 4px 18px 4px 12px;
+    border-radius: 9999px;
+    background: #141413;
+    border: 1.5px solid #72C7D5;
+    color: #F2F0E9;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 24px rgba(114, 199, 213, 0.25);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-floating-cart:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 32px rgba(114, 199, 213, 0.4);
+    background: #1C1B18;
+    color: #ffffff;
+}
+
+.floating-cart-icon-wrap {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(114, 199, 213, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #72C7D5;
+}
+
+.floating-cart-icon-wrap svg {
+    width: 17px;
+    height: 17px;
+}
+
+.floating-cart-ping {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: fabPing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes fabPing {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1.2); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.floating-cart-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 9999px;
+    background: #72C7D5;
+    color: #141413;
+    font-size: 11px;
+    font-weight: 800;
 }
 
 .header-cart-btn {
@@ -9172,6 +9380,25 @@ body.theme-light .header-notif-dropdown {
 .dash-card.card-cyan:hover {
     border-color: var(--neon-cyan);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25), 0 0 20px rgba(0, 240, 255, 0.25);
+}
+
+.dash-card.card-teal {
+    border-color: rgba(114, 199, 213, 0.35);
+}
+
+.dash-card.card-teal:hover {
+    border-color: #72C7D5;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25), 0 0 20px rgba(114, 199, 213, 0.28);
+}
+
+.card-teal .dash-card-icon-wrapper {
+    background: rgba(114, 199, 213, 0.08);
+    color: #72C7D5;
+    border: 1px solid rgba(114, 199, 213, 0.2);
+}
+
+.card-teal .dash-card-tag {
+    color: #72C7D5;
 }
 
 .dash-card.card-pink {
@@ -20342,6 +20569,9 @@ body.theme-light .inventory-grid {
     box-sizing: border-box !important;
     border-radius: 14px !important;
     position: relative !important;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 240px;
+    contain: layout style;
 }
 
 .inventory-card .card-header {
@@ -26273,4 +26503,69 @@ body.theme-mono .header-notif-dropdown .notif-view-all-btn:hover {
 .dashboard-grid,
 .dash-card {
     z-index: 1 !important;
+}
+
+/* Light Mode & High-Contrast Harmonization for Hardware Cart Elements */
+html[data-theme="light"] .btn-vault-cart-top,
+body.theme-light .btn-vault-cart-top {
+    background: #FFFFFF !important;
+    border: 1px solid rgba(130, 90, 210, 0.25) !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 14px rgba(130, 90, 210, 0.1) !important;
+}
+
+html[data-theme="light"] .btn-vault-cart-top:hover,
+body.theme-light .btn-vault-cart-top:hover {
+    border-color: #9C78ED !important;
+    box-shadow: 0 8px 24px rgba(156, 120, 237, 0.2) !important;
+}
+
+html[data-theme="light"] .vault-cart-badge-pill,
+body.theme-light .vault-cart-badge-pill {
+    background: #9C78ED !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="light"] .btn-floating-cart,
+body.theme-light .btn-floating-cart {
+    background: #FFFFFF !important;
+    border-color: #9C78ED !important;
+    color: #0f172a !important;
+    box-shadow: 0 12px 30px rgba(100, 70, 160, 0.18) !important;
+}
+
+html[data-theme="light"] .floating-cart-badge,
+body.theme-light .floating-cart-badge {
+    background: #9C78ED !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="light"] .dash-card.card-teal,
+body.theme-light .dash-card.card-teal {
+    border-color: rgba(130, 90, 210, 0.25) !important;
+    background: #FFFFFF !important;
+}
+
+html[data-theme="light"] .card-teal .dash-card-icon-wrapper,
+body.theme-light .card-teal .dash-card-icon-wrapper {
+    background: rgba(156, 120, 237, 0.1) !important;
+    color: #7c3aed !important;
+    border: 1px solid rgba(156, 120, 237, 0.25) !important;
+}
+
+html[data-theme="light"] .card-teal .dash-card-tag,
+body.theme-light .card-teal .dash-card-tag {
+    color: #7c3aed !important;
+}
+
+@media (max-width: 640px) {
+    .floating-cart-fab {
+        bottom: 20px;
+        right: 16px;
+    }
+    .btn-floating-cart {
+        height: 42px;
+        padding: 4px 14px 4px 10px;
+        font-size: 12.5px;
+    }
 }

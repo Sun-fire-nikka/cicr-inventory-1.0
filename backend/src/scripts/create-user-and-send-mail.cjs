@@ -23,14 +23,21 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
+const args = process.argv.slice(2);
+function getArg(key, def) {
+  const prefix = `--${key}=`;
+  const found = args.find(a => a.startsWith(prefix));
+  return found ? found.slice(prefix.length) : def;
+}
+
 const MEMBER_DATA = {
-  name: 'Juhi Singh',
-  email: 'jeg262274@mail.jiit.ac.in',
-  roll_number: 'JEG262274',
-  batch: 'F27',
-  branch: 'AI & ML',
+  name: getArg('name', 'Dev Maheshwari'),
+  email: getArg('email', '992501210067@mail.jiit.ac.in'),
+  roll_number: getArg('roll', '992501210067'),
+  batch: getArg('batch', 'E3'),
+  branch: getArg('branch', 'ECM'),
   role: 'MEMBER',
-  tempPassword: 'Juhi@CICR2026!'
+  tempPassword: getArg('pass', 'Dev@CICR2026!')
 };
 
 async function provisionAndSendMail() {

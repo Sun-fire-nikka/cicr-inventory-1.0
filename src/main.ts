@@ -316,6 +316,8 @@ class Background3D {
     private mouseY = 0;
     private targetCameraX = 0;
     private targetCameraY = 4;
+    private lastFrameTime = 0;
+    private readonly frameInterval = 1000 / 30;
 
     constructor() {
         this.canvas = document.getElementById('canvas-3d') as HTMLCanvasElement;
@@ -445,6 +447,11 @@ class Background3D {
     private animate() {
         requestAnimationFrame(() => this.animate());
         if (typeof document !== 'undefined' && document.hidden) return;
+
+        const now = performance.now();
+        const delta = now - this.lastFrameTime;
+        if (delta < this.frameInterval) return;
+        this.lastFrameTime = now - (delta % this.frameInterval);
 
         const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (prefersReducedMotion) return;
@@ -1308,16 +1315,22 @@ class DashboardManager {
             document.body.classList.toggle('view-inventory-view', targetId === 'inventory-view');
             document.body.classList.toggle('view-hardware-logs-view', targetId === 'hardware-logs-view');
 
-            // Top navbar cart button is strictly visible ONLY on the Vault page (inventory-view)
+            // Top navbar cart button is visible on Vault, Dashboard, or whenever items are staged
             const headerCartWrapper = document.querySelector('.header-cart-wrapper') as HTMLElement | null;
             if (headerCartWrapper) {
-                headerCartWrapper.style.display = targetId === 'inventory-view' ? 'inline-flex' : 'none';
+                const cartHasItems = typeof CartManager !== 'undefined' && CartManager.getCount() > 0;
+                headerCartWrapper.style.display = (targetId === 'inventory-view' || targetId === 'dashboard-view' || cartHasItems) ? 'inline-flex' : 'none';
             }
 
-            // Refresh Lucide icons if needed
-            if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                lucide.createIcons();
+            // Sync floating cart capsule FAB
+            const floatingFab = document.getElementById('floating-cart-fab');
+            if (floatingFab) {
+                const cartHasItems = typeof CartManager !== 'undefined' && CartManager.getCount() > 0;
+                floatingFab.style.display = (targetId === 'inventory-view' || cartHasItems) ? 'block' : 'none';
             }
+
+            // Refresh Lucide icons efficiently without re-parsing whole DOM
+            renderLucideIcons();
 
             // Update sidebar link active class
             sidebarLinks.forEach(link => {
@@ -1881,8 +1894,6 @@ class DashboardManager {
         });
         this.inventoryGrid.appendChild(fragment);
 
-        renderLucideIcons(this.inventoryGrid);
-
         // If currently viewing profile, keep active loans & quota updated in real time
         const profileSec = document.getElementById('profile-view');
         if (profileSec && profileSec.classList.contains('active') && typeof ProfileViewManager !== 'undefined') {
@@ -2272,6 +2283,45 @@ class CartManager {
             else navbarBtn.classList.remove('has-items');
         }
 
+        // Vault Top Bar Cart Button
+        const vaultBadge = document.getElementById('vault-cart-badge');
+        const vaultDot = document.getElementById('vault-cart-dot');
+        const vaultBtn = document.getElementById('btn-vault-cart-trigger');
+        if (vaultBadge) vaultBadge.innerText = String(count);
+        if (vaultDot) vaultDot.style.display = count > 0 ? 'block' : 'none';
+        if (vaultBtn) {
+            if (count > 0) vaultBtn.classList.add('has-items');
+            else vaultBtn.classList.remove('has-items');
+        }
+
+        // Catalog Header Action Cart Badge
+        const catalogBadge = document.getElementById('catalog-cart-badge');
+        if (catalogBadge) catalogBadge.innerText = String(count);
+
+        // Sidebar Cart Badge
+        const sideNavBadge = document.getElementById('side-nav-cart-badge');
+        if (sideNavBadge) {
+            sideNavBadge.innerText = String(count);
+            sideNavBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+
+        // Dashboard Cart Card Text
+        const dashCountText = document.getElementById('dash-cart-count-text');
+        if (dashCountText) {
+            dashCountText.innerText = count === 0 ? '0 items loaded' : `${count} component${count === 1 ? '' : 's'} staged`;
+        }
+
+        // Floating Action Button (FAB)
+        const floatingFab = document.getElementById('floating-cart-fab');
+        const floatingBadge = document.getElementById('floating-cart-badge');
+        const floatingPing = document.getElementById('floating-cart-ping');
+        if (floatingBadge) floatingBadge.innerText = String(count);
+        if (floatingPing) floatingPing.style.display = count > 0 ? 'block' : 'none';
+        if (floatingFab) {
+            const isInventory = document.body.classList.contains('view-inventory-view') || (document.getElementById('inventory-view')?.style.display !== 'none');
+            floatingFab.style.display = (isInventory || count > 0) ? 'block' : 'none';
+        }
+
         // Capsule Nav Cart Badge (if on capsule view)
         const capsuleBadge = document.getElementById('nav-cart-badge');
         if (capsuleBadge) {
@@ -2285,23 +2335,21 @@ class CartManager {
     }
 
     public static pulseFloatingCart() {
-        const navbarBtn = document.getElementById('btn-navbar-cart');
-        if (navbarBtn) {
-            navbarBtn.classList.remove('pulse-anim');
-            void navbarBtn.offsetWidth;
-            navbarBtn.classList.add('pulse-anim');
-        }
+        const btns = [
+            document.getElementById('btn-navbar-cart'),
+            document.getElementById('btn-vault-cart-trigger'),
+            document.getElementById('btn-floating-cart')
+        ];
+        btns.forEach(btn => {
+            if (btn) {
+                btn.classList.remove('pulse-anim');
+                void btn.offsetWidth;
+                btn.classList.add('pulse-anim');
+            }
+        });
     }
 
     public static openCart() {
-        const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
-        if (!isLoggedIn) {
-            ToastManager.show('Login Required', 'Please log in to review your hardware request cart.', 'warning');
-            AuthManager.showLoginOverlay();
-            document.getElementById('tab-login-btn')?.click();
-            return;
-        }
-
         const storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}');
         let userName = storedUser.name || storedUser.username || localStorage.getItem('cicr_auth') || 'Member';
         let userRoll = storedUser.roll_number || storedUser.roll || '';
@@ -2313,7 +2361,7 @@ class CartManager {
         const nameEl = document.getElementById('cart-borrower-name');
         const rollEl = document.getElementById('cart-borrower-roll');
         if (nameEl) nameEl.innerText = userName;
-        if (rollEl) rollEl.innerText = userRoll || 'Student';
+        if (rollEl) rollEl.innerText = userRoll || 'Student / Guest';
 
         const dueDateInput = document.getElementById('cart-due-date') as HTMLInputElement | null;
         if (dueDateInput && !dueDateInput.value) {
@@ -2658,6 +2706,26 @@ class CartManager {
         });
 
         document.getElementById('btn-vault-cart-trigger')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openCart();
+        });
+
+        document.getElementById('btn-catalog-cart-trigger')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openCart();
+        });
+
+        document.getElementById('side-nav-cart')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openCart();
+        });
+
+        document.getElementById('dash-card-cart')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openCart();
+        });
+
+        document.getElementById('btn-floating-cart')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.openCart();
         });
@@ -6219,7 +6287,8 @@ class AdminManager {
             { id: 'mem-tanisha', name: 'Tanisha', email: '992501040037@mail.jiit.ac.in', roll_number: '992501040037', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' },
             { id: 'mem-kushagra', name: 'Kushagra Garg', email: '992501030406@mail.jiit.ac.in', roll_number: '992501030406', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F7 CSE', created_at: '2026-09-08T17:05:00.000Z' },
             { id: 'mem-parivisha', name: 'Parivisha Midha', email: '992501040035@mail.jiit.ac.in', roll_number: '992501040035', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'H2 IT', created_at: '2026-09-08T17:05:00.000Z' },
-            { id: 'mem-juhi', name: 'Juhi Singh', email: 'jeg262274@mail.jiit.ac.in', roll_number: 'JEG262274', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F27 AI & ML', created_at: '2026-09-24T18:00:00.000Z' }
+            { id: 'mem-juhi', name: 'Juhi Singh', email: 'jeg262274@mail.jiit.ac.in', roll_number: 'JEG262274', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'F27 AI & ML', created_at: '2026-09-24T18:00:00.000Z' },
+            { id: 'mem-dev', name: 'Dev Maheshwari', email: '992501210067@mail.jiit.ac.in', roll_number: '992501210067', role: 'MEMBER', status: 'APPROVED', isMasterAdmin: false, batch: 'E3 ECM', created_at: '2026-09-24T18:20:00.000Z' }
         ];
 
         for (const mem of defaultMembers) {
