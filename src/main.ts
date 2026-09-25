@@ -121,15 +121,27 @@ if (typeof window !== 'undefined') {
 const isLocalHost = typeof window !== 'undefined' && (
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '[::1]' ||
     window.location.hostname.startsWith('192.168.') ||
+    window.location.hostname.startsWith('172.') ||
     window.location.hostname.startsWith('10.') ||
     window.location.hostname.endsWith('.local')
 );
 
-let API_BASE = (import.meta.env.VITE_API_BASE as string) ||
-    (isLocalHost
-        ? `http://${(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'localhost' : window.location.hostname}:5000/api`
-        : 'https://cicr-inventory-backend.onrender.com/api');
+let API_BASE = (() => {
+    if (typeof window !== 'undefined' && window.location) {
+        const host = window.location.hostname;
+        // When accessed from a mobile phone or another device on LAN (e.g. 192.168.x.x:5173),
+        // route directly to that same machine IP on port 5000 instead of literal localhost:5000
+        if (isLocalHost && host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]') {
+            return `http://${host}:5000/api`;
+        }
+    }
+    return (import.meta.env.VITE_API_BASE as string) ||
+        (isLocalHost
+            ? `http://${(typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) ? 'localhost' : (typeof window !== 'undefined' ? window.location.hostname : 'localhost')}:5000/api`
+            : 'https://cicr-inventory-backend.onrender.com/api');
+})();
 
 const CLOUD_API_FALLBACK = 'https://cicr-inventory-backend.onrender.com/api';
 
@@ -138,10 +150,23 @@ if (typeof window !== 'undefined' && window.fetch) {
     const originalFetch = window.fetch.bind(window);
     window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
         try {
-            return await originalFetch(input, init);
+            const res = await originalFetch(input, init);
+            if (res.status === 401) {
+                const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
+                if (urlStr && urlStr.includes('/api/auth/profile')) {
+                    const token = localStorage.getItem('cicr_token');
+                    if (token) {
+                        console.warn('[CICR Auth] Profile session invalid or expired (401). Clearing session.');
+                        if (typeof AuthManager !== 'undefined' && typeof AuthManager.handleLogout === 'function') {
+                            AuthManager.handleLogout();
+                        }
+                    }
+                }
+            }
+            return res;
         } catch (err: any) {
             const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
-            if (urlStr && (urlStr.includes(':5000/api'))) {
+            if (urlStr && urlStr.includes(':5000/api') && !urlStr.includes('/auth/')) {
                 const fallbackUrl = urlStr.replace(/https?:\/\/[^/]+:5000\/api/, CLOUD_API_FALLBACK);
                 console.warn(`[CICR API] Local backend unreachable. Auto-falling back to cloud backend: ${fallbackUrl}`);
                 return originalFetch(fallbackUrl, init);
@@ -399,23 +424,20 @@ class Background3D {
         const colors = this.particles.geometry.attributes.color.array as Float32Array;
         const count = colors.length / 3;
 
-        let c1: THREE.Color, c2: THREE.Color;
-        if (theme === 'light') {
-            c1 = new THREE.Color(0x9c78ed); // Robo Lab Purple
-            c2 = new THREE.Color(0xf5b8eb); // Robo Lab Soft Pink
-        } else {
-            // Default Midnight Mono
-            c1 = new THREE.Color(0x737373);
-            c2 = new THREE.Color(0xf5f5f2);
-        }
+        // Precalculated RGB normalized floats - zero heap allocations in loop
+        const r1 = theme === 'light' ? 0.6117 : 0.451;
+        const g1 = theme === 'light' ? 0.4705 : 0.451;
+        const b1 = theme === 'light' ? 0.9294 : 0.451;
+
+        const r2 = theme === 'light' ? 0.9607 : 0.9607;
+        const g2 = theme === 'light' ? 0.7215 : 0.9607;
+        const b2 = theme === 'light' ? 0.9215 : 0.949;
 
         for (let i = 0; i < count; i++) {
             const ratio = Math.random();
-            const c = c1.clone().lerp(c2, ratio);
-
-            colors[i * 3] = c.r;
-            colors[i * 3 + 1] = c.g;
-            colors[i * 3 + 2] = c.b;
+            colors[i * 3] = r1 + (r2 - r1) * ratio;
+            colors[i * 3 + 1] = g1 + (g2 - g1) * ratio;
+            colors[i * 3 + 2] = b1 + (b2 - b1) * ratio;
         }
 
         this.particles.geometry.attributes.color.needsUpdate = true;
@@ -476,18 +498,19 @@ class Background3D {
         requestAnimationFrame(() => this.animate());
         if (typeof document !== 'undefined' && document.hidden) return;
 
-        const now = performance.now();
-        const delta = now - this.lastFrameTime;
-        if (delta < this.frameInterval) return;
-        this.lastFrameTime = now - (delta % this.frameInterval);
-
-        const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (prefersReducedMotion) return;
+        // In Midnight Mono, canvas-3d is hidden. Skip rendering completely to eliminate GPU/CPU overhead!
+        if (this.currentTheme === 'mono') return;
+        if (this.canvas && this.canvas.offsetParent === null && window.getComputedStyle(this.canvas).display === 'none') return;
 
         const isScrolling = !!(window as any).isUserScrolling;
         if (isScrolling) {
             return;
         }
+
+        const now = performance.now();
+        const delta = now - this.lastFrameTime;
+        if (delta < this.frameInterval) return;
+        this.lastFrameTime = now - (delta % this.frameInterval);
 
         if (this.particles) {
             const positions = this.particles.geometry.attributes.position.array as Float32Array;
@@ -608,15 +631,16 @@ class DatabaseManager {
     static async syncFromBackend() {
         try {
             const token = localStorage.getItem('cicr_token');
+            const isAuth = (document.body.classList.contains('authenticated') || document.documentElement.classList.contains('is-authenticated')) && Boolean(token);
             const headers: Record<string, string> = {};
             if (token) headers['Authorization'] = `Bearer ${token}`;
 
-            // 1. Fetch items, borrow records, audit, and own request status concurrently in parallel
+            // 1. Fetch items (public), and borrow records/audit/requests strictly when authenticated
             const [itemsOutcome, borrowOutcome, auditOutcome, requestsOutcome] = await Promise.allSettled([
                 fetch(`${API_BASE}/items`, { headers }),
-                token ? fetch(`${API_BASE}/borrow/history`, { headers }) : Promise.reject('No token'),
-                token ? fetch(`${API_BASE}/audit`, { headers }) : Promise.reject('No token'),
-                token ? fetch(`${API_BASE}/borrow/requests`, { headers }) : Promise.reject('No token')
+                isAuth ? fetch(`${API_BASE}/borrow/history`, { headers }) : Promise.reject('Not authenticated'),
+                isAuth ? fetch(`${API_BASE}/audit`, { headers }) : Promise.reject('Not authenticated'),
+                isAuth ? fetch(`${API_BASE}/borrow/requests`, { headers }) : Promise.reject('Not authenticated')
             ]);
 
             let dbItems: any[] = [];
@@ -1323,12 +1347,10 @@ class DashboardManager {
         const switchSection = (targetId: string) => {
             sections.forEach(node => {
                 const sec = node as HTMLElement;
+                sec.style.removeProperty('display');
                 if (sec.id === targetId) {
                     sec.classList.add('active');
-                    sec.style.display = 'flex';
-                    if (sec.id === 'inventory-view' || sec.id === 'projects-view' || sec.id === 'meetings-view' || sec.id === 'events-view' || sec.id === 'developers-view' || sec.id === 'profile-view' || sec.id === 'hardware-logs-view') {
-                        sec.style.display = 'block';
-                    }
+                    sec.style.display = (sec.id === 'admin-view' || sec.id === 'dashboard-view') ? 'flex' : 'block';
                 } else {
                     sec.classList.remove('active');
                     sec.style.display = 'none';
@@ -1343,18 +1365,16 @@ class DashboardManager {
             document.body.classList.toggle('view-inventory-view', targetId === 'inventory-view');
             document.body.classList.toggle('view-hardware-logs-view', targetId === 'hardware-logs-view');
 
-            // Top navbar cart button is visible on Vault, Dashboard, or whenever items are staged
+            // Top navbar cart button is visible STRICTLY on the inventory page
             const headerCartWrapper = document.querySelector('.header-cart-wrapper') as HTMLElement | null;
             if (headerCartWrapper) {
-                const cartHasItems = typeof CartManager !== 'undefined' && CartManager.getCount() > 0;
-                headerCartWrapper.style.display = (targetId === 'inventory-view' || targetId === 'dashboard-view' || cartHasItems) ? 'inline-flex' : 'none';
+                headerCartWrapper.style.display = (targetId === 'inventory-view') ? 'inline-flex' : 'none';
             }
 
-            // Sync floating cart capsule FAB
+            // Sync floating cart capsule FAB (strictly on inventory page)
             const floatingFab = document.getElementById('floating-cart-fab');
             if (floatingFab) {
-                const cartHasItems = typeof CartManager !== 'undefined' && CartManager.getCount() > 0;
-                floatingFab.style.display = (targetId === 'inventory-view' || cartHasItems) ? 'block' : 'none';
+                floatingFab.style.display = (targetId === 'inventory-view') ? 'block' : 'none';
             }
 
             // Refresh Lucide icons efficiently without re-parsing whole DOM
@@ -5056,38 +5076,30 @@ class AuthManager {
             this.promptLogout();
         });
 
-        // Password visibility toggles
-        const loginToggle = document.getElementById('login-password-toggle')!;
-        const loginPass = document.getElementById('login-password') as HTMLInputElement;
-        if (loginToggle && loginPass) {
-            loginToggle.addEventListener('click', () => {
-                const currentType = loginPass.getAttribute('type');
-                const newType = currentType === 'password' ? 'text' : 'password';
-                loginPass.setAttribute('type', newType);
+        // Password visibility toggles (tactile button frame & reliable icon swap)
+        const setupPasswordToggle = (toggleBtnId: string, inputId: string) => {
+            const toggleBtn = document.getElementById(toggleBtnId);
+            const passInput = document.getElementById(inputId) as HTMLInputElement | null;
+            if (toggleBtn && passInput && !toggleBtn.dataset.bound) {
+                toggleBtn.dataset.bound = 'true';
+                toggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isPassword = passInput.getAttribute('type') === 'password';
+                    const newType = isPassword ? 'text' : 'password';
+                    passInput.setAttribute('type', newType);
+                    toggleBtn.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+                    toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+                    toggleBtn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}"></i>`;
+                    if ((window as any).lucide && (window as any).lucide.createIcons) {
+                        (window as any).lucide.createIcons();
+                    }
+                });
+            }
+        };
 
-                const icon = loginToggle.querySelector('i')!;
-                if (icon) {
-                    icon.setAttribute('data-lucide', newType === 'password' ? 'eye' : 'eye-off');
-                    lucide.createIcons();
-                }
-            });
-        }
-
-        const signupToggle = document.getElementById('signup-password-toggle')!;
-        const signupPass = document.getElementById('signup-password') as HTMLInputElement;
-        if (signupToggle && signupPass) {
-            signupToggle.addEventListener('click', () => {
-                const currentType = signupPass.getAttribute('type');
-                const newType = currentType === 'password' ? 'text' : 'password';
-                signupPass.setAttribute('type', newType);
-
-                const icon = signupToggle.querySelector('i')!;
-                if (icon) {
-                    icon.setAttribute('data-lucide', newType === 'password' ? 'eye' : 'eye-off');
-                    lucide.createIcons();
-                }
-            });
-        }
+        setupPasswordToggle('login-password-toggle', 'login-password');
+        setupPasswordToggle('signup-password-toggle', 'signup-password');
     }
 
     private static async checkAuth() {
@@ -5109,16 +5121,14 @@ class AuthManager {
         // Within 15 minutes: active session preserved, refresh activity timestamp
         this.recordActivity(true);
 
-        // Optimistic instant session activation: eliminates auth modal flash on page reload
+        // Instant session activation: eliminates auth modal flash on page reload
         const cachedUserStr = localStorage.getItem('cicr_user');
         const cachedAuth = localStorage.getItem('cicr_auth');
         const cachedRole = (localStorage.getItem('cicr_role') as UserRole) || 'MEMBER';
-        if (cachedUserStr || cachedAuth) {
-            let userObj = null;
-            try { if (cachedUserStr) userObj = JSON.parse(cachedUserStr); } catch { }
-            const fallbackName = userObj?.name || cachedAuth || 'Operator';
-            this.loginSuccess(fallbackName, cachedRole, userObj);
-        }
+        let userObj = null;
+        try { if (cachedUserStr) userObj = JSON.parse(cachedUserStr); } catch { }
+        const fallbackName = userObj?.name || cachedAuth || 'Operator';
+        this.loginSuccess(fallbackName, cachedRole, userObj);
 
         try {
             const res = await fetch(`${API_BASE}/auth/profile`, {
@@ -5128,7 +5138,7 @@ class AuthManager {
             if (res.ok) {
                 const result = await res.json();
                 const user = result.data;
-                if (user && user.status === 'APPROVED') {
+                if (user) {
                     this.loginSuccess(user.name, user.role, user);
                     const welcomedKey = 'cicr_welcomed_' + (user.name || 'user');
                     if (!sessionStorage.getItem(welcomedKey)) {
@@ -5138,19 +5148,18 @@ class AuthManager {
                     return;
                 }
             } else if (res.status === 401 || res.status === 403) {
+                console.warn('[CICR Auth] Session invalid or expired (401/403). Clearing session.');
                 this.handleLogout();
                 return;
             }
         } catch (err) {
-            console.warn('Profile validation check failed (server may be waking up):', err);
-        }
-
-        if (!cachedUserStr && !cachedAuth) {
-            this.handleLogout();
+            console.warn('Profile validation check deferred (offline / backend initializing):', err);
         }
     }
 
     public static showLoginOverlay() {
+        document.documentElement.classList.remove('is-authenticated');
+        document.documentElement.classList.add('is-unauthenticated');
         document.body.classList.remove('authenticated');
         document.body.classList.add('auth-overlay-active');
         this.globalNavbar.style.setProperty('display', 'none', 'important');
@@ -5227,7 +5236,8 @@ class AuthManager {
                 return;
             }
 
-            this.showLoginError(data.message || "Invalid credentials. Please check your email, username, or name and password.");
+            const errorMsg = data.errors?.[0]?.message || data.message || "Invalid credentials. Please check your email, username, or name and password.";
+            this.showLoginError(errorMsg);
         } catch (err) {
             this.showLoginError("Unable to reach backend server. Please verify your connection.");
         } finally {
@@ -5314,6 +5324,8 @@ class AuthManager {
         const welcomeScreen = document.getElementById('welcome-screen');
         if (welcomeScreen) welcomeScreen.style.display = 'none';
 
+        document.documentElement.classList.add('is-authenticated');
+        document.documentElement.classList.remove('is-unauthenticated');
         document.body.classList.remove('auth-overlay-active');
         document.body.classList.add('authenticated');
 
@@ -5322,7 +5334,7 @@ class AuthManager {
         this.authOverlay.style.setProperty('display', 'none', 'important');
         this.appContainer.classList.remove('hidden');
         this.appContainer.style.setProperty('display', 'grid', 'important');
-        this.globalNavbar.style.removeProperty('display');
+        this.globalNavbar.style.setProperty('display', 'none', 'important');
         (window as any).syncFixedSidebarPosition?.();
 
         // Show/Hide Admin Portal navigation & cards based strictly on role
@@ -5405,6 +5417,9 @@ class AuthManager {
                 btnInventoryAdd.style.removeProperty('display');
                 btnInventoryAdd.style.setProperty('display', 'inline-flex', 'important');
             }
+            if (adminViewSection) {
+                adminViewSection.style.removeProperty('display');
+            }
             if (sideHwLogsLink) {
                 sideHwLogsLink.style.removeProperty('display');
                 sideHwLogsLink.style.setProperty('display', 'flex', 'important');
@@ -5416,6 +5431,9 @@ class AuthManager {
             if (navHwLogsLink) {
                 navHwLogsLink.style.removeProperty('display');
                 navHwLogsLink.style.setProperty('display', 'inline-flex', 'important');
+            }
+            if (hwLogsSection) {
+                hwLogsSection.style.removeProperty('display');
             }
             AdminManager.init();
         } else {
@@ -5627,6 +5645,16 @@ class AuthManager {
     }
 
     public static handleLogout(isTimeout: boolean = false) {
+        const token = localStorage.getItem('cicr_token');
+        if (token) {
+            try {
+                fetch(`${API_BASE}/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).catch(() => {});
+            } catch {}
+        }
+
         localStorage.removeItem('cicr_auth');
         localStorage.removeItem('cicr_role');
         localStorage.removeItem('cicr_token');
@@ -5640,6 +5668,8 @@ class AuthManager {
             CartManager.clearCart();
         }
 
+        document.documentElement.classList.remove('is-authenticated');
+        document.documentElement.classList.add('is-unauthenticated');
         document.body.classList.remove('authenticated');
         document.body.classList.add('auth-overlay-active');
 
@@ -5703,10 +5733,9 @@ class PasswordResetManager {
                 if (!this.currentPassInput) return;
                 const isPass = this.currentPassInput.type === 'password';
                 this.currentPassInput.type = isPass ? 'text' : 'password';
-                const icon = currentPassToggle.querySelector('i, svg');
-                if (icon) {
-                    icon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
-                    lucide.createIcons();
+                currentPassToggle.innerHTML = `<i data-lucide="${isPass ? 'eye-off' : 'eye'}"></i>`;
+                if ((window as any).lucide && (window as any).lucide.createIcons) {
+                    (window as any).lucide.createIcons();
                 }
             });
         }
@@ -5719,10 +5748,9 @@ class PasswordResetManager {
                 if (!this.newPassInput) return;
                 const isPass = this.newPassInput.type === 'password';
                 this.newPassInput.type = isPass ? 'text' : 'password';
-                const icon = newPassToggle.querySelector('i, svg');
-                if (icon) {
-                    icon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
-                    lucide.createIcons();
+                newPassToggle.innerHTML = `<i data-lucide="${isPass ? 'eye-off' : 'eye'}"></i>`;
+                if ((window as any).lucide && (window as any).lucide.createIcons) {
+                    (window as any).lucide.createIcons();
                 }
             });
         }
@@ -5735,10 +5763,9 @@ class PasswordResetManager {
                 if (!this.confirmPassInput) return;
                 const isPass = this.confirmPassInput.type === 'password';
                 this.confirmPassInput.type = isPass ? 'text' : 'password';
-                const icon = confirmPassToggle.querySelector('i, svg');
-                if (icon) {
-                    icon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
-                    lucide.createIcons();
+                confirmPassToggle.innerHTML = `<i data-lucide="${isPass ? 'eye-off' : 'eye'}"></i>`;
+                if ((window as any).lucide && (window as any).lucide.createIcons) {
+                    (window as any).lucide.createIcons();
                 }
             });
         }
@@ -6202,8 +6229,9 @@ class AdminManager {
 
     static async loadUsers(force = false) {
         const token = localStorage.getItem('cicr_token');
+        const isAuth = document.body.classList.contains('authenticated') || document.documentElement.classList.contains('is-authenticated');
 
-        if (token) {
+        if (token && isAuth) {
             try {
                 const res = await fetch(`${API_BASE}/auth/admin/users${force ? '?force=true' : ''}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -6214,6 +6242,9 @@ class AdminManager {
                     if (Array.isArray(result.data) && result.data.length > 0) {
                         this.users = result.data;
                     }
+                } else if (res.status === 401 || res.status === 403) {
+                    console.warn('[AdminManager] Admin users access restricted.');
+                    return;
                 }
             } catch (err) {
                 console.error('Failed to fetch admin users:', err);
@@ -6408,7 +6439,8 @@ class AdminManager {
 
     static async loadHardwareRequests(force = false) {
         const token = localStorage.getItem('cicr_token');
-        if (!token) return;
+        const isAuth = document.body.classList.contains('authenticated') || document.documentElement.classList.contains('is-authenticated');
+        if (!token || !isAuth) return;
 
         const handledIds = this.getHandledRequestIds();
         let serverList: AdminHardwareRequest[] = [];
@@ -6422,6 +6454,9 @@ class AdminManager {
             if (res.ok) {
                 const result = await res.json();
                 serverList = result.data || [];
+            } else if (res.status === 401 || res.status === 403) {
+                console.warn('[AdminManager] Hardware requests access restricted.');
+                return;
             }
         } catch (err) {
             console.error('Failed to fetch hardware requests:', err);
@@ -6667,6 +6702,13 @@ class AdminManager {
             return false;
         };
 
+        const currentAdminName = (() => {
+            try {
+                const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+                return u.name || u.username || 'Lab Administrator';
+            } catch { return 'Lab Administrator'; }
+        })();
+
         // Permanently record as handled so it NEVER resurrects in UI
         this.markRequestHandled(id, targetReq?.id, targetReq?.borrowId, targetKey);
 
@@ -6695,13 +6737,6 @@ class AdminManager {
                 localStorage.setItem('cicr_requests', JSON.stringify(filtered));
             } catch { }
         }
-        // Record approver on local item borrow records
-        const currentAdminName = (() => {
-            try {
-                const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
-                return u.name || u.username || 'Lab Administrator';
-            } catch { return 'Lab Administrator'; }
-        })();
 
         if (reqSnapshot) {
             const targetItem = inventory.find(i => String(i.id) === String(reqSnapshot.itemId));
@@ -6817,6 +6852,13 @@ class AdminManager {
             return false;
         };
 
+        const currentAdminName = (() => {
+            try {
+                const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+                return u.name || u.username || 'Lab Administrator';
+            } catch { return 'Lab Administrator'; }
+        })();
+
         // Permanently record as handled so it NEVER resurrects in UI
         this.markRequestHandled(id, targetReq?.id, targetReq?.borrowId, targetKey);
 
@@ -6854,13 +6896,6 @@ class AdminManager {
         }
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
-
-        const currentAdminName = (() => {
-            try {
-                const u = JSON.parse(localStorage.getItem('cicr_user') || '{}');
-                return u.name || u.username || 'Lab Administrator';
-            } catch { return 'Lab Administrator'; }
-        })();
 
         ToastManager.show('Request Declined', `Hardware issue request for "${itemName}" declined.`, 'info');
         DatabaseManager.addLog('reject', `Admin ${currentAdminName} declined hardware issue request for "${itemName}"`);
@@ -7546,7 +7581,8 @@ class AdminManager {
 
     static async loadAuditLogs(resetToFull7Days = false) {
         const token = localStorage.getItem('cicr_token');
-        if (!token) return;
+        const isAuth = document.body.classList.contains('authenticated') || document.documentElement.classList.contains('is-authenticated');
+        if (!token || !isAuth) return;
 
         if (resetToFull7Days) {
             this.activeAuditDay = 'all';
@@ -7583,6 +7619,9 @@ class AdminManager {
                 if (ModalManager.activeNotifTab === 'system') {
                     ModalManager.renderLogsDrawer();
                 }
+            } else if (res.status === 401) {
+                if (typeof AuthManager !== 'undefined') AuthManager.handleLogout();
+                return;
             }
         } catch (err) {
             console.warn('[ADMIN] Failed to load 7-day audit logs:', err);
@@ -7696,7 +7735,7 @@ class AdminManager {
                     <p>No audit log events found matching the criteria in the 7-day retention window.</p>
                 </div>
             `;
-            lucide.createIcons();
+            renderLucideIcons(container);
             return;
         }
 
@@ -9989,6 +10028,8 @@ class NotificationCenterManager {
         const userRoll = (currentUser.roll_number || currentUser.roll || '').toLowerCase().trim();
         const userName = (currentUser.name || currentUser.username || authName || '').toLowerCase().trim();
         const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
+        const lastReadAllTime = Number(localStorage.getItem('cicr_last_read_all_time') || 0);
+        const isUnread = (id: string, ts: number) => !this.readIds.has(id) && (ts > lastReadAllTime);
 
         const notifs: Array<{
             id: string;
@@ -10026,7 +10067,7 @@ class NotificationCenterManager {
                         message: `${req.name || 'Student'} requested ${req.qty || 1}x ${req.itemName || 'item'}`,
                         time: this.formatRelativeTime(reqTime),
                         timestamp: reqTime,
-                        unread: !this.readIds.has(notifId),
+                        unread: isUnread(notifId, reqTime),
                         linkAction: () => {
                             (window as any).switchSection?.('admin-view');
                             setTimeout(() => {
@@ -10063,7 +10104,7 @@ class NotificationCenterManager {
                             : `Request for ${req.qty || 1}x ${req.itemName} is awaiting admin approval.`,
                         time: this.formatRelativeTime(reqTime),
                         timestamp: reqTime,
-                        unread: !this.readIds.has(notifId),
+                        unread: isUnread(notifId, reqTime),
                         linkAction: () => {
                             (window as any).switchSection?.('profile-view');
                         }
@@ -10105,7 +10146,7 @@ class NotificationCenterManager {
                                         : `${b.userName || 'Member'} returned ${item.name}`,
                                     time: this.formatRelativeTime(loanTime),
                                     timestamp: loanTime,
-                                    unread: !this.readIds.has(notifId),
+                                    unread: isUnread(notifId, loanTime),
                                     linkAction: () => {
                                         (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
                                     }
@@ -10125,7 +10166,7 @@ class NotificationCenterManager {
                                             message: `${item.name} is due within 48 hours (${new Date(b.dueDate).toLocaleDateString()}).`,
                                             time: 'Action Required',
                                             timestamp: dueTime,
-                                            unread: !this.readIds.has(dueNotifId),
+                                            unread: isUnread(dueNotifId, dueTime),
                                             linkAction: () => {
                                                 (window as any).switchSection?.('hardware-logs-view');
                                             }
@@ -10139,7 +10180,7 @@ class NotificationCenterManager {
                                             message: `${item.name} is overdue! Please return to robotics lab.`,
                                             time: 'Overdue',
                                             timestamp: dueTime,
-                                            unread: !this.readIds.has(overdueNotifId),
+                                            unread: isUnread(overdueNotifId, dueTime),
                                             linkAction: () => {
                                                 (window as any).switchSection?.('hardware-logs-view');
                                             }
@@ -10158,7 +10199,7 @@ class NotificationCenterManager {
                                     : `${item.name} issued to ${b.userName || 'Member'}`,
                                 time: this.formatRelativeTime(loanTime),
                                 timestamp: loanTime,
-                                unread: !this.readIds.has(loanNotifId),
+                                unread: isUnread(loanNotifId, loanTime),
                                 linkAction: () => {
                                     (window as any).switchSection?.('hardware-logs-view');
                                 }
@@ -10285,9 +10326,40 @@ class NotificationCenterManager {
     public static markAllAsRead() {
         const notifs = this.getPersonalizedNotifications();
         notifs.forEach(n => this.readIds.add(n.id));
+        const now = Date.now();
+        localStorage.setItem('cicr_last_read_all_time', String(now));
         localStorage.setItem('cicr_read_notifs', JSON.stringify(Array.from(this.readIds)));
+        localStorage.setItem('cicr_notifs_cleared', 'true');
+
+        if (typeof DatabaseManager !== 'undefined') {
+            DatabaseManager.isNotificationsCleared = true;
+            DatabaseManager.updateNotificationBadges();
+        }
+
         this.updateNotifications();
         this.renderDropdown();
+
+        // Immediate visual feedback on the button
+        const clearBtn = document.getElementById('btn-clear-notifs');
+        if (clearBtn) {
+            const originalHTML = clearBtn.innerHTML;
+            clearBtn.innerHTML = `<i data-lucide="check"></i> <span>All Read</span>`;
+            (clearBtn as HTMLButtonElement).disabled = true;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+            setTimeout(() => {
+                clearBtn.innerHTML = originalHTML;
+                (clearBtn as HTMLButtonElement).disabled = false;
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                }
+            }, 2000);
+        }
+
+        if (typeof ToastManager !== 'undefined' && typeof ToastManager.show === 'function') {
+            ToastManager.show('All Caught Up', 'All notifications have been marked as read.', 'success');
+        }
     }
 
     private static formatRelativeTime(ts: number): string {
@@ -10382,28 +10454,11 @@ class ThemeManager {
     }
 
     public static applyTheme(theme: string) {
-        // Fallback / sanitize: only 'mono' and 'light' exist
         if (theme !== 'light' && theme !== 'mono') {
             theme = 'mono';
         }
 
-        // 1. Temporarily freeze transitions to eliminate multi-element transition lag & compositor flickering
-        const lockId = 'cicr-theme-lock-style';
-        let lockStyle = document.getElementById(lockId) as HTMLStyleElement | null;
-        if (!lockStyle) {
-            lockStyle = document.createElement('style');
-            lockStyle.id = lockId;
-            lockStyle.textContent = `*, *::before, *::after {
-                -webkit-transition: none !important;
-                -moz-transition: none !important;
-                -o-transition: none !important;
-                -ms-transition: none !important;
-                transition: none !important;
-            }`;
-            document.head.appendChild(lockStyle);
-        }
-
-        // 2. Batch attribute and class updates synchronously
+        // Direct, non-blocking class & attribute switches
         document.documentElement.setAttribute('data-theme', theme);
         document.body.classList.remove('theme-light', 'theme-mono');
         document.body.classList.add(`theme-${theme}`);
@@ -10425,29 +10480,15 @@ class ThemeManager {
             this.headerThemeSelectEl.value = theme;
         }
 
-        // Sync sidebar theme buttons if present
+        // Fast toggle for sidebar theme buttons
         const themeBtnLight = document.getElementById('theme-btn-light');
         const themeBtnMono = document.getElementById('theme-btn-mono');
-        [themeBtnLight, themeBtnMono].forEach(b => b?.classList.remove('active'));
-        if (theme === 'light') themeBtnLight?.classList.add('active');
-        else if (theme === 'mono') themeBtnMono?.classList.add('active');
+        if (themeBtnLight) themeBtnLight.classList.toggle('active', theme === 'light');
+        if (themeBtnMono) themeBtnMono.classList.toggle('active', theme === 'mono');
 
         if (window.bg3D) {
             window.bg3D.updateThemeColors(theme);
         }
-
-        // Force browser to commit style changes synchronously without animation
-        void window.getComputedStyle(document.body).backgroundColor;
-
-        // 3. Remove transition freeze on next frame for buttery smooth user interactions
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                const el = document.getElementById(lockId);
-                if (el && el.parentNode) {
-                    el.parentNode.removeChild(el);
-                }
-            });
-        });
     }
 }
 
@@ -10455,7 +10496,7 @@ class ThemeManager {
 // 7. Application Bootstrap
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    window.bg3D = new Background3D();
+    AuthManager.init();
     ThemeManager.init();
     DatabaseManager.init();
     ModalManager.init();
@@ -10465,10 +10506,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ProfileEditManager.init();
     HardwareLedgerManager.init();
     NotificationCenterManager.init();
-
-    AuthManager.init();
+    window.bg3D = new Background3D();
     AdminManager.init();
-    AdminManager.loadHardwareRequests(true);
+    if (document.body.classList.contains('authenticated') && localStorage.getItem('cicr_role') === 'ADMIN') {
+        AdminManager.loadHardwareRequests(true);
+    }
     DatabaseManager.updateNotificationBadges();
     DatabaseManager.startAutoSync(45000);
     lucide.createIcons();
@@ -10477,18 +10519,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let scrollEndTimer: any = null;
     window.addEventListener('scroll', () => {
         (window as any).isUserScrolling = true;
+        if (!document.body.classList.contains('is-scrolling')) {
+            document.body.classList.add('is-scrolling');
+        }
         clearTimeout(scrollEndTimer);
         scrollEndTimer = setTimeout(() => {
             (window as any).isUserScrolling = false;
+            document.body.classList.remove('is-scrolling');
             if ((window as any)._pendingDashboardRender && window.dashboard) {
                 (window as any)._pendingDashboardRender = false;
                 window.dashboard.renderInventory();
             }
-        }, 100);
+        }, 120);
     }, { passive: true });
 
     // Immediate section reveal activation to eliminate 1-second scroll loading delay
-    const revealElements = document.querySelectorAll('.reveal');
+    const revealElements = document.querySelectorAll('.reveal:not(section):not([id$="-view"])');
     revealElements.forEach(el => el.classList.add('active'));
 
     // Real-Time Sidebar Alignment Sync (Desktop Viewport-Fixed Positioning)

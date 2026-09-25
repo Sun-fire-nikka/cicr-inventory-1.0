@@ -411,7 +411,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
     const { data: user, error } = await dbRead
       .from('users')
-      .select('*')
+      .select('id, name, email, roll_number, role, created_at')
       .eq('id', req.user?.id)
       .single();
 
@@ -1057,3 +1057,30 @@ export const adminCreateUser = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ status: 'error', message: err.message });
   }
 };
+
+export const logout = async (req: AuthRequest, res: Response) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      const { revokeToken } = await import('./tokenRevocationService');
+      await revokeToken(token);
+    }
+    const { clearSessionUser } = await import('../../middleware/auth.middleware');
+    await clearSessionUser(req);
+
+    if (req.user?.id) {
+      logAuditEvent({
+        action: 'Sign Out',
+        userId: req.user.id,
+        itemId: null,
+        description: `User signed out: ${req.user.name} (${req.user.email})`
+      }).catch(() => {});
+    }
+
+    return res.status(200).json({ status: 'success', message: 'Signed out successfully. Token revoked.' });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+

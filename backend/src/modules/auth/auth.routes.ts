@@ -14,7 +14,8 @@ import {
   forgotPassword,
   resetPassword,
   changePassword,
-  adminCreateUser
+  adminCreateUser,
+  logout
 } from './auth.controller';
 import { sendOtp, verifyOtp } from './authOtpController';
 import { authenticateToken, requireAdmin } from '../../middleware/auth.middleware';
@@ -26,6 +27,7 @@ const router = Router();
 // Public routes with rate limiting and validation
 router.post('/register', registerLimiter, validate(registerSchema), register);
 router.post('/login', authLimiter, validate(loginSchema), login);
+router.post('/logout', authenticateToken, logout);
 router.post('/verify-login-otp', otpLimiter, validate(verifyOtpSchema), verifyLoginOtp);
 router.post('/resend-login-otp', otpLimiter, validate(resendOtpSchema), resendLoginOtp);
 router.post('/send-otp', otpLimiter, sendOtp);

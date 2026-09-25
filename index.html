@@ -39,9 +39,11 @@
 
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png">
-    <!-- Google Fonts -->
+    <!-- Google Fonts & Backend API Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cicr-inventory-backend.onrender.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cicr-inventory-backend.onrender.com">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Playfair+Display:wght@500;700;800;900&family=Rajdhani:wght@500;600;700&display=swap"
         rel="stylesheet">
@@ -418,12 +420,141 @@
             text-shadow: none;
         }
     </style>
+    <!-- Immediate Authentication State & Refresh Session Resolver -->
+    <script>
+      (function() {
+        try {
+          var token = localStorage.getItem('cicr_token');
+          var lastActiveStr = localStorage.getItem('cicr_last_active');
+          var now = Date.now();
+          var isExpired = false;
+          if (lastActiveStr) {
+            var lastActive = parseInt(lastActiveStr, 10);
+            if (!isNaN(lastActive) && lastActive > 0 && (now - lastActive > 15 * 60 * 1000)) {
+              isExpired = true;
+            }
+          }
+          if (token && !isExpired) {
+            document.documentElement.classList.add('is-authenticated');
+            document.documentElement.classList.remove('is-unauthenticated');
+            localStorage.setItem('cicr_last_active', now.toString());
+          } else {
+            document.documentElement.classList.add('is-unauthenticated');
+            document.documentElement.classList.remove('is-authenticated');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style id="cicr-auth-critical-css">
+      /* Instant Refresh Session Persistence: Authenticated user NEVER sees login screen */
+      html.is-authenticated #auth-overlay {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      html.is-authenticated #app-container {
+        display: grid !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      /* Legacy capsule navbar is strictly disabled in favor of app-sidebar & viewport-header */
+      #global-navbar,
+      .navbar-wrapper {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      html.is-authenticated body.auth-overlay-active {
+        overflow-y: auto !important;
+      }
+
+      /* Explicit unauthenticated state: show login screen, hide app */
+      html.is-unauthenticated #auth-overlay {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      html.is-unauthenticated #app-container,
+      html.is-unauthenticated #global-navbar {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      /* Color-scheme alignment prevents Chromium UA light-blue autofill */
+      :root,
+      html[data-theme="mono"],
+      body.theme-mono {
+        color-scheme: dark;
+      }
+      html[data-theme="light"],
+      body.theme-light,
+      html[data-theme="light"] .auth-card,
+      body.theme-light .auth-card {
+        color-scheme: light;
+      }
+
+      /* Instant Critical Autofill Defense: Midnight Mono (Dark Theme) */
+      html[data-theme="mono"] .auth-card input:-webkit-autofill,
+      html[data-theme="mono"] .auth-card input:-webkit-autofill:hover,
+      html[data-theme="mono"] .auth-card input:-webkit-autofill:focus,
+      html[data-theme="mono"] .auth-card input:-webkit-autofill:active,
+      body.theme-mono .auth-card input:-webkit-autofill,
+      body.theme-mono .auth-card input:-webkit-autofill:hover,
+      body.theme-mono .auth-card input:-webkit-autofill:focus,
+      body.theme-mono .auth-card input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px #121211 inset !important;
+        box-shadow: 0 0 0 1000px #121211 inset !important;
+        -webkit-text-fill-color: #F2F0E9 !important;
+        color: #F2F0E9 !important;
+        border: 1px solid #2B2A27 !important;
+        caret-color: #C8BFA8 !important;
+        background-color: #121211 !important;
+        transition: background-color 5000000s ease-in-out 0s !important;
+      }
+
+      /* Instant Critical Autofill Defense: Robo Lab (Light Theme) */
+      html[data-theme="light"] .auth-card input:-webkit-autofill,
+      html[data-theme="light"] .auth-card input:-webkit-autofill:hover,
+      html[data-theme="light"] .auth-card input:-webkit-autofill:focus,
+      html[data-theme="light"] .auth-card input:-webkit-autofill:active,
+      html[data-theme="light"] #login-username:-webkit-autofill,
+      html[data-theme="light"] #login-password:-webkit-autofill,
+      html[data-theme="light"] #signup-email:-webkit-autofill,
+      html[data-theme="light"] #signup-enrollment:-webkit-autofill,
+      html[data-theme="light"] #signup-batch:-webkit-autofill,
+      html[data-theme="light"] #signup-password:-webkit-autofill,
+      body.theme-light .auth-card input:-webkit-autofill,
+      body.theme-light .auth-card input:-webkit-autofill:hover,
+      body.theme-light .auth-card input:-webkit-autofill:focus,
+      body.theme-light .auth-card input:-webkit-autofill:active,
+      body.theme-light #login-username:-webkit-autofill,
+      body.theme-light #login-password:-webkit-autofill,
+      body.theme-light #signup-email:-webkit-autofill,
+      body.theme-light #signup-enrollment:-webkit-autofill,
+      body.theme-light #signup-batch:-webkit-autofill,
+      body.theme-light #signup-password:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+        box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+        -webkit-text-fill-color: #17152B !important;
+        color: #17152B !important;
+        border: 1.5px solid #7956E8 !important;
+        caret-color: #7956E8 !important;
+        background-color: #FFFFFF !important;
+        transition: background-color 5000000s ease-in-out 0s !important;
+      }
+    </style>
     <!-- Lucide Icons CDN (for runtime icons) -->
     <script defer src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="/src/main.ts"></script>
 </head>
 
-<body class="theme-mono auth-overlay-active">
+<body class="theme-mono">
     <!-- ========================================================
          CICR QUANTUM LASER MONOLITH PRELOADER (NON-CIRCULAR)
          ======================================================== -->
@@ -622,7 +753,14 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="login-password">Password</label>
+                    <div class="form-label-row">
+                        <label for="login-password">Password</label>
+                        <a href="#" id="btn-open-forgot-password" class="auth-forgot-inline-link"
+                            onclick="if (window.openPasswordResetModal) window.openPasswordResetModal(); else document.getElementById('reset-password-modal')?.classList.add('active'); return false;"
+                            title="Reset your password">
+                            <i data-lucide="key-round" class="forgot-key-icon"></i> Forgot Password?
+                        </a>
+                    </div>
                     <div class="input-icon-wrapper">
                         <i data-lucide="lock" class="input-icon"></i>
                         <input type="password" id="login-password" required placeholder="Enter your password"
@@ -632,12 +770,6 @@
                             <i data-lucide="eye"></i>
                         </button>
                     </div>
-                </div>
-                <div class="auth-forgot-row">
-                    <a href="#" id="btn-open-forgot-password" class="auth-forgot-link"
-                        onclick="if (window.openPasswordResetModal) window.openPasswordResetModal(); else document.getElementById('reset-password-modal')?.classList.add('active'); return false;">
-                        <i data-lucide="key-round"></i> Forgot / Reset Password?
-                    </a>
                 </div>
                 <div class="auth-error-msg" id="login-error" style="display: none;"></div>
                 <button type="submit" class="btn btn-primary btn-block" id="btn-submit-login">
@@ -765,8 +897,8 @@
 
 
 
-    <!-- App Container (Hidden by default, shown when logged in) -->
-    <div class="app-container hidden" id="app-container" style="display: none !important;">
+    <!-- App Container (Shown when logged in) -->
+    <div class="app-container" id="app-container">
         <!-- Left Sidebar Navigation -->
         <aside class="app-sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -819,12 +951,7 @@
                             <i data-lucide="layers"></i>
                             <span>Inventory</span>
                         </a>
-                        <a href="#" class="sidebar-nav-link" id="side-nav-cart" title="Hardware Request Cart">
-                            <i data-lucide="shopping-bag"></i>
-                            <span>Hardware Cart</span>
-                            <span class="badge" id="side-nav-cart-badge"
-                                style="display: none; background: #72C7D5; color: #141413; margin-left: auto; font-size: 8.5px; padding: 1px 6px; border-radius: 9999px; font-weight: 800;">0</span>
-                        </a>
+
                         <a href="#" class="sidebar-nav-link" id="side-nav-admin" data-target="admin-view"
                             style="display: none !important;">
                             <i data-lucide="shield-check"></i>
@@ -843,9 +970,9 @@
                         </a>
 
                         <details class="vault-dropdown" id="sidebar-vault-dropdown" open>
-                            <summary class="sidebar-nav-title" title="Toggle Vault Index">
+                            <summary class="sidebar-section-header sidebar-nav-title" id="sidebar-header-vault" role="button" tabindex="0" title="Toggle Vault Index">
                                 <span>VAULT INDEX</span>
-                                <i data-lucide="chevron-down"></i>
+                                <i data-lucide="chevron-down" class="section-arrow"></i>
                             </summary>
                             <div class="sidebar-items-group">
                                 <div class="sidebar-item active" data-category="all">
@@ -943,8 +1070,8 @@
                 </div>
 
                 <div class="header-right">
-                    <!-- Small Aesthetic Cart Button in Top Navbar -->
-                    <div class="header-cart-wrapper">
+                    <!-- Small Aesthetic Cart Button in Top Navbar (Visible strictly in Inventory Page) -->
+                    <div class="header-cart-wrapper" style="display: none;">
                         <button type="button" class="header-cart-btn" id="btn-navbar-cart" title="Hardware Request Cart" aria-label="Hardware Cart">
                             <div class="header-cart-icon-box">
                                 <i data-lucide="shopping-bag"></i>
@@ -978,9 +1105,9 @@
                                         <span class="notif-dropdown-sub" id="notif-dropdown-sub">Personal Activity & Updates</span>
                                     </div>
                                 </div>
-                                <button type="button" class="btn-clear-notifs" id="btn-clear-notifs" title="Mark all as read">
+                                <button type="button" class="btn-clear-notifs" id="btn-clear-notifs" title="Mark all as read" onclick="if(window.NotificationCenterManager) window.NotificationCenterManager.markAllAsRead();">
                                     <i data-lucide="check-check"></i>
-                                    <span>Mark Read</span>
+                                    <span>Read All</span>
                                 </button>
                             </div>
 
@@ -1143,17 +1270,6 @@
                         <div class="vault-top-bar">
                             <div class="vault-heading-group">
                                 <h1 class="vault-main-heading">Component Vault</h1>
-                                <span class="vault-status-indicator"><span class="vault-status-dot"></span> Live Hardware Registry</span>
-                            </div>
-                            <div class="vault-top-actions">
-                                <button type="button" class="btn-vault-cart-top" id="btn-vault-cart-trigger" title="Open Hardware Request Cart">
-                                    <div class="vault-cart-icon-box">
-                                        <i data-lucide="shopping-bag"></i>
-                                        <span class="vault-cart-dot" id="vault-cart-dot" style="display: none;"></span>
-                                    </div>
-                                    <span class="vault-cart-label">Hardware Cart</span>
-                                    <span class="vault-cart-badge-pill" id="vault-cart-badge">0</span>
-                                </button>
                             </div>
                         </div>
 
@@ -1257,9 +1373,6 @@
                                     <span class="catalog-subtext">Click any component to inspect specifications or add to your request cart</span>
                                 </div>
                                 <div class="catalog-actions-col">
-                                    <button type="button" class="btn btn-secondary btn-sm btn-vault-cart-quick" id="btn-catalog-cart-trigger" title="Open Hardware Request Cart">
-                                        <i data-lucide="shopping-bag"></i> <span>View Cart</span> (<strong id="catalog-cart-badge">0</strong>)
-                                    </button>
                                     <button class="btn btn-secondary btn-sm" id="btn-inventory-add-item" style="display: none !important;">
                                         <i data-lucide="plus-circle"></i> Add Component
                                     </button>
@@ -1284,7 +1397,7 @@
                 </section>
 
                 <!-- Section: Meet The Developers & Mentors (GDG JIIT Style Interactive Showcase) -->
-                <section class="developers-section reveal" id="developers-view" style="display: none;">
+                <section class="developers-section" id="developers-view" style="display: none;">
                     <div class="team-showcase-container">
                         <!-- Top Header -->
                         <div class="team-showcase-header">
@@ -1365,7 +1478,7 @@
                 </section>
 
                 <!-- Section: Member Profile & Equipment Access Pass (CICR Robotics Lab) -->
-                <section class="profile-layout-section reveal" id="profile-view" style="display: none;">
+                <section class="profile-layout-section" id="profile-view" style="display: none;">
                     <div class="profile-view-container">
                         <!-- 1. Cool Aesthetic Cyber Profile Hero Banner -->
                         <div class="profile-clean-hero glass">
@@ -1571,7 +1684,7 @@
                 </section>
 
                 <!-- Section: Admin Management & Member Approvals -->
-                <section class="admin-layout-section reveal" id="admin-view" style="display: none !important;">
+                <section class="admin-layout-section" id="admin-view" style="display: none;">
                     <div class="admin-panel-container">
                         <!-- Admin Banner Header -->
                         <div class="admin-header-card glass">
@@ -1813,7 +1926,7 @@
                 </section>
 
                 <!-- Section: Component Issue & Return Ledger (Core Workspace - Just below Admin Portal - Admin Only) -->
-                <section class="hardware-logs-section reveal" id="hardware-logs-view" style="display: none;">
+                <section class="hardware-logs-section" id="hardware-logs-view" style="display: none;">
                     <div class="hw-ledger-container">
                         <!-- Top Banner Header -->
                         <div class="hw-ledger-header-card glass">

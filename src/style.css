@@ -81,7 +81,6 @@ body {
     scrollbar-width: thin;
     /* Firefox support */
     scrollbar-color: var(--border-glass-hover, rgba(0, 240, 255, 0.25)) rgba(0, 0, 0, 0.03);
-    overflow-x: hidden;
     overflow-x: clip;
     max-width: 100vw;
     width: 100%;
@@ -96,7 +95,6 @@ html {
 body {
     background-color: transparent;
     color: var(--text-main);
-    overflow-x: hidden;
     overflow-x: clip;
     min-height: 100vh;
     position: relative;
@@ -462,38 +460,74 @@ body.theme-light .auth-overlay {
     transform: scale(1.02);
 }
 
-/* Strict isolation: When auth overlay is active or user is unauthenticated, strictly hide app-container, sidebar, navbars, and background layers */
-#auth-overlay:not(.hidden) ~ #app-container,
-#auth-overlay:not(.hidden) ~ #global-navbar,
-#auth-overlay:not(.hidden) ~ .app-accent-line,
-body.auth-overlay-active #app-container,
-body.auth-overlay-active #global-navbar,
-body.auth-overlay-active .app-accent-line,
-body.auth-overlay-active #canvas-3d,
-body.auth-overlay-active .mono-viewport-bg,
-body.auth-overlay-active .robolab-viewport-bg,
-body:not(.authenticated) #app-container,
-body:not(.authenticated) #global-navbar,
-body:not(.authenticated) .app-accent-line,
-body:not(.authenticated) #canvas-3d,
-body:not(.authenticated) .mono-viewport-bg,
-body:not(.authenticated) .robolab-viewport-bg,
-.app-container.hidden,
-#app-container.hidden {
+/* Persistent authenticated session display rules */
+html.is-authenticated #app-container {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+html.is-authenticated #auth-overlay {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
 
-body.auth-overlay-active,
-body:has(#auth-overlay:not(.hidden)) {
+#global-navbar,
+.navbar-wrapper,
+html.is-authenticated #global-navbar {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+html.is-authenticated .app-sidebar {
+    display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+html.is-authenticated #canvas-3d,
+html.is-authenticated .mono-viewport-bg,
+html.is-authenticated .robolab-viewport-bg {
+    display: block !important;
+}
+
+/* Strict isolation: When auth overlay is active or user is unauthenticated, strictly hide app-container, sidebar, navbars, and background layers */
+html:not(.is-authenticated) #auth-overlay:not(.hidden) ~ #app-container,
+html:not(.is-authenticated) #auth-overlay:not(.hidden) ~ #global-navbar,
+html:not(.is-authenticated) #auth-overlay:not(.hidden) ~ .app-accent-line,
+html:not(.is-authenticated) body.auth-overlay-active #app-container,
+html:not(.is-authenticated) body.auth-overlay-active #global-navbar,
+html:not(.is-authenticated) body.auth-overlay-active .app-accent-line,
+html:not(.is-authenticated) body.auth-overlay-active #canvas-3d,
+html:not(.is-authenticated) body.auth-overlay-active .mono-viewport-bg,
+html:not(.is-authenticated) body.auth-overlay-active .robolab-viewport-bg,
+html:not(.is-authenticated) body:not(.authenticated) #app-container,
+html:not(.is-authenticated) body:not(.authenticated) #global-navbar,
+html:not(.is-authenticated) body:not(.authenticated) .app-accent-line,
+html:not(.is-authenticated) body:not(.authenticated) #canvas-3d,
+html:not(.is-authenticated) body:not(.authenticated) .mono-viewport-bg,
+html:not(.is-authenticated) body:not(.authenticated) .robolab-viewport-bg,
+html:not(.is-authenticated) .app-container.hidden,
+html:not(.is-authenticated) #app-container.hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+html:not(.is-authenticated) body.auth-overlay-active,
+html:not(.is-authenticated) body:has(#auth-overlay:not(.hidden)) {
     overflow: hidden !important;
 }
 
-body.auth-overlay-active .app-sidebar,
-body:not(.authenticated) .app-sidebar,
-#auth-overlay:not(.hidden) ~ #app-container .app-sidebar {
+html:not(.is-authenticated) body.auth-overlay-active .app-sidebar,
+html:not(.is-authenticated) body:not(.authenticated) .app-sidebar,
+html:not(.is-authenticated) #auth-overlay:not(.hidden) ~ #app-container .app-sidebar {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
@@ -684,26 +718,138 @@ body.theme-light .auth-theme-toggle:hover {
 .auth-card .form-group label {
     font-size: 11.5px;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--text-main, #f1f5f9) !important;
     letter-spacing: 0.2px;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
+}
+
+.auth-card .form-label-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 3px !important;
+    width: 100% !important;
+}
+
+.auth-card .form-label-row label {
+    margin-bottom: 0 !important;
+}
+
+.auth-forgot-inline-link {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--neon-cyan, #00f0ff) !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.auth-forgot-inline-link:hover {
+    color: #ffffff !important;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.8) !important;
+    background: rgba(0, 240, 255, 0.1) !important;
+    transform: translateY(-1px) !important;
+}
+
+.auth-forgot-inline-link .forgot-key-icon {
+    width: 12px !important;
+    height: 12px !important;
+    stroke-width: 2.2 !important;
 }
 
 .auth-card .form-group input {
-    height: 39px !important;
-    padding: 8px 12px !important;
-    font-size: 13px !important;
+    height: 42px !important;
+    padding: 8px 12px 8px 38px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
     border-radius: 8px !important;
-    background: rgba(0, 0, 0, 0.45) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: #111116 !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    caret-color: #00f0ff !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 .auth-card .form-group input:focus {
-    border-color: var(--neon-cyan) !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.25), inset 0 1px 2px rgba(0, 240, 255, 0.1) !important;
+    border-color: #00f0ff !important;
+    background: #0d0d12 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.35), inset 0 1px 2px rgba(0, 240, 255, 0.15) !important;
+}
+
+/* Chrome/Edge/Safari Autofill Styling: Midnight Mono (Dark) */
+.auth-card input:-webkit-autofill,
+.auth-card input:-webkit-autofill:hover,
+.auth-card input:-webkit-autofill:focus,
+.auth-card input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #111116 inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(0, 240, 255, 0.4) !important;
+    caret-color: #00f0ff !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* Light Mode Overrides (Robo Lab) */
+html[data-theme="light"] .auth-card .form-group label,
+body.theme-light .auth-card .form-group label {
+    color: #1e1b4b !important;
+}
+
+html[data-theme="light"] .auth-forgot-inline-link,
+body.theme-light .auth-forgot-inline-link {
+    color: #7956E8 !important;
+}
+
+html[data-theme="light"] .auth-forgot-inline-link:hover,
+body.theme-light .auth-forgot-inline-link:hover {
+    color: #4c1d95 !important;
+    background: rgba(121, 86, 232, 0.12) !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] .auth-card .form-group input,
+body.theme-light .auth-card .form-group input {
+    background: #ffffff !important;
+    border: 1.5px solid rgba(130, 90, 210, 0.4) !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #7956E8 !important;
+}
+
+html[data-theme="light"] .auth-card .form-group input:focus,
+body.theme-light .auth-card .form-group input:focus {
+    border-color: #7956E8 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    box-shadow: 0 0 0 3px rgba(121, 86, 232, 0.22) !important;
+}
+
+/* Chrome/Edge/Safari Autofill Styling: Robo Lab (Light) */
+html[data-theme="light"] .auth-card input:-webkit-autofill,
+html[data-theme="light"] .auth-card input:-webkit-autofill:hover,
+html[data-theme="light"] .auth-card input:-webkit-autofill:focus,
+html[data-theme="light"] .auth-card input:-webkit-autofill:active,
+body.theme-light .auth-card input:-webkit-autofill,
+body.theme-light .auth-card input:-webkit-autofill:hover,
+body.theme-light .auth-card input:-webkit-autofill:focus,
+body.theme-light .auth-card input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+    color: #0f172a !important;
+    border: 1.5px solid #7956E8 !important;
+    caret-color: #7956E8 !important;
+    transition: background-color 5000s ease-in-out 0s !important;
 }
 
 /* Responsive 2-Column Signup Grid */
@@ -1808,7 +1954,7 @@ body.theme-light .auth-card input::placeholder,
    ============================================================ */
 .header-cart-wrapper {
     position: relative;
-    display: inline-flex;
+    display: none;
     align-items: center;
 }
 
@@ -2291,7 +2437,6 @@ body.theme-light .auth-card input::placeholder,
     transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease !important;
     position: relative !important;
     transform: translateZ(0) !important;
-    will-change: transform !important;
     backface-visibility: hidden !important;
     box-sizing: border-box !important;
     min-height: 98px !important;
@@ -2447,9 +2592,8 @@ body.theme-light .auth-card input::placeholder,
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     transform: translateZ(0);
-    will-change: transform;
     backface-visibility: hidden;
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     width: 100%;
     min-width: 0;
     touch-action: manipulation;
@@ -6164,8 +6308,7 @@ input:-webkit-autofill:active {
     }
 
     .app-container {
-        padding: 160px 20px 24px 20px !important;
-        /* Shift content down for mobile stacked navbar */
+        padding: 8px 12px 24px 12px !important;
     }
 
     /* Inventory Grid layout adjustment for mobile view */
@@ -8771,6 +8914,13 @@ html[data-theme="light"] .sidebar-section-header:hover {
     color: var(--text-main, #ffffff);
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-clear-notifs:disabled {
+    opacity: 0.85;
+    cursor: default;
+    border-color: rgba(0, 240, 255, 0.5);
+    color: var(--neon-cyan, #00f0ff);
 }
 
 .btn-clear-notifs i,
@@ -13113,28 +13263,42 @@ body.theme-light .user-group-title {
     transform: scale(1.08);
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1200px) {
     .admin-queues-split-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
     }
 
     .admin-header-card {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 14px;
-        padding: 14px 16px;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        padding: 16px 18px !important;
     }
 
     .admin-header-stats {
-        width: 100%;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 8px;
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
+        gap: 8px !important;
     }
 
     .admin-stat-box {
-        min-width: 0;
-        padding: 8px 6px;
+        min-width: 0 !important;
+        padding: 8px 6px !important;
+    }
+
+    .admin-audit-top-hud {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .admin-audit-hud-right {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
     }
 }
 
@@ -17425,7 +17589,25 @@ body.theme-light .date-preset-pill.active {
 }
 
 .profile-layout-section.active {
+    display: block;
+}
+
+#profile-view {
+    display: none !important;
+}
+
+body.view-profile-view #profile-view,
+#app-main-content > #profile-view.active {
     display: block !important;
+}
+
+body:not(.view-profile-view) #profile-view,
+body.view-dashboard-view #profile-view,
+body.view-inventory-view #profile-view,
+body.view-developers-view #profile-view,
+body.view-admin-view #profile-view,
+body.view-hardware-logs-view #profile-view {
+    display: none !important;
 }
 
 @keyframes profileFadeIn {
@@ -20748,7 +20930,8 @@ body.theme-light {
     color: #17152B !important;
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     position: relative !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
 }
 
 /* Geometric Typography */
@@ -21742,7 +21925,6 @@ body.theme-light .inventory-card {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     transform: translateZ(0) !important;
-    will-change: transform !important;
     backface-visibility: hidden !important;
     contain: layout style !important;
 }
@@ -23225,7 +23407,8 @@ body.theme-mono {
     color: #F2F0E9 !important;
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
     position: relative !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
 }
 
 /* Remove legacy pseudo-elements in favor of dedicated viewport layer */
@@ -23317,7 +23500,7 @@ body.theme-mono .mono-bg-orbit-primary {
     background-size: contain !important;
     opacity: 0.88 !important;
     pointer-events: none !important;
-    animation: monoOrbitFloat 54s ease-in-out infinite alternate !important;
+    animation: none !important;
 }
 
 @keyframes monoOrbitFloat {
@@ -23993,8 +24176,10 @@ body.theme-mono .inventory-card {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
     position: relative !important;
     z-index: 2 !important;
-    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
     border-top: 1px solid #2B2A27 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 html[data-theme="mono"] .inventory-card::before,
@@ -25161,12 +25346,17 @@ body.theme-mono .profile-field-val {
     color: #F2F0E9 !important;
 }
 
-/* 15. Admin View */
+/* 15. Admin View - Midnight Mono Theme Harmonization */
 html[data-theme="mono"] .admin-header,
-body.theme-mono .admin-header {
+body.theme-mono .admin-header,
+html[data-theme="mono"] .admin-header-card,
+body.theme-mono .admin-header-card {
     background: #171715 !important;
     border: 1px solid #2B2A27 !important;
-    border-radius: 12px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 html[data-theme="mono"] .admin-header-title,
@@ -25179,37 +25369,139 @@ body.theme-mono .admin-header-desc {
     color: #AAA79F !important;
 }
 
-html[data-theme="mono"] .admin-card,
-body.theme-mono .admin-card {
-    background: #171715 !important;
+html[data-theme="mono"] .admin-shield-icon,
+body.theme-mono .admin-shield-icon {
+    background: #23221F !important;
+    border: 1px solid #3B3934 !important;
+    color: #C8BFA8 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="mono"] .admin-header-tag,
+body.theme-mono .admin-header-tag {
+    color: #C8BFA8 !important;
+}
+
+html[data-theme="mono"] .admin-stat-box,
+body.theme-mono .admin-stat-box {
+    background: #1A1917 !important;
     border: 1px solid #2B2A27 !important;
-    border-radius: 12px !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
 }
 
-html[data-theme="mono"] .admin-card-header,
-body.theme-mono .admin-card-header {
+html[data-theme="mono"] .admin-stat-num,
+body.theme-mono .admin-stat-num {
+    color: #F2F0E9 !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="mono"] .admin-stat-lbl,
+body.theme-mono .admin-stat-lbl {
+    color: #AAA79F !important;
+}
+
+html[data-theme="mono"] .admin-card,
+body.theme-mono .admin-card,
+html[data-theme="mono"] .admin-block-card,
+body.theme-mono .admin-block-card,
+html[data-theme="mono"] .admin-audit-block-card,
+body.theme-mono .admin-audit-block-card {
+    background: #171715 !important;
+    border: 1px solid #2B2A27 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="mono"] .admin-block-header,
+body.theme-mono .admin-block-header {
     border-bottom: 1px solid #262522 !important;
+    padding-bottom: 8px !important;
+}
+
+html[data-theme="mono"] .hardware-request-card,
+body.theme-mono .hardware-request-card,
+html[data-theme="mono"] .pending-request-card,
+body.theme-mono .pending-request-card {
+    background: #1A1917 !important;
+    border: 1px solid #2B2A27 !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="mono"] .hardware-request-card:hover,
+body.theme-mono .hardware-request-card:hover,
+html[data-theme="mono"] .pending-request-card:hover,
+body.theme-mono .pending-request-card:hover {
+    border-color: #4A463E !important;
+    background: #1E1D1A !important;
+}
+
+html[data-theme="mono"] .admin-table-responsive,
+body.theme-mono .admin-table-responsive {
+    background: #131312 !important;
+    border: 1px solid #2B2A27 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 html[data-theme="mono"] .admin-table th,
-body.theme-mono .admin-table th {
-    background: #131312 !important;
-    border-bottom: 1px solid #262522 !important;
+body.theme-mono .admin-table th,
+html[data-theme="mono"] .admin-users-table th,
+body.theme-mono .admin-users-table th {
+    background: #181816 !important;
+    border-bottom: 1px solid #2B2A27 !important;
     color: #AAA79F !important;
-    font-family: ui-monospace, monospace !important;
-    font-size: 10px !important;
+    font-size: 10.5px !important;
 }
 
 html[data-theme="mono"] .admin-table td,
-body.theme-mono .admin-table td {
+body.theme-mono .admin-table td,
+html[data-theme="mono"] .admin-users-table td,
+body.theme-mono .admin-users-table td {
     border-bottom: 1px solid #20201E !important;
     color: #F2F0E9 !important;
 }
 
 html[data-theme="mono"] .admin-table tr:hover td,
-body.theme-mono .admin-table tr:hover td {
+body.theme-mono .admin-table tr:hover td,
+html[data-theme="mono"] .admin-users-table tr:hover td,
+body.theme-mono .admin-users-table tr:hover td {
     background: #1C1B19 !important;
+}
+
+html[data-theme="mono"] .audit-log-card,
+body.theme-mono .audit-log-card {
+    background: #181816 !important;
+    border: 1px solid #262522 !important;
+    border-radius: 9px !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="mono"] .audit-log-card:hover,
+body.theme-mono .audit-log-card:hover {
+    background: #1E1D1A !important;
+    border-color: #3B3934 !important;
+}
+
+html[data-theme="mono"] .audit-stat-pill,
+body.theme-mono .audit-stat-pill {
+    background: #1E1D1A !important;
+    border: 1px solid #2B2A27 !important;
+}
+
+html[data-theme="mono"] .audit-stat-pill-num,
+body.theme-mono .audit-stat-pill-num {
+    color: #F2F0E9 !important;
+    text-shadow: none !important;
+}
+
+/* High-performance scroll optimization: disable pointer-events while scrolling to eliminate layout thrashing */
+body.is-scrolling * {
+    pointer-events: none !important;
 }
 
 /* 16. Form Controls & Inputs */
@@ -25669,7 +25961,9 @@ body.theme-mono .auth-switch-prompt a {
     overflow: visible !important;
     flex-wrap: nowrap !important;
     gap: 12px !important;
-    position: relative !important;
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 16px !important;
     z-index: 99999 !important;
 }
 
@@ -26470,7 +26764,9 @@ body.theme-mono .header-notif-dropdown .notif-view-all-btn:hover {
    greeting headers, and clock widgets
    ======================================================== */
 .viewport-header {
-    position: relative !important;
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 16px !important;
     z-index: 99999 !important;
 }
 
@@ -26562,3 +26858,1871 @@ body.theme-light .card-teal .dash-card-tag {
         font-size: 12.5px;
     }
 }
+
+/* ==========================================================================
+   ADVANCED CYBERNETIC OVERHAUL: NOTIFICATIONS, REVIEW REQUEST PORTAL & ADMIN/LOGS CONSOLE
+   ========================================================================== */
+
+/* 1. SIDEBAR ACTION BUTTON: REVIEW REQUEST */
+.sidebar-action-btn.notif-sidebar-btn {
+    position: relative !important;
+    background: linear-gradient(135deg, rgba(30, 29, 27, 0.85) 0%, rgba(20, 20, 19, 0.95) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 8px 12px !important;
+    min-height: 48px !important;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+    overflow: hidden !important;
+}
+
+.sidebar-action-btn.notif-sidebar-btn:hover {
+    background: linear-gradient(135deg, rgba(38, 36, 33, 0.95) 0%, rgba(24, 23, 21, 0.98) 100%) !important;
+    border-color: rgba(0, 240, 255, 0.35) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 240, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    transform: translateY(-1px) !important;
+}
+
+.sidebar-action-btn.notif-sidebar-btn:active {
+    transform: translateY(0) scale(0.98) !important;
+}
+
+.notif-icon-frame {
+    position: relative !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 9px !important;
+    background: rgba(0, 240, 255, 0.08) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--neon-cyan, #00f0ff) !important;
+    flex-shrink: 0 !important;
+    transition: all 0.25s ease !important;
+}
+
+.sidebar-action-btn.notif-sidebar-btn:hover .notif-icon-frame {
+    background: rgba(0, 240, 255, 0.18) !important;
+    border-color: var(--neon-cyan, #00f0ff) !important;
+    transform: scale(1.06) !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.35) !important;
+}
+
+.notif-bell-svg {
+    width: 17px !important;
+    height: 17px !important;
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+}
+
+.notif-radar-beacon {
+    position: absolute !important;
+    top: -2px !important;
+    right: -2px !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    background: #f59e0b !important;
+    box-shadow: 0 0 10px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.6) !important;
+    animation: notifBeaconPulse 1.8s infinite ease-in-out !important;
+}
+
+@keyframes notifBeaconPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.75; }
+}
+
+.sidebar-action-btn .btn-text {
+    font-family: 'Space Grotesk', -apple-system, sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px !important;
+    color: var(--text-main, #F2F0E9) !important;
+}
+
+.sidebar-action-btn .btn-subtext {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.badge.notif-hud-badge {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #11110F !important;
+    font-family: ui-monospace, 'JetBrains Mono', monospace !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    padding: 2px 7px !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35) !important;
+}
+
+/* 2. HEADER NOTIFICATION POPUP & BUTTON */
+.header-notif-btn {
+    background: linear-gradient(135deg, rgba(23, 23, 21, 0.85) 0%, rgba(17, 17, 15, 0.95) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.header-notif-btn:hover {
+    border-color: rgba(0, 240, 255, 0.4) !important;
+    box-shadow: 0 4px 16px rgba(0, 240, 255, 0.18) !important;
+    transform: translateY(-1px) !important;
+}
+
+.header-notif-dropdown {
+    background: #141413 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+.notif-dropdown-header {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    padding: 16px 18px !important;
+}
+
+.notif-dropdown-icon-wrap {
+    background: rgba(0, 240, 255, 0.1) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    border-radius: 10px !important;
+}
+
+.notif-dropdown-title {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #F2F0E9 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.notif-item-card {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    padding: 13px 18px !important;
+    transition: background 0.18s ease !important;
+}
+
+.notif-item-card:hover {
+    background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.notif-item-card.unread {
+    background: rgba(0, 240, 255, 0.03) !important;
+}
+
+.notif-item-card.unread::before {
+    background: var(--neon-cyan, #00f0ff) !important;
+    box-shadow: 0 0 10px var(--neon-cyan, #00f0ff) !important;
+}
+
+.notif-dropdown-footer {
+    padding: 12px 18px !important;
+    background: rgba(255, 255, 255, 0.015) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.notif-view-all-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    padding: 8px 16px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #F2F0E9 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.notif-view-all-btn:hover {
+    background: rgba(0, 240, 255, 0.1) !important;
+    border-color: rgba(0, 240, 255, 0.3) !important;
+    color: var(--neon-cyan, #00f0ff) !important;
+}
+
+/* 3. REVIEW REQUEST & NOTIFICATIONS DRAWER */
+#logs-drawer .modal-content,
+.notif-drawer {
+    background: #131312 !important;
+    border: 1px solid #2B2A27 !important;
+    box-shadow: -10px 0 50px rgba(0, 0, 0, 0.85) !important;
+}
+
+.notif-drawer-header {
+    padding: 18px 22px !important;
+    border-bottom: 1px solid #23221F !important;
+}
+
+.notif-header-icon-box {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 11px !important;
+    background: #1C1B19 !important;
+    border: 1px solid #33322E !important;
+    color: #F2F0E9 !important;
+}
+
+#notif-drawer-title {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    color: #F2F0E9 !important;
+    letter-spacing: 0.3px !important;
+}
+
+#notif-drawer-subtitle {
+    font-size: 12px !important;
+    color: #8E8B83 !important;
+}
+
+/* Category Tabs Bar */
+.notif-tabs-bar {
+    display: flex !important;
+    gap: 6px !important;
+    padding: 8px 14px !important;
+    background: #0E0E0D !important;
+    border-bottom: 1px solid #23221F !important;
+}
+
+.notif-tab-btn {
+    flex: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: #7A7770 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.22s ease !important;
+}
+
+.notif-tab-btn:hover {
+    color: #F2F0E9 !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.notif-tab-btn.active {
+    background: #23221F !important;
+    border-color: #383632 !important;
+    color: #F2F0E9 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.notif-tab-count {
+    font-family: ui-monospace, 'JetBrains Mono', monospace !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    padding: 1px 6px !important;
+    border-radius: 9999px !important;
+    background: #191816 !important;
+}
+
+.notif-tab-btn.active .notif-tab-count {
+    background: #33322E !important;
+    color: #F2F0E9 !important;
+}
+
+/* Request Cards in Drawer */
+.notif-card {
+    position: relative !important;
+    background: #171715 !important;
+    border: 1px solid #282724 !important;
+    border-radius: 12px !important;
+    padding: 15px 18px !important;
+    margin-bottom: 12px !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+
+.notif-card:hover {
+    background: #1C1B19 !important;
+    border-color: #383632 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+    transform: translateY(-1px) !important;
+}
+
+.notif-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+}
+
+.notif-card-tag {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-family: ui-monospace, 'JetBrains Mono', monospace !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+}
+
+.notif-card-tag.tag-cyan {
+    background: rgba(0, 240, 255, 0.08) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    color: #38bdf8 !important;
+}
+
+.notif-card-tag.tag-green {
+    background: rgba(16, 185, 129, 0.08) !important;
+    border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    color: #34d399 !important;
+}
+
+.notif-card-tag.tag-red {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    color: #f87171 !important;
+}
+
+.notif-card-tag.tag-purple {
+    background: rgba(168, 85, 247, 0.08) !important;
+    border: 1px solid rgba(168, 85, 247, 0.25) !important;
+    color: #c084fc !important;
+}
+
+.notif-status-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-family: ui-monospace, monospace !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px !important;
+    padding: 3px 9px !important;
+    border-radius: 9999px !important;
+}
+
+.notif-status-badge.badge-green {
+    background: rgba(16, 185, 129, 0.12) !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    color: #34d399 !important;
+}
+
+.notif-status-badge.badge-cyan {
+    background: rgba(0, 240, 255, 0.12) !important;
+    border: 1px solid rgba(0, 240, 255, 0.35) !important;
+    color: #38bdf8 !important;
+}
+
+.notif-status-badge.badge-red {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    color: #f87171 !important;
+}
+
+.notif-status-badge.badge-yellow {
+    background: rgba(245, 158, 11, 0.12) !important;
+    border: 1px solid rgba(245, 158, 11, 0.35) !important;
+    color: #fbbf24 !important;
+}
+
+.notif-card-main-text {
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    color: #E2DFD8 !important;
+    margin-bottom: 6px !important;
+}
+
+.notif-card-sub-text {
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
+    color: #8E8B83 !important;
+    margin-bottom: 8px !important;
+}
+
+.notif-user-pill {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 1px 7px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    color: #F2F0E9 !important;
+}
+
+/* ACTION BUTTONS: HIGH-OCTANE CYBER AESTHETIC */
+.notif-card-actions {
+    display: flex !important;
+    gap: 10px !important;
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.notif-action-btn,
+.btn-hw-approve,
+.btn-hw-reject,
+.btn-approve,
+.btn-reject {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    font-family: 'Space Grotesk', -apple-system, sans-serif !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px !important;
+    padding: 7px 15px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    user-select: none !important;
+}
+
+/* APPROVE BUTTONS (Green Cyber Neon) */
+.notif-btn-approve,
+.btn-hw-approve,
+.btn-approve {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.28) 100%) !important;
+    border: 1px solid rgba(52, 211, 153, 0.45) !important;
+    color: #34d399 !important;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.15) !important;
+}
+
+.notif-btn-approve:hover,
+.btn-hw-approve:hover,
+.btn-approve:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.32) 0%, rgba(5, 150, 105, 0.45) 100%) !important;
+    border-color: #34d399 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+
+.notif-btn-approve:active,
+.btn-hw-approve:active,
+.btn-approve:active {
+    transform: translateY(0) scale(0.97) !important;
+}
+
+/* REJECT BUTTONS (Crimson Cyber Neon) */
+.notif-btn-reject,
+.btn-hw-reject,
+.btn-reject {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(185, 28, 28, 0.25) 100%) !important;
+    border: 1px solid rgba(248, 113, 113, 0.4) !important;
+    color: #f87171 !important;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.12) !important;
+}
+
+.notif-btn-reject:hover,
+.btn-hw-reject:hover,
+.btn-reject:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.28) 0%, rgba(185, 28, 28, 0.4) 100%) !important;
+    border-color: #f87171 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+.notif-btn-reject:active,
+.btn-hw-reject:active,
+.btn-reject:active {
+    transform: translateY(0) scale(0.97) !important;
+}
+
+/* 4. WHOLE ADMIN PORTAL OVERHAUL */
+.admin-layout-section {
+    padding: 24px 28px !important;
+    max-width: 1440px !important;
+    margin: 0 auto !important;
+}
+
+.admin-header-card {
+    position: relative !important;
+    background: linear-gradient(135deg, #171715 0%, #121211 100%) !important;
+    border: 1px solid #2B2A27 !important;
+    border-radius: 18px !important;
+    padding: 24px 28px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+    margin-bottom: 24px !important;
+}
+
+.admin-shield-icon {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+    background: rgba(0, 240, 255, 0.1) !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    color: var(--neon-cyan, #00f0ff) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.2) !important;
+}
+
+.admin-header-tag {
+    font-family: ui-monospace, 'JetBrains Mono', monospace !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
+    color: var(--neon-cyan, #00f0ff) !important;
+}
+
+.admin-header-title {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #F2F0E9 !important;
+    letter-spacing: 0.3px !important;
+    margin: 4px 0 !important;
+}
+
+.admin-header-desc {
+    font-size: 13px !important;
+    color: #8E8B83 !important;
+}
+
+/* 5 HUD Stat Boxes */
+.admin-header-stats {
+    display: flex !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+}
+
+.admin-stat-box {
+    min-width: 110px !important;
+    background: #1C1B19 !important;
+    border: 1px solid #2B2A27 !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.22s ease !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+}
+
+.admin-stat-box:hover {
+    background: #22211E !important;
+    border-color: #383630 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+.admin-stat-num {
+    font-family: ui-monospace, 'JetBrains Mono', monospace !important;
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+}
+
+.stat-purple .admin-stat-num { color: #c084fc !important; }
+.stat-pink .admin-stat-num { color: #f472b6 !important; }
+.stat-green .admin-stat-num { color: #34d399 !important; }
+.stat-cyan .admin-stat-num { color: #38bdf8 !important; }
+.stat-yellow .admin-stat-num { color: #fbbf24 !important; }
+
+.admin-stat-lbl {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    color: #74716B !important;
+    margin-top: 4px !important;
+}
+
+/* Dual Column Queues Grid */
+.admin-queues-split-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    margin-bottom: 24px !important;
+}
+
+.admin-block-card {
+    background: #171715 !important;
+    border: 1px solid #282724 !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.admin-block-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 1px solid #23221F !important;
+}
+
+.admin-block-title-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+.admin-block-title-wrap h3 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #F2F0E9 !important;
+    margin: 0 !important;
+}
+
+.admin-badge-count {
+    font-family: ui-monospace, 'JetBrains Mono', monospace !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    padding: 2px 8px !important;
+    border-radius: 9999px !important;
+    background: rgba(244, 114, 182, 0.15) !important;
+    color: #f472b6 !important;
+    border: 1px solid rgba(244, 114, 182, 0.3) !important;
+}
+
+.admin-badge-count.count-cyan {
+    background: rgba(0, 240, 255, 0.12) !important;
+    color: #38bdf8 !important;
+    border-color: rgba(0, 240, 255, 0.3) !important;
+}
+
+/* Hardware Request & Member Pending Cards */
+.hardware-request-card,
+.pending-request-card {
+    position: relative !important;
+    background: #1B1A18 !important;
+    border: 1px solid #2B2A27 !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+    transition: all 0.22s ease !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.hardware-request-card:hover,
+.pending-request-card:hover {
+    background: #201F1C !important;
+    border-color: #383630 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+.hw-card-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    font-weight: 700 !important;
+    font-size: 13.5px !important;
+    color: #F2F0E9 !important;
+}
+
+.hw-qty-badge {
+    font-family: ui-monospace, monospace !important;
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+    background: rgba(0, 240, 255, 0.12) !important;
+    border: 1px solid rgba(0, 240, 255, 0.28) !important;
+    color: #38bdf8 !important;
+    padding: 2px 7px !important;
+    border-radius: 6px !important;
+}
+
+.hw-avatar,
+.pending-card-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    background: #262521 !important;
+    border: 1px solid #383630 !important;
+    color: #F2F0E9 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 800 !important;
+    font-size: 12.5px !important;
+}
+
+.hw-requester-name,
+.pending-card-name {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #F2F0E9 !important;
+}
+
+.hw-requester-email,
+.pending-card-email {
+    font-size: 11px !important;
+    color: #74716B !important;
+}
+
+/* Users Directory Table */
+.admin-table-responsive {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    border: 1px solid #262522 !important;
+}
+
+.admin-users-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: #141413 !important;
+}
+
+.admin-users-table thead th {
+    background: #181816 !important;
+    color: #74716B !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.6px !important;
+    text-transform: uppercase !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #262522 !important;
+}
+
+.admin-users-table tbody tr {
+    border-bottom: 1px solid #1E1D1A !important;
+    transition: background 0.15s ease !important;
+}
+
+.admin-users-table tbody tr:hover {
+    background: #1A1917 !important;
+}
+
+.admin-users-table tbody td {
+    padding: 13px 16px !important;
+    font-size: 12.5px !important;
+    color: #D6D3CB !important;
+    vertical-align: middle !important;
+}
+
+/* 5. 7-DAY SYSTEM AUDIT LEDGER */
+.admin-audit-block-card {
+    background: #141413 !important;
+    border: 1px solid #282724 !important;
+    border-radius: 16px !important;
+    padding: 22px !important;
+}
+
+.audit-hud-icon-box {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    background: rgba(0, 240, 255, 0.08) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.audit-live-beacon-tag {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-family: ui-monospace, monospace !important;
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    background: rgba(16, 185, 129, 0.12) !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    color: #34d399 !important;
+    padding: 2px 7px !important;
+    border-radius: 9999px !important;
+}
+
+.pulse-beacon-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background: #10b981 !important;
+    box-shadow: 0 0 8px #10b981 !important;
+    animation: notifBeaconPulse 1.5s infinite !important;
+}
+
+.admin-audit-range-pills {
+    display: flex !important;
+    gap: 6px !important;
+    padding: 4px !important;
+    background: #0E0E0D !important;
+    border: 1px solid #262522 !important;
+    border-radius: 8px !important;
+}
+
+.audit-range-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 5px 12px !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    border: none !important;
+    color: #74716B !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.audit-range-pill.active {
+    background: #23221F !important;
+    color: #F2F0E9 !important;
+    border: 1px solid #383630 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+
+.audit-range-pill:hover:not(.active) {
+    color: #D6D3CB !important;
+}
+
+/* ========================================================
+   Password Input Frame, Tactile Toggle & Autofill Hardening
+   ======================================================== */
+
+/* Tactile Password Visibility Toggle Button Frame */
+.password-toggle-btn,
+.auth-card .password-toggle-btn,
+#reset-password-modal .password-toggle-btn {
+    position: absolute !important;
+    right: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 28px !important;
+    height: 28px !important;
+    background: #1C1B19 !important;
+    border: 1px solid #302F2B !important;
+    border-radius: 6px !important;
+    color: #AAA79F !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 5 !important;
+}
+
+.password-toggle-btn:hover,
+.auth-card .password-toggle-btn:hover,
+#reset-password-modal .password-toggle-btn:hover {
+    background: #282724 !important;
+    border-color: #756E60 !important;
+    color: #F2F0E9 !important;
+    box-shadow: 0 0 10px rgba(200, 191, 168, 0.25) !important;
+    transform: translateY(-50%) scale(1.05) !important;
+}
+
+.password-toggle-btn:active,
+.auth-card .password-toggle-btn:active {
+    transform: translateY(-50%) scale(0.95) !important;
+}
+
+.password-toggle-btn svg,
+.password-toggle-btn i,
+.auth-card .password-toggle-btn svg,
+.auth-card .password-toggle-btn i {
+    width: 14px !important;
+    height: 14px !important;
+    stroke-width: 2 !important;
+    display: block !important;
+}
+
+/* Midnight Mono (Dark) Password Input Frame */
+.auth-card #login-password,
+.auth-card #signup-password,
+.auth-card input[type="password"],
+.auth-card .input-icon-wrapper input[type="password"],
+#reset-password-modal input[type="password"] {
+    background: #121211 !important;
+    background-color: #121211 !important;
+    border: 1px solid #2B2A27 !important;
+    color: #F2F0E9 !important;
+    -webkit-text-fill-color: #F2F0E9 !important;
+    caret-color: #C8BFA8 !important;
+    height: 42px !important;
+    padding-left: 38px !important;
+    padding-right: 44px !important;
+    border-radius: 8px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+.auth-card #login-password:focus,
+.auth-card #signup-password:focus,
+.auth-card input[type="password"]:focus,
+#reset-password-modal input[type="password"]:focus {
+    border-color: #756E60 !important;
+    background: #161514 !important;
+    background-color: #161514 !important;
+    color: #F2F0E9 !important;
+    -webkit-text-fill-color: #F2F0E9 !important;
+    box-shadow: 0 0 0 2px rgba(200, 191, 168, 0.15) !important;
+}
+
+/* Complete Chromium & WebKit Autofill Immunity (Midnight Mono - Dark Theme) */
+html[data-theme="mono"] .auth-card input:-webkit-autofill,
+html[data-theme="mono"] .auth-card input:-webkit-autofill:hover,
+html[data-theme="mono"] .auth-card input:-webkit-autofill:focus,
+html[data-theme="mono"] .auth-card input:-webkit-autofill:active,
+html[data-theme="mono"] .auth-card input[type="password"]:-webkit-autofill,
+html[data-theme="mono"] #login-password:-webkit-autofill,
+html[data-theme="mono"] #signup-password:-webkit-autofill,
+html[data-theme="mono"] #login-username:-webkit-autofill,
+body.theme-mono .auth-card input:-webkit-autofill,
+body.theme-mono .auth-card input:-webkit-autofill:hover,
+body.theme-mono .auth-card input:-webkit-autofill:focus,
+body.theme-mono .auth-card input:-webkit-autofill:active,
+body.theme-mono .auth-card input[type="password"]:-webkit-autofill,
+body.theme-mono #login-password:-webkit-autofill,
+body.theme-mono #signup-password:-webkit-autofill,
+body.theme-mono #login-username:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #121211 inset !important;
+    box-shadow: 0 0 0 1000px #121211 inset !important;
+    -webkit-text-fill-color: #F2F0E9 !important;
+    color: #F2F0E9 !important;
+    border: 1px solid #2B2A27 !important;
+    caret-color: #C8BFA8 !important;
+    background-color: #121211 !important;
+    transition: background-color 5000000s ease-in-out 0s !important;
+}
+
+html[data-theme="mono"] .auth-card input:-webkit-autofill:focus,
+html[data-theme="mono"] #login-password:-webkit-autofill:focus,
+html[data-theme="mono"] #signup-password:-webkit-autofill:focus,
+body.theme-mono .auth-card input:-webkit-autofill:focus,
+body.theme-mono #login-password:-webkit-autofill:focus,
+body.theme-mono #signup-password:-webkit-autofill:focus {
+    border-color: #756E60 !important;
+    -webkit-box-shadow: 0 0 0 1000px #161514 inset, 0 0 0 2px rgba(200, 191, 168, 0.15) !important;
+    box-shadow: 0 0 0 1000px #161514 inset, 0 0 0 2px rgba(200, 191, 168, 0.15) !important;
+}
+
+/* Light Mode (Robo Lab) All Auth Card Inputs: Crisp White Surface */
+html[data-theme="light"] .auth-card input,
+html[data-theme="light"] .auth-card #login-username,
+html[data-theme="light"] .auth-card #login-password,
+html[data-theme="light"] .auth-card #signup-email,
+html[data-theme="light"] .auth-card #signup-enrollment,
+html[data-theme="light"] .auth-card #signup-batch,
+html[data-theme="light"] .auth-card #signup-password,
+body.theme-light .auth-card input,
+body.theme-light .auth-card #login-username,
+body.theme-light .auth-card #login-password,
+body.theme-light .auth-card #signup-email,
+body.theme-light .auth-card #signup-enrollment,
+body.theme-light .auth-card #signup-batch,
+body.theme-light .auth-card #signup-password {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    border: 1.5px solid rgba(130, 90, 210, 0.32) !important;
+    color: #17152B !important;
+    -webkit-text-fill-color: #17152B !important;
+    caret-color: #7956E8 !important;
+    height: 42px !important;
+    padding-left: 38px !important;
+}
+
+html[data-theme="light"] .auth-card input[type="password"],
+body.theme-light .auth-card input[type="password"] {
+    padding-right: 44px !important;
+}
+
+html[data-theme="light"] .auth-card input:focus,
+html[data-theme="light"] .auth-card #login-username:focus,
+html[data-theme="light"] .auth-card #login-password:focus,
+html[data-theme="light"] .auth-card #signup-email:focus,
+html[data-theme="light"] .auth-card #signup-enrollment:focus,
+html[data-theme="light"] .auth-card #signup-batch:focus,
+html[data-theme="light"] .auth-card #signup-password:focus,
+body.theme-light .auth-card input:focus,
+body.theme-light .auth-card #login-username:focus,
+body.theme-light .auth-card #login-password:focus,
+body.theme-light .auth-card #signup-email:focus,
+body.theme-light .auth-card #signup-enrollment:focus,
+body.theme-light .auth-card #signup-batch:focus,
+body.theme-light .auth-card #signup-password:focus {
+    border-color: #7956E8 !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    box-shadow: 0 0 0 3px rgba(121, 86, 232, 0.22) !important;
+    color: #17152B !important;
+    -webkit-text-fill-color: #17152B !important;
+}
+
+html[data-theme="light"] .password-toggle-btn,
+body.theme-light .password-toggle-btn {
+    background: rgba(121, 86, 232, 0.08) !important;
+    border: 1px solid rgba(121, 86, 232, 0.22) !important;
+    color: #7956E8 !important;
+}
+
+html[data-theme="light"] .password-toggle-btn:hover,
+body.theme-light .password-toggle-btn:hover {
+    color: #4c1d95 !important;
+    background: rgba(121, 86, 232, 0.18) !important;
+    border-color: #7956E8 !important;
+    box-shadow: 0 0 10px rgba(121, 86, 232, 0.25) !important;
+}
+
+/* Light Mode (Robo Lab) Autofill Hardening: Pure Crisp White Inset */
+html[data-theme="light"] .auth-card input:-webkit-autofill,
+html[data-theme="light"] .auth-card input:-webkit-autofill:hover,
+html[data-theme="light"] .auth-card input:-webkit-autofill:focus,
+html[data-theme="light"] .auth-card input:-webkit-autofill:active,
+html[data-theme="light"] #login-username:-webkit-autofill,
+html[data-theme="light"] #login-username:-webkit-autofill:hover,
+html[data-theme="light"] #login-username:-webkit-autofill:focus,
+html[data-theme="light"] #login-username:-webkit-autofill:active,
+html[data-theme="light"] #login-password:-webkit-autofill,
+html[data-theme="light"] #login-password:-webkit-autofill:hover,
+html[data-theme="light"] #login-password:-webkit-autofill:focus,
+html[data-theme="light"] #login-password:-webkit-autofill:active,
+html[data-theme="light"] #signup-email:-webkit-autofill,
+html[data-theme="light"] #signup-enrollment:-webkit-autofill,
+html[data-theme="light"] #signup-batch:-webkit-autofill,
+html[data-theme="light"] #signup-password:-webkit-autofill,
+body.theme-light .auth-card input:-webkit-autofill,
+body.theme-light .auth-card input:-webkit-autofill:hover,
+body.theme-light .auth-card input:-webkit-autofill:focus,
+body.theme-light .auth-card input:-webkit-autofill:active,
+body.theme-light #login-username:-webkit-autofill,
+body.theme-light #login-username:-webkit-autofill:hover,
+body.theme-light #login-username:-webkit-autofill:focus,
+body.theme-light #login-username:-webkit-autofill:active,
+body.theme-light #login-password:-webkit-autofill,
+body.theme-light #login-password:-webkit-autofill:hover,
+body.theme-light #login-password:-webkit-autofill:focus,
+body.theme-light #login-password:-webkit-autofill:active,
+body.theme-light #signup-email:-webkit-autofill,
+body.theme-light #signup-enrollment:-webkit-autofill,
+body.theme-light #signup-batch:-webkit-autofill,
+body.theme-light #signup-password:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+    box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+    -webkit-text-fill-color: #17152B !important;
+    color: #17152B !important;
+    border: 1.5px solid #7956E8 !important;
+    caret-color: #7956E8 !important;
+    background-color: #FFFFFF !important;
+    transition: background-color 5000000s ease-in-out 0s !important;
+}
+
+/* ========================================================
+   STICKY NAVBAR & SIDEBAR BEHAVIOR (Always Visible On Scroll)
+   ======================================================== */
+html,
+body,
+html[data-theme="mono"] body,
+body.theme-mono,
+html[data-theme="light"] body,
+body.theme-light {
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+}
+
+.app-container {
+    overflow: visible !important;
+    align-items: stretch !important;
+}
+
+.main-viewport-wrapper {
+    overflow: visible !important;
+    min-height: 100vh !important;
+    position: relative !important;
+}
+
+/* Left Sidebar: Permanently pinned / static on scroll (DESKTOP ONLY) */
+@media (min-width: 901px) {
+    .app-sidebar,
+    html[data-theme="mono"] .app-sidebar,
+    body.theme-mono .app-sidebar,
+    html[data-theme="light"] .app-sidebar,
+    body.theme-light .app-sidebar {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 16px !important;
+        width: 240px !important;
+        height: calc(100vh - 32px) !important;
+        max-height: calc(100vh - 32px) !important;
+        align-self: start !important;
+        z-index: 9998 !important;
+    }
+}
+
+/* Top Header Navbar: Permanently pinned / static on scroll across devices */
+.viewport-header,
+html[data-theme="mono"] .viewport-header,
+body.theme-mono .viewport-header,
+html[data-theme="light"] .viewport-header,
+body.theme-light .viewport-header {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 16px !important;
+    z-index: 99999 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html[data-theme="mono"] .viewport-header,
+body.theme-mono .viewport-header {
+    background: rgba(16, 16, 15, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid #262522 !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+
+html[data-theme="light"] .viewport-header,
+body.theme-light .viewport-header {
+    background: rgba(250, 246, 255, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(130, 90, 210, 0.25) !important;
+    box-shadow: 0 8px 32px rgba(100, 70, 160, 0.12) !important;
+}
+
+/* Mobile & Tablet Drawer and Header Layout (<= 900px) */
+@media (max-width: 900px) {
+    html.is-authenticated #app-container,
+    .app-container,
+    html[data-theme="mono"] .app-container,
+    body.theme-mono .app-container,
+    html[data-theme="light"] .app-container,
+    body.theme-light .app-container {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 8px 12px 28px 12px !important;
+        gap: 0 !important;
+    }
+
+    .main-viewport-wrapper,
+    html[data-theme="mono"] .main-viewport-wrapper,
+    body.theme-mono .main-viewport-wrapper,
+    html[data-theme="light"] .main-viewport-wrapper,
+    body.theme-light .main-viewport-wrapper {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .app-sidebar,
+    html[data-theme="mono"] .app-sidebar,
+    body.theme-mono .app-sidebar,
+    html[data-theme="light"] .app-sidebar,
+    body.theme-light .app-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: min(310px, 86vw) !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        align-self: auto !important;
+        transform: translate3d(-105%, 0, 0) !important;
+        -webkit-transform: translate3d(-105%, 0, 0) !important;
+        z-index: 999999 !important;
+        margin: 0 !important;
+    }
+
+    .app-container.sidebar-open .app-sidebar,
+    .app-container.sidebar-open html[data-theme="mono"] .app-sidebar,
+    .app-container.sidebar-open body.theme-mono .app-sidebar,
+    .app-container.sidebar-open html[data-theme="light"] .app-sidebar,
+    .app-container.sidebar-open body.theme-light .app-sidebar {
+        transform: translate3d(0, 0, 0) !important;
+        -webkit-transform: translate3d(0, 0, 0) !important;
+    }
+
+    .viewport-header,
+    html[data-theme="mono"] .viewport-header,
+    body.theme-mono .viewport-header,
+    html[data-theme="light"] .viewport-header,
+    body.theme-light .viewport-header {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 8px !important;
+        margin-top: 0 !important;
+        margin-bottom: 12px !important;
+        z-index: 9999 !important;
+    }
+}
+
+/* ========================================================
+   THEME-BASED NOTIFICATION / REVIEW REQUEST BUTTON (2ND SS)
+   ======================================================== */
+/* Light Theme: Crisp, elegant white card with lavender borders and deep contrast text */
+html[data-theme="light"] .sidebar-action-btn.notif-sidebar-btn,
+body.theme-light .sidebar-action-btn.notif-sidebar-btn {
+    background: #FFFFFF !important;
+    border: 1.5px solid rgba(130, 90, 210, 0.22) !important;
+    box-shadow: 0 4px 16px rgba(130, 90, 210, 0.08) !important;
+}
+
+html[data-theme="light"] .sidebar-action-btn.notif-sidebar-btn:hover,
+body.theme-light .sidebar-action-btn.notif-sidebar-btn:hover {
+    background: #FFFFFF !important;
+    border-color: rgba(128, 88, 215, 0.45) !important;
+    box-shadow: 0 6px 20px rgba(130, 90, 210, 0.16) !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="light"] .sidebar-action-btn .btn-text,
+body.theme-light .sidebar-action-btn .btn-text,
+html[data-theme="light"] #sidebar-notif-title,
+body.theme-light #sidebar-notif-title {
+    color: #17152B !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="light"] .sidebar-action-btn .btn-subtext,
+body.theme-light .sidebar-action-btn .btn-subtext,
+html[data-theme="light"] #sidebar-notif-subtext,
+body.theme-light #sidebar-notif-subtext {
+    color: #64748b !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] .sidebar-action-btn .notif-icon-frame,
+body.theme-light .sidebar-action-btn .notif-icon-frame {
+    background: rgba(128, 88, 215, 0.12) !important;
+    border: 1px solid rgba(128, 88, 215, 0.28) !important;
+    color: #8058D7 !important;
+}
+
+html[data-theme="light"] .sidebar-action-btn.notif-sidebar-btn:hover .notif-icon-frame,
+body.theme-light .sidebar-action-btn.notif-sidebar-btn:hover .notif-icon-frame {
+    background: rgba(128, 88, 215, 0.22) !important;
+    border-color: #8058D7 !important;
+    box-shadow: 0 0 12px rgba(128, 88, 215, 0.25) !important;
+}
+
+html[data-theme="light"] .badge.notif-hud-badge,
+body.theme-light .badge.notif-hud-badge {
+    background: #8058D7 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 8px rgba(128, 88, 215, 0.35) !important;
+}
+
+/* Mono Theme: Sleek metallic obsidian button */
+html[data-theme="mono"] .sidebar-action-btn.notif-sidebar-btn,
+body.theme-mono .sidebar-action-btn.notif-sidebar-btn {
+    background: linear-gradient(135deg, rgba(30, 29, 27, 0.95) 0%, rgba(20, 20, 19, 0.98) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="mono"] .sidebar-action-btn.notif-sidebar-btn:hover,
+body.theme-mono .sidebar-action-btn.notif-sidebar-btn:hover {
+    background: linear-gradient(135deg, rgba(38, 36, 33, 0.98) 0%, rgba(24, 23, 21, 1) 100%) !important;
+    border-color: rgba(0, 240, 255, 0.35) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 240, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="mono"] .sidebar-action-btn .btn-text,
+body.theme-mono .sidebar-action-btn .btn-text,
+html[data-theme="mono"] #sidebar-notif-title,
+body.theme-mono #sidebar-notif-title {
+    color: #F2F0E9 !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="mono"] .sidebar-action-btn .btn-subtext,
+body.theme-mono .sidebar-action-btn .btn-subtext,
+html[data-theme="mono"] #sidebar-notif-subtext,
+body.theme-mono #sidebar-notif-subtext {
+    color: #8E8B82 !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="mono"] .sidebar-action-btn .notif-icon-frame,
+body.theme-mono .sidebar-action-btn .notif-icon-frame {
+    background: rgba(0, 240, 255, 0.08) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    color: var(--neon-cyan, #00f0ff) !important;
+}
+
+html[data-theme="mono"] .sidebar-action-btn.notif-sidebar-btn:hover .notif-icon-frame,
+body.theme-mono .sidebar-action-btn.notif-sidebar-btn:hover .notif-icon-frame {
+    background: rgba(0, 240, 255, 0.18) !important;
+    border-color: var(--neon-cyan, #00f0ff) !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.35) !important;
+}
+
+html[data-theme="mono"] .badge.notif-hud-badge,
+body.theme-mono .badge.notif-hud-badge {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #11110F !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35) !important;
+}
+
+/* ========================================================
+   UNIFIED HEADINGS & BUTTONS ALIGNMENT (3RD SS)
+   ======================================================== */
+/* 1. Sidebar Section Headings (CORE WORKSPACE, VAULT INDEX, MISCELLANEOUS) */
+.sidebar-section-header,
+.vault-dropdown summary,
+.vault-dropdown summary.sidebar-nav-title {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    padding: 0 10px !important;
+    margin-bottom: 6px !important;
+    border-radius: 8px !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
+    transition: background 0.2s ease, color 0.2s ease !important;
+    list-style: none !important;
+}
+
+.vault-dropdown summary::-webkit-details-marker,
+.vault-dropdown summary::marker {
+    display: none !important;
+}
+
+html[data-theme="light"] .sidebar-section-header,
+body.theme-light .sidebar-section-header,
+html[data-theme="light"] .vault-dropdown summary,
+body.theme-light .vault-dropdown summary {
+    color: #64748b !important;
+    background: transparent !important;
+}
+
+html[data-theme="light"] .sidebar-section-header:hover,
+body.theme-light .sidebar-section-header:hover,
+html[data-theme="light"] .vault-dropdown summary:hover,
+body.theme-light .vault-dropdown summary:hover {
+    color: #17152B !important;
+    background: rgba(130, 90, 210, 0.08) !important;
+}
+
+html[data-theme="mono"] .sidebar-section-header,
+body.theme-mono .sidebar-section-header,
+html[data-theme="mono"] .vault-dropdown summary,
+body.theme-mono .vault-dropdown summary {
+    color: #74716B !important;
+    background: transparent !important;
+}
+
+html[data-theme="mono"] .sidebar-section-header:hover,
+body.theme-mono .sidebar-section-header:hover,
+html[data-theme="mono"] .vault-dropdown summary:hover,
+body.theme-mono .vault-dropdown summary:hover {
+    color: #F2F0E9 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Accordion Chevrons Alignment & Synchronized Direction */
+.sidebar-section-header .section-arrow,
+.vault-dropdown summary .section-arrow,
+.sidebar-section-header svg.section-arrow,
+.vault-dropdown summary svg.section-arrow,
+.vault-dropdown summary i,
+.vault-dropdown summary svg {
+    width: 12px !important;
+    height: 12px !important;
+    opacity: 0.7 !important;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+    transform-origin: center center !important;
+}
+
+/* Expanded state: chevron points down */
+.sidebar-section:not(.is-collapsed) .sidebar-section-header .section-arrow,
+.vault-dropdown[open] summary .section-arrow,
+.vault-dropdown[open] summary i,
+.vault-dropdown[open] summary svg {
+    transform: rotate(0deg) !important;
+    opacity: 0.8 !important;
+}
+
+/* Collapsed state: chevron points right */
+.sidebar-section.is-collapsed .sidebar-section-header .section-arrow,
+.vault-dropdown:not([open]) summary .section-arrow,
+.vault-dropdown:not([open]) summary i,
+.vault-dropdown:not([open]) summary svg {
+    transform: rotate(-90deg) !important;
+    opacity: 0.5 !important;
+}
+
+/* 2. Flatten Vault Items Group so it shares the exact same grid alignment */
+.sidebar-items-group,
+.app-sidebar .sidebar-items-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 4px 0 0 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. Unified Navigation Buttons & Vault Category Items */
+.sidebar-nav-link,
+.app-sidebar .sidebar-item,
+.sidebar-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    padding: 0 12px !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    gap: 10px !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    white-space: nowrap !important;
+    transition: all 0.18s ease-in-out !important;
+}
+
+.sidebar-nav-link i,
+.sidebar-nav-link svg,
+.sidebar-item i,
+.sidebar-item svg {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: color 0.18s ease, stroke 0.18s ease !important;
+}
+
+.sidebar-nav-link span,
+.sidebar-item span {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    letter-spacing: 0.1px !important;
+    text-align: left !important;
+    flex-grow: 1 !important;
+}
+
+/* Light Theme Navigation Button Colors */
+html[data-theme="light"] .sidebar-nav-link,
+body.theme-light .sidebar-nav-link,
+html[data-theme="light"] .sidebar-item,
+body.theme-light .sidebar-item {
+    color: #585170 !important;
+    background: transparent !important;
+    border: 1.5px solid transparent !important;
+}
+
+html[data-theme="light"] .sidebar-nav-link i,
+body.theme-light .sidebar-nav-link i,
+html[data-theme="light"] .sidebar-nav-link svg,
+body.theme-light .sidebar-nav-link svg,
+html[data-theme="light"] .sidebar-item i,
+body.theme-light .sidebar-item i,
+html[data-theme="light"] .sidebar-item svg,
+body.theme-light .sidebar-item svg {
+    color: #585170 !important;
+    stroke: #585170 !important;
+}
+
+html[data-theme="light"] .sidebar-nav-link:hover,
+body.theme-light .sidebar-nav-link:hover,
+html[data-theme="light"] .sidebar-item:hover,
+body.theme-light .sidebar-item:hover {
+    color: #17152B !important;
+    background: rgba(156, 120, 237, 0.08) !important;
+    border-color: rgba(130, 90, 210, 0.18) !important;
+}
+
+html[data-theme="light"] .sidebar-nav-link:hover i,
+body.theme-light .sidebar-nav-link:hover i,
+html[data-theme="light"] .sidebar-nav-link:hover svg,
+body.theme-light .sidebar-nav-link:hover svg,
+html[data-theme="light"] .sidebar-item:hover i,
+body.theme-light .sidebar-item:hover i,
+html[data-theme="light"] .sidebar-item:hover svg,
+body.theme-light .sidebar-item:hover svg {
+    color: #17152B !important;
+    stroke: #17152B !important;
+}
+
+/* Active Main Navigation Page (e.g. Dashboard) in Light Theme */
+html[data-theme="light"] .sidebar-nav-link.active,
+body.theme-light .sidebar-nav-link.active {
+    background: rgba(156, 120, 237, 0.12) !important;
+    color: #17152B !important;
+    border: 1.5px solid #8058D7 !important;
+    box-shadow: 0 2px 8px rgba(128, 88, 215, 0.15) !important;
+}
+
+html[data-theme="light"] .sidebar-nav-link.active span,
+body.theme-light .sidebar-nav-link.active span {
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] .sidebar-nav-link.active i,
+body.theme-light .sidebar-nav-link.active i,
+html[data-theme="light"] .sidebar-nav-link.active svg,
+body.theme-light .sidebar-nav-link.active svg {
+    color: #8058D7 !important;
+    stroke: #8058D7 !important;
+}
+
+/* Active Category item ONLY when viewing inventory page */
+body.view-inventory-view html[data-theme="light"] .sidebar-item.active,
+body.view-inventory-view.theme-light .sidebar-item.active {
+    background: rgba(156, 120, 237, 0.12) !important;
+    color: #17152B !important;
+    border: 1.5px solid #8058D7 !important;
+    box-shadow: 0 2px 8px rgba(128, 88, 215, 0.15) !important;
+}
+
+body.view-inventory-view html[data-theme="light"] .sidebar-item.active span,
+body.view-inventory-view.theme-light .sidebar-item.active span {
+    font-weight: 600 !important;
+}
+
+body.view-inventory-view html[data-theme="light"] .sidebar-item.active i,
+body.view-inventory-view.theme-light .sidebar-item.active i,
+body.view-inventory-view html[data-theme="light"] .sidebar-item.active svg,
+body.view-inventory-view.theme-light .sidebar-item.active svg {
+    color: #8058D7 !important;
+    stroke: #8058D7 !important;
+}
+
+/* When not in inventory, category items shouldn't show active page outline */
+body:not(.view-inventory-view) .sidebar-item.active {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Mono Theme Navigation Button Colors */
+html[data-theme="mono"] .sidebar-nav-link,
+body.theme-mono .sidebar-nav-link,
+html[data-theme="mono"] .sidebar-item,
+body.theme-mono .sidebar-item {
+    color: #AAA79F !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+}
+
+html[data-theme="mono"] .sidebar-nav-link i,
+body.theme-mono .sidebar-nav-link i,
+html[data-theme="mono"] .sidebar-nav-link svg,
+body.theme-mono .sidebar-nav-link svg,
+html[data-theme="mono"] .sidebar-item i,
+body.theme-mono .sidebar-item i,
+html[data-theme="mono"] .sidebar-item svg,
+body.theme-mono .sidebar-item svg {
+    color: #85817A !important;
+    stroke: #85817A !important;
+}
+
+html[data-theme="mono"] .sidebar-nav-link:hover,
+body.theme-mono .sidebar-nav-link:hover,
+html[data-theme="mono"] .sidebar-item:hover,
+body.theme-mono .sidebar-item:hover {
+    color: #F2F0E9 !important;
+    background: #22211F !important;
+    border-color: #383733 !important;
+}
+
+html[data-theme="mono"] .sidebar-nav-link:hover i,
+body.theme-mono .sidebar-nav-link:hover i,
+html[data-theme="mono"] .sidebar-nav-link:hover svg,
+body.theme-mono .sidebar-nav-link:hover svg,
+html[data-theme="mono"] .sidebar-item:hover i,
+body.theme-mono .sidebar-item:hover i,
+html[data-theme="mono"] .sidebar-item:hover svg,
+body.theme-mono .sidebar-item:hover svg {
+    color: #F2F0E9 !important;
+    stroke: #F2F0E9 !important;
+}
+
+/* Active Main Navigation Page (e.g. Dashboard) in Mono Theme */
+html[data-theme="mono"] .sidebar-nav-link.active,
+body.theme-mono .sidebar-nav-link.active {
+    color: #11110F !important;
+    background: #E1DCCF !important;
+    border: 1px solid #E1DCCF !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="mono"] .sidebar-nav-link.active span,
+body.theme-mono .sidebar-nav-link.active span {
+    font-weight: 600 !important;
+}
+
+html[data-theme="mono"] .sidebar-nav-link.active i,
+body.theme-mono .sidebar-nav-link.active i,
+html[data-theme="mono"] .sidebar-nav-link.active svg,
+body.theme-mono .sidebar-nav-link.active svg {
+    color: #11110F !important;
+    stroke: #11110F !important;
+}
+
+body.view-inventory-view html[data-theme="mono"] .sidebar-item.active,
+body.view-inventory-view.theme-mono .sidebar-item.active {
+    color: #11110F !important;
+    background: #E1DCCF !important;
+    border: 1px solid #E1DCCF !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.view-inventory-view html[data-theme="mono"] .sidebar-item.active span,
+body.view-inventory-view.theme-mono .sidebar-item.active span {
+    font-weight: 600 !important;
+}
+
+body.view-inventory-view html[data-theme="mono"] .sidebar-item.active i,
+body.view-inventory-view.theme-mono .sidebar-item.active i,
+body.view-inventory-view html[data-theme="mono"] .sidebar-item.active svg,
+body.view-inventory-view.theme-mono .sidebar-item.active svg {
+    color: #11110F !important;
+    stroke: #11110F !important;
+}
+
+/* ========================================================
+   CART BUTTON VISIBILITY & UNWANTED BUTTON REMOVAL
+   ======================================================== */
+/* 1. Header Cart button: visible STRICTLY on inventory page */
+.header-cart-wrapper {
+    display: none !important;
+}
+
+body.view-inventory-view .header-cart-wrapper {
+    display: inline-flex !important;
+}
+
+/* 2. Remove 2nd screenshot sidebar hardware cart button */
+#side-nav-cart {
+    display: none !important;
+}
+
+/* 3. Remove 3rd screenshot vault top cart button & "Live Hardware Registry" text */
+.vault-status-indicator,
+.vault-top-actions,
+#btn-vault-cart-trigger {
+    display: none !important;
+}
+
+/* 4. Remove Catalog View Cart button (user screenshot) */
+#btn-catalog-cart-trigger,
+.btn-vault-cart-quick {
+    display: none !important;
+}
+
+/* ========================================================
+   HIGH-PERFORMANCE SPEED, FLUIDITY & RESPONSIVENESS OPTIMIZATIONS
+   ======================================================== */
+/* 1. Fast touch and hardware acceleration */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button, a, select, input, .sidebar-nav-link, .sidebar-item, .dash-card, .inventory-card {
+    touch-action: manipulation;
+}
+
+/* 2. Content Visibility and Render Containment for Massive Catalog Grids */
+.inventory-grid {
+    content-visibility: auto;
+    contain-intrinsic-size: 800px;
+}
+
+.inventory-card {
+    contain: layout style;
+    will-change: auto;
+}
+
+.dashboard-grid {
+    contain: layout style;
+}
+
+.dash-card {
+    contain: layout style;
+}
+
+/* 3. Smooth touch scrolling on mobile drawers & modals */
+.sidebar-scroll-content,
+.cart-items-scroll,
+.notif-dropdown-list,
+.hw-ledger-table-wrap,
+.modal-content {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+/* 4. Optimized transitions - no jank */
+.app-sidebar,
+.viewport-header,
+.dash-card,
+.inventory-card,
+.modal-content {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* 5. Mobile & Tablet Responsiveness Enhancements */
+@media (max-width: 768px) {
+    .viewport-header {
+        padding: 0 12px !important;
+        height: 52px !important;
+        min-height: 52px !important;
+        max-height: 52px !important;
+        gap: 8px !important;
+    }
+
+    .breadcrumbs {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .header-right {
+        gap: 6px !important;
+    }
+
+    .header-theme-box {
+        padding: 4px 8px !important;
+        font-size: 11px !important;
+    }
+
+    .header-notif-btn,
+    .header-cart-btn {
+        padding: 6px 10px !important;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .dashboard-greeting-card {
+        padding: 18px 16px !important;
+    }
+
+    .profile-clean-hero {
+        padding: 18px 16px !important;
+    }
+
+    .profile-telemetry-hud {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    html.is-authenticated #app-container,
+    .app-container,
+    html[data-theme="mono"] .app-container,
+    body.theme-mono .app-container,
+    html[data-theme="light"] .app-container,
+    body.theme-light .app-container {
+        padding: 6px 8px 24px 8px !important;
+    }
+
+    .viewport-header,
+    html[data-theme="mono"] .viewport-header,
+    body.theme-mono .viewport-header,
+    html[data-theme="light"] .viewport-header,
+    body.theme-light .viewport-header {
+        top: 6px !important;
+        margin-top: 0 !important;
+        margin-bottom: 10px !important;
+    }
+
+    .dash-card-title {
+        font-size: 15px !important;
+    }
+
+    .dash-card-desc {
+        font-size: 12px !important;
+    }
+}
+
+/* ==========================================================================
+   High-Performance Mobile & Desktop Optimization Layer (v2.14.0)
+   ========================================================================== */
+/* Smooth touch scrolling & GPU compositing for mobile devices */
+.app-container,
+.main-viewport,
+.admin-modal-content,
+.modal-content,
+.notif-dropdown-list,
+.nav-cart-items-list {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* GPU Hardware Acceleration for interactive overlays & fixed components */
+.modal-overlay,
+.header-notif-dropdown,
+.toast-container,
+.custom-cursor,
+.canvas-container {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Content Containment for isolated views to eliminate full-page layout recalculations */
+.inventory-grid,
+.admin-table-container,
+.developers-grid {
+    contain: layout style;
+}
+
+/* Zero DOM layout thrashing during active user scroll */
+body.is-scrolling * {
+    pointer-events: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+
+
+

@@ -1,6 +1,6 @@
 {
   "name": "cicr-inventory-backend",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "description": "Express + TypeScript backend for CICR Robotics Inventory Hub",
   "main": "dist/server.js",
   "scripts": {
@@ -23,12 +23,13 @@
     "@types/node": "^20.11.0",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^8.0.1",
+    "@types/pg": "^8.23.1",
     "bcryptjs": "^3.0.3",
     "bullmq": "^6.1.0",
+    "compression": "^1.8.2",
     "connect-redis": "^10.0.0",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
-    "@types/pg": "^8.23.1",
     "express": "^4.18.2",
     "express-rate-limit": "^8.7.0",
     "express-session": "^1.19.0",
@@ -41,6 +42,7 @@
     "zod": "^4.6.4"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2"
   }

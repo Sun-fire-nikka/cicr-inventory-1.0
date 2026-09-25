@@ -13,7 +13,7 @@ function safeKeyGenerator(req: any): string {
 // ---------------------------------------------------------------- general API
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1500, // 1500 requests per 15m (100 req/min) to comfortably support concurrent load bursts and campus NAT IPs
   standardHeaders: true,
   legacyHeaders: false,
   message: {

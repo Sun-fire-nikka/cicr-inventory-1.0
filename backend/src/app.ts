@@ -9,11 +9,28 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import { dbRead, dbWrite } from './config/database';
 import { buildHealthPayload } from './config/healthMonitor';
 import { authenticateToken, requireAdmin } from './middleware/auth.middleware';
+import { generalLimiter } from './middleware/rateLimit';
 dotenv.config();
 
 export const supabase = dbWrite;
 
 const app = express();
+
+// Cybersecurity Hardening: Suppress Express fingerprinting
+app.disable('x-powered-by');
+
+// Strict HTTP Security Headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+  next();
+});
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -42,7 +59,28 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
-app.use(express.json());
+// Payload DOS Protection: limit JSON payload to 1mb
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// High-Performance HTTP Response Compression (Gzip / Brotli)
+import compression from 'compression';
+app.use(compression());
+
+// High-Speed Root & API Status Route (Optimized for load balancers, health checks & load testing)
+app.get(['/', '/api', '/api/'], (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=120');
+  res.status(200).json({
+    status: 'online',
+    service: 'CICR Robotics Inventory System API',
+    version: '2.14.0',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Apply general rate limiter across API
+app.use('/api', generalLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/items', inventoryRoutes);

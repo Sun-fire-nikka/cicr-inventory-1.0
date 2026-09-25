@@ -75,6 +75,8 @@ export const redisClient: Redis | null = isRedisEnabled
   ? new Redis(REDIS_URL, {
       enableReadyCheck: false,
       maxRetriesPerRequest: 1,
+      commandTimeout: 1000, // 1s max command timeout prevents hanging HTTP requests
+      connectTimeout: 2000, // 2s max connect timeout
       tls: REDIS_URL.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined
     })
   : null;
@@ -94,18 +96,31 @@ if (redisClient) {
 }
 
 // ------------------------------------------------------------------- public
+// Multi-Tier Caching (L1 RAM + L2 Distributed Redis):
+// Checks local memory first (0.001ms), falling back to Redis and populating L1.
 export const redisGet = async (key: string): Promise<string | null> => {
+  const memVal = await memoryGet(key);
+  if (memVal !== null) {
+    return memVal;
+  }
+
   if (redisClient) {
     try {
-      return await redisClient.get(key);
+      const val = await redisClient.get(key);
+      if (val !== null) {
+        const ttl = await redisClient.ttl(key).catch(() => 15);
+        await memorySet(key, val, ttl > 0 ? ttl : 15);
+        return val;
+      }
     } catch {
       /* fall through to memory */
     }
   }
-  return memoryGet(key);
+  return null;
 };
 
 export const redisSet = async (key: string, value: string, ttlSeconds?: number): Promise<void> => {
+  await memorySet(key, value, ttlSeconds);
   if (redisClient) {
     try {
       if (ttlSeconds && ttlSeconds > 0) {
@@ -113,27 +128,26 @@ export const redisSet = async (key: string, value: string, ttlSeconds?: number):
       } else {
         await redisClient.set(key, value);
       }
-      return;
     } catch {
       /* fall through to memory */
     }
   }
-  await memorySet(key, value, ttlSeconds);
 };
 
 export const redisDel = async (key: string): Promise<void> => {
+  await memoryDel(key);
   if (redisClient) {
     try {
       await redisClient.del(key);
-      return;
     } catch {
       /* fall through to memory */
     }
   }
-  await memoryDel(key);
 };
 
 export const redisTtl = async (key: string): Promise<number> => {
+  const memTtl = await memoryTtl(key);
+  if (memTtl > 0) return memTtl;
   if (redisClient) {
     try {
       return await redisClient.ttl(key);
@@ -141,18 +155,20 @@ export const redisTtl = async (key: string): Promise<number> => {
       /* fall through to memory */
     }
   }
-  return memoryTtl(key);
+  return memTtl;
 };
 
 export const redisKeys = async (pattern: string): Promise<string[]> => {
+  const memKeys = await memoryKeys(pattern);
   if (redisClient) {
     try {
-      return await redisClient.keys(pattern);
+      const rKeys = await redisClient.keys(pattern);
+      return Array.from(new Set([...memKeys, ...rKeys]));
     } catch {
       /* fall through to memory */
     }
   }
-  return memoryKeys(pattern);
+  return memKeys;
 };
 
 // ------------------------------------------------------------ JSON caching

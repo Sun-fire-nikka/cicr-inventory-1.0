@@ -58,10 +58,14 @@ if (isNeonConfigured() && neonConfig.branchId && neonConfig.apiKey && neonConfig
   console.log('[FAILOVER] Neon API not configured — failover will not perform promotion');
 }
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🚀 Server listening on http://0.0.0.0:${PORT} (accessible via LAN/Mobile)`);
   console.log(`📊 Database mode: Supabase PRIMARY (PostgREST) for users/inventory/audit_logs | Neon for borrow_records (atomic ops) + DR`);
 });
+
+// Configure Node HTTP Keep-Alive for cloud reverse proxies (Render, Cloudflare, Nginx)
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
 
 startReminderScheduler();
 startHealthMonitor();

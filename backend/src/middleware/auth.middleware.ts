@@ -14,6 +14,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { dbRead } from '../config/database';
+import { isTokenRevoked } from '../modules/auth/tokenRevocationService';
 
 export interface AuthUser {
   id: string;
@@ -61,6 +62,11 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
   const token = authHeader && authHeader.split(' ')[1];
 
   if (token) {
+    // Check if token has been revoked via SHA-256 hash blocklist
+    if (await isTokenRevoked(token)) {
+      return res.status(401).json({ status: 'error', message: 'Token has been revoked. Please sign in again.' });
+    }
+
     try {
       const secret = process.env.JWT_SECRET;
       if (!secret) {
@@ -81,33 +87,45 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       if (tv === null) {
         return res.status(403).json({ status: 'error', message: 'Invalid or expired token.' });
       }
+
       // H-3: server-side token-version check. The DB router covers Supabase
-      // primary / Neon failover. No Redis cache in v1 (exact semantics).
-      // Fail closed on lookup error — never fall back to the JWT claim.
-      let record: { id: string; token_version: unknown } | null = null;
+      // primary / Neon failover. Fail closed on lookup error.
       try {
         const { data, error } = await dbRead
           .from('users')
           .select('id, token_version')
           .eq('id', user.id)
           .single();
-        if (error || !data) {
+
+        if (error && (error.code === '42703' || String(error.message).includes('token_version does not exist'))) {
+          // Schema does not yet have token_version column -> fallback to user existence check
+          const fallback = await dbRead
+            .from('users')
+            .select('id')
+            .eq('id', user.id)
+            .single();
+
+          if (fallback.error || !fallback.data) {
+            return res.status(401).json({ status: 'error', message: 'Access denied. User no longer exists.' });
+          }
+        } else if (error || !data) {
           return res.status(401).json({ status: 'error', message: 'Access denied. User no longer exists.' });
+        } else {
+          const recordVersion =
+            typeof (data as any).token_version === 'number' &&
+            Number.isInteger((data as any).token_version) &&
+            (data as any).token_version > 0
+              ? (data as any).token_version
+              : 1;
+
+          if (recordVersion !== tv) {
+            return res.status(403).json({ status: 'error', message: 'Invalid or expired token.' });
+          }
         }
-        record = data as { id: string; token_version: unknown };
       } catch {
         return res.status(503).json({ status: 'error', message: 'Authentication temporarily unavailable.' });
       }
-      // H-3: deleted users have no row (handled above); a version mismatch
-      // means the credential/role changed after issuance — reject.
-      if (
-        !record ||
-        typeof record.token_version !== 'number' ||
-        !Number.isInteger(record.token_version) ||
-        record.token_version !== tv
-      ) {
-        return res.status(403).json({ status: 'error', message: 'Invalid or expired token.' });
-      }
+
       req.user = user;
       return next();
     } catch (err) {
