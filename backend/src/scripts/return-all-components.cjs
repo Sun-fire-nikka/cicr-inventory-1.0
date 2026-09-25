@@ -120,6 +120,30 @@ async function returnAllComponents() {
     console.log('ℹ️ hardware_requests_data.json does not exist.');
   }
 
+  // 4. Update Neon secondary (if configured)
+  if (process.env.NEON_PRIMARY_HOST && process.env.NEON_USER && process.env.NEON_PASSWORD) {
+    console.log('\n📦 Step 4: Syncing Neon PostgreSQL secondary...');
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      host: process.env.NEON_PRIMARY_HOST,
+      database: process.env.NEON_DATABASE || 'PostgreSQL',
+      user: process.env.NEON_USER,
+      password: process.env.NEON_PASSWORD,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 5000,
+    });
+    try {
+      const resBorrows = await pool.query("UPDATE public.borrow_records SET status = 'RETURNED', returned_at = NOW() WHERE status <> 'RETURNED';");
+      console.log(`   ✅ Marked ${resBorrows.rowCount || 0} Neon borrow records as RETURNED.`);
+      const resInv = await pool.query('UPDATE public.inventory SET available_quantity = quantity WHERE available_quantity <> quantity;');
+      console.log(`   ✅ Restocked ${resInv.rowCount || 0} Neon inventory items to 100% capacity.`);
+    } catch (neonErr) {
+      console.warn('   ℹ️ Neon secondary note:', neonErr.message);
+    } finally {
+      await pool.end().catch(() => {});
+    }
+  }
+
   console.log('\n==============================================');
   console.log('✅ ALL COMPONENTS SUCCESSFULLY RETURNED & RESTOCKED');
   console.log('==============================================');
