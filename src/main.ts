@@ -644,6 +644,25 @@ class DatabaseManager {
                 } catch { }
             }
 
+            // Fetch active loans from backend to sync return buttons and active loans
+            let dbActiveLoans: any[] = [];
+            if (token) {
+                try {
+                    const role = ModalManager.getCurrentRole();
+                    const loansEndpoint = role === 'ADMIN' ? `${API_BASE}/borrow/ledger?force=true` : `${API_BASE}/borrow/history?force=true`;
+                    const loansRes = await fetch(loansEndpoint, { headers });
+                    if (loansRes.ok) {
+                        const loansJson = await loansRes.json();
+                        dbActiveLoans = Array.isArray(loansJson.data) ? loansJson.data : [];
+                        if (typeof ProfileViewManager !== 'undefined' && dbActiveLoans.length > 0) {
+                            ProfileViewManager.cachedHistory = dbActiveLoans;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[DatabaseManager] Loans sync notice:', e);
+                }
+            }
+
             if (dbItems.length > 0) {
                 // Map inventory items with available_quantity computed canonically by backend
                 inventory = dbItems.map((item: any) => {
@@ -666,6 +685,35 @@ class DatabaseManager {
 
                     const existingItem = inventory.find(i => String(i.id) === String(item.id));
 
+                    // Map server active loans for this item
+                    const itemActiveLoans: BorrowRecord[] = dbActiveLoans
+                        .filter((rec: any) => String(rec.inventory_id || rec.inventory?.id) === String(item.id))
+                        .map((rec: any) => ({
+                            id: rec.id,
+                            name: rec.borrower_name || rec.users?.name || 'Member',
+                            userName: rec.borrower_name || rec.users?.name || 'Member',
+                            borrowerName: rec.borrower_name || rec.users?.name || 'Member',
+                            roll: rec.roll_number || rec.users?.roll_number || '',
+                            userRoll: rec.roll_number || rec.users?.roll_number || '',
+                            email: rec.borrower_email || rec.users?.email || '',
+                            userEmail: rec.borrower_email || rec.users?.email || '',
+                            userId: rec.user_id,
+                            qty: Number(rec.quantity) || 1,
+                            purpose: rec.purpose || 'Active Loan',
+                            date: rec.borrowed_at || new Date().toISOString(),
+                            dueDate: rec.due_date || null,
+                            status: rec.status,
+                            returned: rec.status === 'RETURNED'
+                        }));
+
+                    const existingLoans = existingItem?.borrowedBy || [];
+                    const mergedBorrowedBy = [...itemActiveLoans];
+                    for (const ex of existingLoans) {
+                        if (!mergedBorrowedBy.some(m => m.id === ex.id)) {
+                            mergedBorrowedBy.push(ex);
+                        }
+                    }
+
                     return {
                         id: String(item.id),
                         name: cleanName,
@@ -676,7 +724,7 @@ class DatabaseManager {
                         specs: item.description || 'No specifications provided.',
                         image: item.image || (cat === 'sensors' ? 'drone.jpg' : cat === 'actuators' || cat === 'power' ? 'rover.jpg' : 'microchip.jpg'),
                         tags: Array.isArray(item.tags) ? item.tags : typeof item.tags === 'string' ? JSON.parse(item.tags || '[]') : [],
-                        borrowedBy: existingItem?.borrowedBy || []
+                        borrowedBy: mergedBorrowedBy
                     };
                 });
 
@@ -769,23 +817,36 @@ class DatabaseManager {
         });
 
         // Collect all user hardware requests from all available caches
-        const allUserReqs: any[] = [];
-        const seenReqKeys = new Set<string>();
+        const userReqMap = new Map<string, any>();
         const dismissedRaw = localStorage.getItem('cicr_dismissed_requests');
         const dismissedSet: Set<string> = dismissedRaw ? new Set(JSON.parse(dismissedRaw)) : new Set();
         dismissedSet.add('req_1789341756703_7d6b6494');
 
         const addReq = (r: any) => {
             if (!r) return;
-            const status = r.status || 'PENDING';
+            const status = (r.status || 'PENDING').toUpperCase();
             if (status === 'PENDING' && (dismissedSet.has(r.id) || (r.borrowId && dismissedSet.has(r.borrowId)))) {
                 return;
             }
-            const key = `${r.id || ''}__${status}__${r.itemName || ''}__${r.borrowerEmail || r.email || ''}`;
-            if (!seenReqKeys.has(key)) {
-                seenReqKeys.add(key);
-                allUserReqs.push(r);
+            const isReturn = r.type === 'RETURN' || Boolean(r.borrowId);
+            const borrowerKey = (r.borrowerEmail || r.email || r.roll || r.rollNumber || r.name || r.borrowerName || '').toLowerCase().trim();
+            const itemKey = (r.itemId || r.itemName || '').toLowerCase().trim();
+            const qtyKey = Number(r.quantity || r.qty) || 1;
+            const purpKey = (r.purpose || '').toLowerCase().trim();
+            const key = isReturn
+                ? `ret__${(r.borrowId || r.id || '').trim().toLowerCase()}`
+                : `iss__${borrowerKey}__${itemKey}__${qtyKey}__${purpKey}`;
+
+            const reqKey = key || String(r.id || Math.random());
+            if (userReqMap.has(reqKey)) {
+                const existing = userReqMap.get(reqKey);
+                const existingStatus = (existing.status || 'PENDING').toUpperCase();
+                if (existingStatus === 'PENDING' && (status === 'APPROVED' || status === 'REJECTED')) {
+                    userReqMap.set(reqKey, r);
+                }
+                return;
             }
+            userReqMap.set(reqKey, r);
         };
 
         if (isAdmin) {
@@ -838,6 +899,7 @@ class DatabaseManager {
             }
         }
 
+        const allUserReqs: any[] = Array.from(userReqMap.values());
         const pendingCount = allUserReqs.filter(r => r.status === 'PENDING').length;
 
         const isLoggedIn = Boolean(localStorage.getItem('cicr_token') || localStorage.getItem('cicr_auth'));
@@ -2365,17 +2427,26 @@ class CartManager {
         listEl.innerHTML = '';
 
         if (count === 0) {
-            if (emptyState) emptyState.style.display = 'block';
-            if (checkoutPane) (checkoutPane as HTMLElement).style.opacity = '0.4';
+            if (emptyState) {
+                emptyState.style.display = 'block';
+                renderLucideIcons(emptyState);
+            }
+            if (checkoutPane) (checkoutPane as HTMLElement).style.opacity = '1';
             const submitBtn = document.getElementById('btn-submit-cart-checkout') as HTMLButtonElement | null;
-            if (submitBtn) submitBtn.disabled = true;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.title = 'Add components from the catalog to submit request';
+            }
             return;
         }
 
         if (emptyState) emptyState.style.display = 'none';
         if (checkoutPane) (checkoutPane as HTMLElement).style.opacity = '1';
         const submitBtn = document.getElementById('btn-submit-cart-checkout') as HTMLButtonElement | null;
-        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.title = 'Checkout and submit hardware request';
+        }
 
         const globalDueInput = document.getElementById('cart-due-date') as HTMLInputElement | null;
         const globalDueDate = globalDueInput?.value || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -3359,7 +3430,41 @@ class ModalManager {
         badge.innerText = status.text;
         badge.className = `modal-status-badge ${status.class}`;
 
-        const myLoans = (item.borrowedBy || []).filter(rec => !rec.returned && (rec as any).status !== 'PENDING' && ModalManager.isUserLoanMatch(rec));
+        let myLoans = (item.borrowedBy || []).filter(rec => !rec.returned && (rec as any).status !== 'PENDING' && ModalManager.isUserLoanMatch(rec));
+        
+        // Fallback: If not found in item.borrowedBy, check ProfileViewManager.cachedHistory
+        if (myLoans.length === 0 && typeof ProfileViewManager !== 'undefined' && Array.isArray(ProfileViewManager.cachedHistory)) {
+            const histMatches = ProfileViewManager.cachedHistory.filter((h: any) =>
+                String(h.inventory_id || h.inventory?.id) === String(item.id) &&
+                (h.status === 'BORROWED' || h.status === 'RETURN_REQUESTED')
+            );
+            if (histMatches.length > 0) {
+                if (!item.borrowedBy) item.borrowedBy = [];
+                for (const h of histMatches) {
+                    if (!item.borrowedBy.some(b => b.id === h.id)) {
+                        item.borrowedBy.push({
+                            id: h.id,
+                            name: h.borrower_name || h.users?.name || 'Member',
+                            userName: h.borrower_name || h.users?.name || 'Member',
+                            borrowerName: h.borrower_name || h.users?.name || 'Member',
+                            roll: h.roll_number || h.users?.roll_number || '',
+                            userRoll: h.roll_number || h.users?.roll_number || '',
+                            email: h.borrower_email || h.users?.email || '',
+                            userEmail: h.borrower_email || h.users?.email || '',
+                            userId: h.user_id,
+                            qty: Number(h.quantity) || 1,
+                            purpose: h.purpose || 'Active Loan',
+                            date: h.borrowed_at || new Date().toISOString(),
+                            dueDate: h.due_date || null,
+                            status: h.status,
+                            returned: false
+                        });
+                    }
+                }
+                myLoans = (item.borrowedBy || []).filter(rec => !rec.returned && (rec as any).status !== 'PENDING' && ModalManager.isUserLoanMatch(rec));
+            }
+        }
+
         const myActiveLoan = myLoans.find(r => (r as any).status !== 'RETURN_REQUESTED') || myLoans[0];
         const anyActiveLoan = (item.borrowedBy || []).find(rec => !rec.returned && (rec as any).status !== 'PENDING');
         const targetLoan = myActiveLoan || (role === 'ADMIN' ? anyActiveLoan : null);
@@ -3380,7 +3485,8 @@ class ModalManager {
                 returnBtn.style.cursor = 'pointer';
                 returnBtn.innerHTML = '<i data-lucide="corner-up-left"></i> Return Component';
                 returnBtn.onclick = () => {
-                    this.openReturnModal(targetLoan, item, item.borrowedBy.indexOf(targetLoan));
+                    const loanIdx = item.borrowedBy ? item.borrowedBy.indexOf(targetLoan) : 0;
+                    this.openReturnModal(targetLoan, item, loanIdx >= 0 ? loanIdx : 0);
                 };
             }
         } else {
@@ -3737,23 +3843,23 @@ class ModalManager {
         }
 
         // --- GATHER REQUESTS DATA ---
-        const combinedRequests: (RequestRecord | AdminHardwareRequest)[] = [];
-        const seenDrawerReqKeys = new Set<string>();
+        const requestMap = new Map<string, any>();
+        const idToKeyMap = new Map<string, string>();
 
         const getDrawerKey = (r: any): string => {
             if (typeof AdminManager !== 'undefined' && typeof AdminManager.getRequestCanonicalKey === 'function') {
                 return AdminManager.getRequestCanonicalKey(r);
             }
             const isReturn = r.type === 'RETURN' || Boolean(r.borrowId);
-            if (isReturn) return `ret__${(r.borrowId || r.id || '').trim()}`;
+            if (isReturn) return `ret__${(r.borrowId || r.id || '').trim().toLowerCase()}`;
             const email = (r.borrowerEmail || r.email || '').toLowerCase().trim();
             const name = (r.borrowerName || r.name || '').toLowerCase().trim();
-            const itemId = (r.itemId || '').toLowerCase().trim();
+            const roll = (r.rollNumber || r.roll || '').toLowerCase().trim();
+            const itemId = (r.itemId || r.itemName || '').toLowerCase().trim();
             const qty = Number(r.quantity || r.qty) || 1;
             const purp = (r.purpose || '').toLowerCase().trim();
-            const reqTime = r.requestedAt ? new Date(r.requestedAt).getTime() : 0;
-            const timeBucket = reqTime > 0 ? Math.floor(reqTime / 120000) : 0;
-            return `iss__${email}__${name}__${itemId}__${qty}__${purp}__${timeBucket}`;
+            const borrower = roll || email || name;
+            return `iss__${borrower}__${itemId}__${qty}__${purp}`;
         };
 
         const handledIds = typeof AdminManager !== 'undefined' ? AdminManager.getHandledRequestIds() : new Set<string>();
@@ -3768,43 +3874,69 @@ class ModalManager {
             return false;
         };
 
-        // For non-admin, use AdminManager.userHardwareRequests first (keeps PENDING, APPROVED, REJECTED)
-        if (!isAdmin && typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.userHardwareRequests) && AdminManager.userHardwareRequests.length > 0) {
-            AdminManager.userHardwareRequests.forEach(r => {
-                if (r) {
-                    const key = getDrawerKey(r) + '__' + (r.status || 'PENDING');
-                    if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
-                        seenDrawerReqKeys.add(key);
-                        seenDrawerReqKeys.add(r.id);
-                        combinedRequests.push(r);
-                    }
+        const addOrMergeDrawerRequest = (r: any) => {
+            if (!r) return;
+            const status = (r.status || 'PENDING').toUpperCase();
+            if (status === 'PENDING' && isDrawerItemDismissed(r)) {
+                return;
+            }
+
+            const key = getDrawerKey(r) || String(r.id || Math.random());
+            const reqId = r.id ? String(r.id) : '';
+            const borrowId = r.borrowId ? String(r.borrowId) : '';
+
+            // Find existing request entry if any
+            let existingKey: string | null = null;
+            if (requestMap.has(key)) {
+                existingKey = key;
+            } else if (reqId && idToKeyMap.has(reqId)) {
+                existingKey = idToKeyMap.get(reqId)!;
+            } else if (borrowId && idToKeyMap.has(borrowId)) {
+                existingKey = idToKeyMap.get(borrowId)!;
+            }
+
+            if (existingKey && requestMap.has(existingKey)) {
+                const existing = requestMap.get(existingKey);
+                const existingStatus = (existing.status || 'PENDING').toUpperCase();
+
+                // If existing is PENDING and incoming is APPROVED or REJECTED:
+                // Incoming replaces existing completely! (Pending is removed!)
+                if (existingStatus === 'PENDING' && (status === 'APPROVED' || status === 'REJECTED')) {
+                    requestMap.set(existingKey, r);
+                    if (reqId) idToKeyMap.set(reqId, existingKey);
+                    if (borrowId) idToKeyMap.set(borrowId, existingKey);
+                    return;
                 }
-            });
+
+                // If existing is APPROVED or REJECTED, incoming PENDING is discarded!
+                if ((existingStatus === 'APPROVED' || existingStatus === 'REJECTED') && status === 'PENDING') {
+                    return;
+                }
+
+                // If same status, keep the richer record
+                if (status === existingStatus) {
+                    if (!existing.reviewedBy && r.reviewedBy) {
+                        requestMap.set(existingKey, { ...existing, ...r });
+                    }
+                    return;
+                }
+            }
+
+            requestMap.set(key, r);
+            if (reqId) idToKeyMap.set(reqId, key);
+            if (borrowId) idToKeyMap.set(borrowId, key);
+        };
+
+        // For non-admin, process AdminManager.userHardwareRequests
+        if (!isAdmin && typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.userHardwareRequests)) {
+            AdminManager.userHardwareRequests.forEach(addOrMergeDrawerRequest);
         }
 
         if (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.hardwareRequests)) {
-            AdminManager.hardwareRequests.forEach(r => {
-                if (r && (!isAdmin || !isDrawerItemDismissed(r))) {
-                    const key = getDrawerKey(r) + '__' + (r.status || 'PENDING');
-                    if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
-                        seenDrawerReqKeys.add(key);
-                        seenDrawerReqKeys.add(r.id);
-                        combinedRequests.push(r);
-                    }
-                }
-            });
+            AdminManager.hardwareRequests.forEach(addOrMergeDrawerRequest);
         }
 
-        (requests || []).forEach(r => {
-            if (r && (!isAdmin || !isDrawerItemDismissed(r))) {
-                const key = getDrawerKey(r) + '__' + (r.status || 'PENDING');
-                if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(r.id)) {
-                    seenDrawerReqKeys.add(key);
-                    seenDrawerReqKeys.add(r.id);
-                    combinedRequests.push(r);
-                }
-            }
-        });
+        (requests || []).forEach(addOrMergeDrawerRequest);
 
         // Connect all historical & active checkout requests from backend Hardware Ledger
         if (typeof HardwareLedgerManager !== 'undefined' && typeof HardwareLedgerManager.getRecords === 'function') {
@@ -3836,18 +3968,12 @@ class ModalManager {
                         reviewedBy: rec.admin_approved_by || 'Vardaan Saxena'
                     };
 
-                    if (!isAdmin && isDrawerItemDismissed(mappedReq)) return;
-                    if (isAdmin && mappedReq.status === 'PENDING' && isDrawerItemDismissed(mappedReq)) return;
-
-                    const key = getDrawerKey(mappedReq) + '__' + statusVal;
-                    if (!seenDrawerReqKeys.has(key) && !seenDrawerReqKeys.has(mappedReq.id)) {
-                        seenDrawerReqKeys.add(key);
-                        seenDrawerReqKeys.add(mappedReq.id);
-                        combinedRequests.push(mappedReq);
-                    }
+                    addOrMergeDrawerRequest(mappedReq);
                 });
             }
         }
+
+        const combinedRequests: (RequestRecord | AdminHardwareRequest)[] = Array.from(requestMap.values());
 
         const isReturnReqRecord = (r: any): boolean => {
             if (r.type === 'RETURN') return true;
@@ -3933,6 +4059,21 @@ class ModalManager {
             const reviewer = req.reviewedBy || req.admin_approved_by || req.reviewer || 'Administrator';
             const reviewNote = req.reviewNote || req.reason || '';
 
+            const origQty = Number(req.originalQuantity) || 0;
+            const isQueueAdjusted = origQty > 0 && origQty > bQty;
+            const queueBadge = isQueueAdjusted
+                ? `<span class="notif-status-badge badge-yellow" style="font-size:10px; margin-left:6px;" title="Requested: ${origQty}x | Queue Allocated: ${bQty}x"><i data-lucide="info"></i> Queue: ${bQty}/${origQty} Allocated</span>`
+                : '';
+
+            const canReturnIssued = !isReturnCard && status === 'APPROVED' && (isAdmin || isUserRequest(req));
+            const returnIssuedActionHtml = canReturnIssued ? `
+                <div class="notif-card-actions" style="margin-top:8px;">
+                    <button type="button" class="notif-action-btn notif-btn-return-issued" data-item-id="${req.itemId}" data-borrow-id="${req.borrowId || req.id}" data-qty="${bQty}" data-req-id="${req.id}" style="background:rgba(99, 102, 241, 0.15); border:1px solid rgba(99, 102, 241, 0.35); color:#a5b4fc; font-weight:600; cursor:pointer;">
+                        <i data-lucide="corner-up-left"></i> Return Hardware
+                    </button>
+                </div>
+            ` : '';
+
             el.innerHTML = `
                 <div class="notif-card-header">
                     <div class="notif-card-tag ${tagColor}">
@@ -3940,6 +4081,7 @@ class ModalManager {
                         <span>${tagTitle}</span>
                     </div>
                     ${statusBadge}
+                    ${queueBadge}
                 </div>
                 <div class="notif-card-body">
                     <p class="notif-card-main-text">
@@ -3965,11 +4107,12 @@ class ModalManager {
                     ${status === 'PENDING' ? `
                         <div class="card-request-admin-note" style="background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); color:#fcd34d;">
                             <i data-lucide="clock" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>
-                            Awaiting Admin Approval & OTP Verification. You will be notified via email when reviewed.
+                            Awaiting Admin Approval. You will be notified via email when reviewed.
                         </div>
                     ` : ''}
                 </div>
                 ${actionsHtml}
+                ${returnIssuedActionHtml}
             `;
 
             return el;
@@ -4038,6 +4181,44 @@ class ModalManager {
                 bindAdminCardActions(logsList);
             }
         }
+
+        // Attach Return Hardware button listeners for any approved cards
+        logsList.querySelectorAll<HTMLButtonElement>('.notif-btn-return-issued').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const itemId = btn.dataset.itemId;
+                const borrowId = btn.dataset.borrowId;
+                const qty = parseInt(btn.dataset.qty || '1', 10);
+                const reqId = btn.dataset.reqId;
+
+                const targetItem = inventory.find(i => String(i.id) === String(itemId)) || {
+                    id: itemId || '',
+                    name: 'Hardware Component',
+                    category: 'tools',
+                    quantity: 1,
+                    availableQuantity: 0,
+                    location: 'Lab',
+                    specs: '',
+                    image: '',
+                    tags: [],
+                    borrowedBy: []
+                };
+
+                const matchingLoan: BorrowRecord = (targetItem.borrowedBy || []).find((b: any) =>
+                    (borrowId && (b.id === borrowId || b._id === borrowId)) ||
+                    ModalManager.isUserLoanMatch(b)
+                ) || {
+                    id: borrowId || reqId || `loan-${Date.now()}`,
+                    name: localStorage.getItem('cicr_auth') || 'Member',
+                    roll: '',
+                    qty: qty,
+                    purpose: 'Active Loan',
+                    date: new Date().toISOString()
+                };
+
+                ModalManager.openReturnModal(matchingLoan, targetItem as any, 0);
+            });
+        });
     }
 
     private static createEmptyNotifCard(icon: string, title: string, desc: string): HTMLElement {
@@ -4310,13 +4491,28 @@ class ModalManager {
     // Opens the return quantity selector. All users (both admins and members) choose
     // how many borrowed units to return; all requests are sent to the Admin Portal for approval.
     public static openReturnModal(rec: BorrowRecord, item: InventoryItem, origIdx: number) {
-        if (!rec || !rec.id) {
+        const isAdmin = this.getCurrentRole() === 'ADMIN';
+
+        // Resolve borrowId if missing or unlinked
+        let effectiveBorrowId = rec?.id;
+        if (!effectiveBorrowId && typeof ProfileViewManager !== 'undefined' && Array.isArray(ProfileViewManager.cachedHistory)) {
+            const match = ProfileViewManager.cachedHistory.find((h: any) =>
+                String(h.inventory_id || h.inventory?.id) === String(item.id) &&
+                (h.status === 'BORROWED' || h.status === 'RETURN_REQUESTED')
+            );
+            if (match?.id) effectiveBorrowId = match.id;
+        }
+        if (!effectiveBorrowId && rec) {
+            effectiveBorrowId = (rec as any).borrowId || (rec as any)._id || item.id;
+        }
+
+        if (!effectiveBorrowId) {
             ToastManager.show('Return Unavailable', 'This loan is not linked to a server record yet.', 'warning');
             return;
         }
 
-        // Strict ownership enforcement: only the person who issued the loan can return it
-        if (!ModalManager.isUserLoanMatch(rec)) {
+        // Strict ownership enforcement: only the person who issued the loan can return it (Admins can return any loan)
+        if (!isAdmin && !ModalManager.isUserLoanMatch(rec)) {
             ToastManager.show('Return Prohibited', 'You can only initiate returns for components you have personally borrowed.', 'warning');
             return;
         }
@@ -4331,7 +4527,7 @@ class ModalManager {
             holderInfo.innerText = `Borrower: ${rec.name || 'Member'} (${rec.roll || 'Enrolled'}) · Issued: ${borrowedQty} unit(s) on ${rec.date || 'Active'}`;
         }
 
-        (document.getElementById('return-borrow-id') as HTMLInputElement).value = rec.id;
+        (document.getElementById('return-borrow-id') as HTMLInputElement).value = effectiveBorrowId;
         (document.getElementById('return-borrow-idx') as HTMLInputElement).value = String(origIdx);
 
         const qtyInput = document.getElementById('return-qty-input') as HTMLInputElement;
@@ -4386,7 +4582,7 @@ class ModalManager {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ borrowId, returnQuantity: requestedQty })
+                body: JSON.stringify({ borrowId, itemId: selectedItem?.id, returnQuantity: requestedQty })
             });
 
             const payload = await res.json().catch(() => ({})) as any;
@@ -5906,6 +6102,10 @@ interface AdminHardwareRequest {
     borrowerEmail: string;
     rollNumber?: string | null;
     quantity: number;
+    originalQuantity?: number;
+    queuePosition?: number;
+    queueAvailable?: number;
+    queueAllocated?: number;
     purpose: string;
     durationDays: number;
     dueDate: string;
@@ -6321,17 +6521,17 @@ class AdminManager {
         if (!r) return '';
         const isReturn = r.type === 'RETURN' || Boolean(r.borrowId);
         if (isReturn) {
-            const bId = (r.borrowId || r.id || '').trim();
+            const bId = (r.borrowId || r.id || '').toString().trim().toLowerCase();
             return `ret__${bId}`;
         }
-        const email = (r.borrowerEmail || r.email || '').toLowerCase().trim();
-        const name = (r.borrowerName || r.name || '').toLowerCase().trim();
-        const itemId = (r.itemId || '').toLowerCase().trim();
+        const email = (r.borrowerEmail || r.email || '').toString().toLowerCase().trim();
+        const name = (r.borrowerName || r.name || '').toString().toLowerCase().trim();
+        const roll = (r.rollNumber || r.roll || '').toString().toLowerCase().trim();
+        const item = (r.itemId || r.itemName || '').toString().toLowerCase().trim();
         const qty = Number(r.quantity || r.qty) || 1;
-        const purpose = (r.purpose || '').toLowerCase().trim();
-        const reqTime = r.requestedAt ? new Date(r.requestedAt).getTime() : 0;
-        const timeBucket = reqTime > 0 ? Math.floor(reqTime / 120000) : 0;
-        return `iss__${email}__${name}__${itemId}__${qty}__${purpose}__${timeBucket}`;
+        const purpose = (r.purpose || '').toString().toLowerCase().trim();
+        const borrower = roll || email || name;
+        return `iss__${borrower}__${item}__${qty}__${purpose}`;
     }
 
     static markRequestHandled(...ids: (string | undefined | null)[]) {
@@ -6548,14 +6748,20 @@ class AdminManager {
         container.innerHTML = pendingRequests.map(r => {
             const isReturn = r.type === 'RETURN';
             const returnQty = Number(r.returnQuantity || r.quantity) || 1;
+            const origQty = Number(r.originalQuantity) || 0;
+            const isQueueAdjusted = !isReturn && origQty > 0 && origQty > r.quantity;
             return `
             <div class="hardware-request-card glass" data-request-id="${r.id}">
                 <div class="hw-card-header">
                     <div class="hw-card-chip">
                         <i data-lucide="${isReturn ? 'corner-up-left' : 'cpu'}" style="width:14px; height:14px; color:var(--neon-cyan);"></i>
                         <span class="hw-item-name">${r.itemName}</span>
+                        ${r.queuePosition ? `<span class="hw-queue-pos" style="font-size:10px; background:rgba(99,102,241,0.18); border:1px solid rgba(99,102,241,0.35); color:#a5b4fc; border-radius:4px; padding:1px 6px; margin-left:6px;"><i data-lucide="layers" style="width:10px;height:10px;display:inline-block;vertical-align:middle;"></i> Queue #${r.queuePosition}</span>` : ''}
                     </div>
-                    <span class="hw-qty-badge">${isReturn ? 'RETURN' : 'ISSUE'} · ${isReturn ? returnQty : r.quantity}x</span>
+                    <span class="hw-qty-badge" style="${isQueueAdjusted ? 'background:rgba(245,158,11,0.2); border-color:rgba(245,158,11,0.45); color:#fbbf24;' : ''}">
+                        ${isReturn ? 'RETURN' : 'ISSUE'} · ${isReturn ? returnQty : r.quantity}x
+                        ${isQueueAdjusted ? ` (of ${origQty}x)` : ''}
+                    </span>
                 </div>
 
                 <div class="hw-card-requester">
@@ -6571,6 +6777,7 @@ class AdminManager {
                     ${isReturn
                     ? `<div class="hw-detail-row"><span class="hw-lbl">RETURNING:</span> <span class="hw-val">${returnQty}x ${r.itemName}</span></div>`
                     : `<div class="hw-detail-row"><span class="hw-lbl">PURPOSE:</span> <span class="hw-val">${r.purpose}</span></div>`}
+                    ${isQueueAdjusted ? `<div class="hw-detail-row"><span class="hw-lbl">QUEUE MATH:</span> <span class="hw-val" style="color:#fbbf24; font-weight:700;">Auto-Allocated ${r.quantity} of ${origQty} units (Remaining stock: ${r.queueAvailable !== undefined ? r.queueAvailable : r.quantity})</span></div>` : ''}
                     ${isReturn ? '' : `<div class="hw-detail-row"><span class="hw-lbl">DUE DATE:</span> <span class="hw-val due">${r.dueDate || '7 Days'}</span></div>`}
                     <div class="hw-detail-row"><span class="hw-lbl">REQUESTED:</span> <span class="hw-val date">${new Date(r.requestedAt).toLocaleString()}</span></div>
                 </div>
@@ -6604,6 +6811,18 @@ class AdminManager {
         const targetKey = this.getRequestCanonicalKey(targetReq);
 
         const isReturnReq = reqSnapshot?.type === 'RETURN' || Boolean(reqSnapshot?.borrowId);
+
+        // Queue math stock auto-cap: if stock is depleted by earlier approved requests
+        if (reqSnapshot && !isReturnReq) {
+            const targetItem = inventory.find(i => String(i.id) === String(reqSnapshot.itemId));
+            if (targetItem) {
+                const avail = typeof targetItem.availableQuantity === 'number' ? targetItem.availableQuantity : targetItem.quantity;
+                if (avail < reqSnapshot.quantity && avail > 0) {
+                    reqSnapshot.quantity = avail;
+                    ToastManager.show('Queue Auto-Adjusted', `Stock is limited to ${avail}. Authorizing ${avail}x ${targetReq.itemName}.`, 'info');
+                }
+            }
+        }
 
         // Strict Order Check: If approving a RETURN, ensure there is NO pending ISSUE request for this item & borrower
         if (isReturnReq) {
@@ -6657,6 +6876,15 @@ class AdminManager {
                 r.status = 'APPROVED';
             }
         });
+        if (Array.isArray(this.userHardwareRequests)) {
+            this.userHardwareRequests.forEach(r => {
+                if (matchesTarget(r)) {
+                    r.status = 'APPROVED';
+                    r.reviewedBy = currentAdminName;
+                    r.reviewedAt = new Date().toISOString();
+                }
+            });
+        }
         this.updateStats();
         this.renderHardwareQueue(true);
 
@@ -6711,6 +6939,12 @@ class AdminManager {
 
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
+        if (typeof ModalManager !== 'undefined' && typeof ModalManager.renderLogsDrawer === 'function') {
+            ModalManager.renderLogsDrawer();
+        }
+        if (typeof NotificationCenterManager !== 'undefined' && typeof NotificationCenterManager.updateNotifications === 'function') {
+            NotificationCenterManager.updateNotifications();
+        }
 
         ToastManager.show(
             isReturnReq ? 'Return Authorized' : 'Request Authorized',
@@ -6809,6 +7043,16 @@ class AdminManager {
                 r.reviewNote = 'Declined by Administrator.';
             }
         });
+        if (Array.isArray(this.userHardwareRequests)) {
+            this.userHardwareRequests.forEach(r => {
+                if (matchesTarget(r)) {
+                    r.status = 'REJECTED';
+                    r.reviewNote = 'Declined by Administrator.';
+                    r.reviewedBy = currentAdminName;
+                    r.reviewedAt = new Date().toISOString();
+                }
+            });
+        }
         this.updateStats();
         this.renderHardwareQueue(true);
 
@@ -6828,6 +7072,12 @@ class AdminManager {
         }
         DatabaseManager.save();
         DatabaseManager.updateNotificationBadges();
+        if (typeof ModalManager !== 'undefined' && typeof ModalManager.renderLogsDrawer === 'function') {
+            ModalManager.renderLogsDrawer();
+        }
+        if (typeof NotificationCenterManager !== 'undefined' && typeof NotificationCenterManager.updateNotifications === 'function') {
+            NotificationCenterManager.updateNotifications();
+        }
 
         ToastManager.show('Request Declined', `Hardware issue request for "${itemName}" declined.`, 'info');
         DatabaseManager.addLog('reject', `Admin ${currentAdminName} declined hardware issue request for "${itemName}"`);
@@ -8322,7 +8572,7 @@ class ProfileViewManager {
     private static isInitialized: boolean = false;
     public static activeTab: 'loans' | 'requests' | 'history' = 'loans';
     private static cachedRequests: any[] = [];
-    private static cachedHistory: any[] = [];
+    public static cachedHistory: any[] = [];
 
     public static init() {
         if (this.isInitialized) return;
@@ -8602,6 +8852,54 @@ class ProfileViewManager {
             });
         });
 
+        // Supplement with cachedHistory to guarantee active loans never disappear
+        if (Array.isArray(this.cachedHistory)) {
+            this.cachedHistory.forEach((h: any) => {
+                if (h.status === 'RETURNED') {
+                    if (!activeLoans.some(l => l.rec.id === h.id)) {
+                        totalReturnedCount += (Number(h.quantity) || 1);
+                    }
+                } else if (h.status === 'BORROWED' || h.status === 'RETURN_REQUESTED') {
+                    const alreadyIn = activeLoans.some(l => l.rec.id === h.id);
+                    if (!alreadyIn) {
+                        let item = inventory.find(i => String(i.id) === String(h.inventory_id || h.inventory?.id));
+                        if (!item) {
+                            item = {
+                                id: String(h.inventory_id || h.inventory?.id || `item-${h.id}`),
+                                name: h.inventory?.name || 'Hardware Component',
+                                category: (h.inventory?.category || 'microcontrollers').toLowerCase(),
+                                quantity: Number(h.quantity) || 1,
+                                availableQuantity: 0,
+                                location: 'Lab Shelf',
+                                specs: 'Hardware Component',
+                                image: h.inventory?.image || 'microchip.jpg',
+                                tags: [],
+                                borrowedBy: []
+                            };
+                        }
+                        const rec: BorrowRecord = {
+                            id: h.id,
+                            name: h.borrower_name || h.users?.name || 'Member',
+                            userName: h.borrower_name || h.users?.name || 'Member',
+                            borrowerName: h.borrower_name || h.users?.name || 'Member',
+                            roll: h.roll_number || h.users?.roll_number || '',
+                            userRoll: h.roll_number || h.users?.roll_number || '',
+                            email: h.borrower_email || h.users?.email || '',
+                            userEmail: h.borrower_email || h.users?.email || '',
+                            userId: h.user_id,
+                            qty: Number(h.quantity) || 1,
+                            purpose: h.purpose || 'Active Loan',
+                            date: h.borrowed_at || new Date().toISOString(),
+                            dueDate: h.due_date || null,
+                            status: h.status,
+                            returned: false
+                        };
+                        activeLoans.push({ item, rec, origIdx: 0 });
+                    }
+                }
+            });
+        }
+
         const MAX_LOAN_QUOTA = 5;
         const activeCount = activeLoans.length;
 
@@ -8743,9 +9041,13 @@ class ProfileViewManager {
                     btn.addEventListener('click', () => {
                         const itemId = (btn as HTMLElement).dataset.itemId;
                         const origIdx = parseInt((btn as HTMLElement).dataset.recIdx || '0', 10);
-                        const targetItem = inventory.find(i => String(i.id) === String(itemId));
-                        if (targetItem && targetItem.borrowedBy && targetItem.borrowedBy[origIdx]) {
-                            ModalManager.openReturnModal(targetItem.borrowedBy[origIdx], targetItem, origIdx);
+                        const targetItem = inventory.find(i => String(i.id) === String(itemId))
+                            || activeLoans.find(l => String(l.item.id) === String(itemId))?.item;
+                        const matchingLoan = targetItem?.borrowedBy?.[origIdx]
+                            || targetItem?.borrowedBy?.find((b: any) => ModalManager.isUserLoanMatch(b))
+                            || activeLoans.find(l => String(l.item.id) === String(itemId))?.rec;
+                        if (targetItem && matchingLoan) {
+                            ModalManager.openReturnModal(matchingLoan, targetItem, origIdx);
                         }
                     });
                 });
@@ -9873,16 +10175,24 @@ class NotificationCenterManager {
     private static isInitialized = false;
     private static readIds: Set<string> = new Set();
 
-    public static init() {
-        if (this.isInitialized) return;
-        this.isInitialized = true;
-
+    private static ensureReadIds(): Set<string> {
+        if (!this.readIds) this.readIds = new Set();
         try {
             const stored = localStorage.getItem('cicr_read_notifs');
             if (stored) {
-                this.readIds = new Set(JSON.parse(stored));
+                const arr = JSON.parse(stored);
+                if (Array.isArray(arr)) {
+                    arr.forEach((id: string) => this.readIds.add(id));
+                }
             }
         } catch {}
+        return this.readIds;
+    }
+
+    public static init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+        this.ensureReadIds();
 
         const notifBtn = document.getElementById('header-notif-btn');
         const dropdown = document.getElementById('header-notif-dropdown');
@@ -9953,6 +10263,7 @@ class NotificationCenterManager {
         unread: boolean;
         linkAction?: () => void;
     }> {
+        this.ensureReadIds();
         let currentUser: any = {};
         try { currentUser = JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch {}
         const authName = localStorage.getItem('cicr_auth') || '';
@@ -9961,7 +10272,20 @@ class NotificationCenterManager {
         const userName = (currentUser.name || currentUser.username || authName || '').toLowerCase().trim();
         const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
         const lastReadAllTime = Number(localStorage.getItem('cicr_last_read_all_time') || 0);
-        const isUnread = (id: string, ts: number) => !this.readIds.has(id) && (ts > lastReadAllTime);
+        const notifsCleared = localStorage.getItem('cicr_notifs_cleared') === 'true';
+
+        const isUnread = (id: string, ts: number) => {
+            if (this.readIds.has(id)) return false;
+            if (id.startsWith('loan-') && this.readIds.has(id.replace('loan-', ''))) return false;
+            if (id.startsWith('req-admin-') && this.readIds.has(id.replace('req-admin-', ''))) return false;
+            if (id.startsWith('my-req-') && this.readIds.has(id.replace('my-req-', ''))) return false;
+            if (notifsCleared) {
+                if (lastReadAllTime > 0 && ts <= (lastReadAllTime + 86400000)) return false;
+                if (!lastReadAllTime) return false;
+            }
+            if (lastReadAllTime > 0 && ts <= lastReadAllTime) return false;
+            return true;
+        };
 
         const notifs: Array<{
             id: string;
@@ -9990,7 +10314,7 @@ class NotificationCenterManager {
                 seenReqIds.add(String(req.id));
 
                 if (req.status === 'PENDING') {
-                    const reqTime = req.requestedAt ? new Date(req.requestedAt).getTime() : Date.now();
+                    const reqTime = req.requestedAt ? Math.min(Date.now(), new Date(req.requestedAt).getTime()) : Date.now();
                     const notifId = `req-admin-${req.id}`;
                     notifs.push({
                         id: notifId,
@@ -10024,7 +10348,7 @@ class NotificationCenterManager {
                                 (userName && reqName === userName);
 
                 if (isMyReq) {
-                    const reqTime = req.requestedAt ? new Date(req.requestedAt).getTime() : Date.now();
+                    const reqTime = req.requestedAt ? Math.min(Date.now(), new Date(req.requestedAt).getTime()) : Date.now();
                     const status = (req.status || 'PENDING').toUpperCase();
                     const notifId = `my-req-${req.id}`;
                     notifs.push({
@@ -10060,7 +10384,7 @@ class NotificationCenterManager {
 
                     if (isAdmin || isMine) {
                         const isReturned = b.returned || b.status === 'RETURNED';
-                        const loanTime = b.date ? new Date(b.date).getTime() : Date.now();
+                        const loanTime = b.date ? Math.min(Date.now(), new Date(b.date).getTime()) : Date.now();
                         const loanId = b.id || `${item.id}-${idx}`;
 
                         if (isReturned) {
@@ -10153,6 +10477,7 @@ class NotificationCenterManager {
     }
 
     public static updateNotifications() {
+        this.ensureReadIds();
         const notifs = this.getPersonalizedNotifications();
         const unreadCount = notifs.filter(n => n.unread).length;
 
@@ -10164,6 +10489,7 @@ class NotificationCenterManager {
                 badge.textContent = String(unreadCount);
                 badge.style.display = 'inline-flex';
             } else {
+                badge.textContent = '0';
                 badge.style.display = 'none';
             }
         }
@@ -10256,8 +10582,14 @@ class NotificationCenterManager {
     }
 
     public static markAllAsRead() {
+        this.ensureReadIds();
         const notifs = this.getPersonalizedNotifications();
-        notifs.forEach(n => this.readIds.add(n.id));
+        notifs.forEach(n => {
+            this.readIds.add(n.id);
+            if (n.id.startsWith('loan-')) this.readIds.add(n.id.replace('loan-', ''));
+            if (n.id.startsWith('req-admin-')) this.readIds.add(n.id.replace('req-admin-', ''));
+            if (n.id.startsWith('my-req-')) this.readIds.add(n.id.replace('my-req-', ''));
+        });
         const now = Date.now();
         localStorage.setItem('cicr_last_read_all_time', String(now));
         localStorage.setItem('cicr_read_notifs', JSON.stringify(Array.from(this.readIds)));
@@ -10268,12 +10600,22 @@ class NotificationCenterManager {
             DatabaseManager.updateNotificationBadges();
         }
 
+        const badge = document.getElementById('header-notif-badge');
+        const dot = document.getElementById('header-notif-dot');
+        if (badge) {
+            badge.textContent = '0';
+            badge.style.display = 'none';
+        }
+        if (dot) {
+            dot.style.display = 'none';
+        }
+
         this.updateNotifications();
         this.renderDropdown();
 
         // Immediate visual feedback on the button
         const clearBtn = document.getElementById('btn-clear-notifs');
-        if (clearBtn) {
+        if (clearBtn && !(clearBtn as HTMLButtonElement).disabled) {
             const originalHTML = clearBtn.innerHTML;
             clearBtn.innerHTML = `<i data-lucide="check"></i> <span>All Read</span>`;
             (clearBtn as HTMLButtonElement).disabled = true;

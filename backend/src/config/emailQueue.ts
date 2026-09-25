@@ -19,37 +19,95 @@ export interface EmailJobData {
 const QUEUE_NAME = 'cicr-email-queue';
 
 let emailQueue: Queue<EmailJobData> | null = null;
+let worker: Worker<EmailJobData> | null = null;
+let queueConnection: Redis | null = null;
+let workerConnection: Redis | null = null;
 
-if (isRedisEnabled && REDIS_URL) {
+let isQueueDisabled = process.env.DISABLE_EMAIL_QUEUE === 'true';
+let hasLoggedQuotaExceeded = false;
+let lastWorkerErrorLogTime = 0;
+let lastWorkerErrorMessage = '';
+
+const isQuotaLimitError = (msg?: string): boolean => {
+  if (!msg) return false;
+  return /max requests limit exceeded|ERR max requests|quota exceeded|OOM command not allowed/i.test(msg);
+};
+
+const shutdownQueueDueToQuota = async (reason: string) => {
+  if (hasLoggedQuotaExceeded) return;
+  hasLoggedQuotaExceeded = true;
+  isQueueDisabled = true;
+
+  console.warn(
+    `\n⚠️ [EMAIL QUEUE] Redis command limit reached: ${reason}.\n` +
+    `   BullMQ background worker has been safely shut down to silence terminal spam.\n` +
+    `   All email notifications will continue to send reliably via direct SMTP dispatches.\n`
+  );
+
+  try {
+    if (worker) {
+      const w = worker;
+      worker = null;
+      await w.close().catch(() => {});
+    }
+  } catch {}
+
+  try {
+    if (emailQueue) {
+      const q = emailQueue;
+      emailQueue = null;
+      await q.close().catch(() => {});
+    }
+  } catch {}
+
+  try {
+    queueConnection?.disconnect();
+    workerConnection?.disconnect();
+  } catch {}
+};
+
+if (!isQueueDisabled && isRedisEnabled && REDIS_URL) {
   const redisOptions = {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
     tls: REDIS_URL.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined
   };
 
-  let hasLoggedQueueError = false;
-  const queueConnection = new Redis(REDIS_URL, redisOptions);
+  let hasLoggedQueueConnError = false;
+  queueConnection = new Redis(REDIS_URL, redisOptions);
   queueConnection.on('error', (err: Error) => {
-    if (!hasLoggedQueueError) {
+    if (isQuotaLimitError(err.message)) {
+      shutdownQueueDueToQuota(err.message);
+      return;
+    }
+    if (!hasLoggedQueueConnError) {
       console.warn('[EMAIL QUEUE] Queue Redis error:', err.message);
-      hasLoggedQueueError = true;
+      hasLoggedQueueConnError = true;
     }
   });
 
-  let hasLoggedWorkerError = false;
-  const workerConnection = new Redis(REDIS_URL, redisOptions);
+  let hasLoggedWorkerConnError = false;
+  workerConnection = new Redis(REDIS_URL, redisOptions);
   workerConnection.on('error', (err: Error) => {
-    if (!hasLoggedWorkerError) {
+    if (isQuotaLimitError(err.message)) {
+      shutdownQueueDueToQuota(err.message);
+      return;
+    }
+    if (!hasLoggedWorkerConnError) {
       console.warn('[EMAIL QUEUE] Worker Redis error:', err.message);
-      hasLoggedWorkerError = true;
+      hasLoggedWorkerConnError = true;
     }
   });
 
   emailQueue = new Queue<EmailJobData>(QUEUE_NAME, { connection: queueConnection });
   emailQueue.on('error', (err: Error) => {
-    if (!hasLoggedQueueError) {
+    if (isQuotaLimitError(err.message)) {
+      shutdownQueueDueToQuota(err.message);
+      return;
+    }
+    if (!hasLoggedQueueConnError) {
       console.warn('[EMAIL QUEUE] Queue instance error:', err.message);
-      hasLoggedQueueError = true;
+      hasLoggedQueueConnError = true;
     }
   });
 
@@ -67,6 +125,7 @@ if (isRedisEnabled && REDIS_URL) {
         pool: true,
         maxConnections: 3,
         maxMessages: 100,
+        family: 4, // Force IPv4 to prevent ENETUNREACH on platforms without IPv6 routing
         auth: {
           user: getSmtpUser(),
           pass: getSmtpPass()
@@ -77,12 +136,12 @@ if (isRedisEnabled && REDIS_URL) {
         tls: {
           rejectUnauthorized: false
         }
-      });
+      } as any);
     }
     return workerTransporter;
   };
 
-  const worker = new Worker<EmailJobData>(
+  worker = new Worker<EmailJobData>(
     QUEUE_NAME,
     async (job) => {
       const { kind, mailOptions } = job.data;
@@ -102,25 +161,45 @@ if (isRedisEnabled && REDIS_URL) {
     },
     { connection: workerConnection, concurrency: 3 }
   );
+
   worker.on('error', (err: Error) => {
-    console.warn('[EMAIL QUEUE] Worker instance error:', err.message);
+    if (isQuotaLimitError(err.message)) {
+      shutdownQueueDueToQuota(err.message);
+      return;
+    }
+    const now = Date.now();
+    // Throttle worker errors so they never flood the console or logs
+    if (err.message !== lastWorkerErrorMessage || now - lastWorkerErrorLogTime > 60000) {
+      console.warn('[EMAIL QUEUE] Worker instance error:', err.message);
+      lastWorkerErrorMessage = err.message;
+      lastWorkerErrorLogTime = now;
+    }
   });
+
   worker.on('failed', (job, err) => {
+    if (isQuotaLimitError(err.message)) {
+      shutdownQueueDueToQuota(err.message);
+      return;
+    }
     console.error(`[EMAIL QUEUE] ${job?.data?.kind} failed (job ${job?.id}): ${err.message}`);
   });
 
   console.log('⚡ BullMQ email queue enabled (Redis).');
 }
 
-export const isEmailQueueEnabled = (): boolean => emailQueue !== null;
+export const isEmailQueueEnabled = (): boolean => !isQueueDisabled && emailQueue !== null;
 
 export const enqueueEmail = async (kind: string, mailOptions: Record<string, unknown>): Promise<boolean> => {
-  if (!emailQueue) return false;
+  if (isQueueDisabled || !emailQueue) return false;
   try {
     await emailQueue.add(kind, { kind, mailOptions }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 } });
     return true;
   } catch (err: any) {
-    console.error('[EMAIL QUEUE] enqueue failed:', err.message);
+    if (isQuotaLimitError(err?.message)) {
+      shutdownQueueDueToQuota(err?.message || 'max requests exceeded');
+    } else {
+      console.warn('[EMAIL QUEUE] enqueue failed (falling back to direct SMTP):', err.message);
+    }
     return false;
   }
 };

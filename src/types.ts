@@ -1,5 +1,6 @@
 export interface BorrowRecord {
     id?: string;
+    userId?: string;
     name: string;
     userName?: string;
     borrowerName?: string;
@@ -30,6 +31,10 @@ export interface RequestRecord {
     name: string;
     roll: string;
     qty: number;
+    originalQuantity?: number;
+    queuePosition?: number;
+    queueAvailable?: number;
+    queueAllocated?: number;
     purpose: string;
     dueDate?: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';

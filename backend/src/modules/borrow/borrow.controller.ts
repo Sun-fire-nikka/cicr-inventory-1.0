@@ -79,6 +79,7 @@ export const finalizeBorrow = async (
 
   let item = initialItem;
   let newAvailableQty = 0;
+  let grantedQuantity = quantity;
 
   // 2. Concurrency-safe atomic CAS loop: guarantees multiple parallel checkout/approvals don't overwrite each other
   let attempts = 0;
@@ -99,16 +100,19 @@ export const finalizeBorrow = async (
     item = freshItem;
 
     const currAvail = Number(freshItem.available_quantity) || 0;
-    if (currAvail < quantity) {
+    if (currAvail <= 0) {
       return {
         error: {
           status: 400,
-          message: `Requested quantity (${quantity}) exceeds available stock (${currAvail}).`
+          message: `Requested component "${freshItem.name}" has 0 available units in stock. Please wait for active loans to be returned.`
         }
       };
     }
 
-    const calculatedRemaining = currAvail - quantity;
+    // Queue math auto-sync: if available stock is less than requested quantity,
+    // auto-adjust actual granted quantity to the remaining available stock
+    const actualQuantity = Math.min(quantity, currAvail);
+    const calculatedRemaining = currAvail - actualQuantity;
     const { data: updatedRows, error: updateErr } = await dbWrite
       .from('inventory')
       .update({
@@ -123,6 +127,7 @@ export const finalizeBorrow = async (
 
     if (updatedRows && updatedRows.length > 0) {
       newAvailableQty = updatedRows[0].available_quantity;
+      grantedQuantity = actualQuantity;
       updateSuccess = true;
       break;
     }
@@ -166,7 +171,7 @@ export const finalizeBorrow = async (
         user_id: safeUserId,
         borrower_name: userName,
         inventory_id: itemId,
-        quantity,
+        quantity: Math.max(1, grantedQuantity),
         purpose,
         borrowed_at: borrowedAt.toISOString(),
         due_date: dueDate.toISOString(),
@@ -180,9 +185,9 @@ export const finalizeBorrow = async (
 
   await invalidateItemsCache(itemId);
 
-  await logAudit('Borrowed', userId, itemId, `Borrowed ${quantity} units of "${item.name}" for purpose: ${purpose}`);
+  await logAudit('Borrowed', userId, itemId, `Borrowed ${Math.max(1, grantedQuantity)} units of "${item.name}" for purpose: ${purpose}${grantedQuantity < quantity ? ` (Queue auto-adjusted from ${quantity} requested)` : ''}`);
 
-  return { borrowRecord, item, newAvailableQty, dueDate };
+  return { borrowRecord, item, newAvailableQty, dueDate, grantedQuantity: Math.max(1, grantedQuantity), requestedQuantity: quantity };
 };
 
 // GET /api/borrow/admins (Admin directory) — cached 60s
@@ -306,15 +311,17 @@ export const verifyOtp = async (req: AuthRequest, res: Response) => {
 export const submitReturnRequestHandler = async (req: AuthRequest, res: Response) => {
   try {
     const borrowId = req.body.borrow_id || req.body.borrowId || req.body.id;
+    const itemId = req.body.itemId || req.body.item_id || req.body.inventory_id;
     const returnQuantity = Number(req.body.returnQuantity || req.body.return_quantity || req.body.quantity) || 1;
 
-    if (!borrowId) {
-      return res.status(400).json({ status: 'error', message: 'borrowId is required.' });
+    if (!borrowId && !itemId) {
+      return res.status(400).json({ status: 'error', message: 'borrowId or itemId is required.' });
     }
 
     const { createReturnRequest } = await import('./hardwareRequestService');
     const result = await createReturnRequest({
       borrowId,
+      itemId,
       returnQuantity,
       userId: req.user?.id,
       userName: req.user?.name,
@@ -378,9 +385,10 @@ export const returnItem = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const userRole = req.user?.role;
     const borrow_id = req.body.borrow_id || req.body.borrowId || req.body.id;
+    const itemId = req.body.itemId || req.body.item_id || req.body.inventory_id;
 
-    if (!borrow_id) {
-      return res.status(400).json({ status: 'error', message: 'borrow_id is required.' });
+    if (!borrow_id && !itemId) {
+      return res.status(400).json({ status: 'error', message: 'borrow_id or itemId is required.' });
     }
 
     // If the request comes from a regular MEMBER, route to return approval workflow!
@@ -388,6 +396,7 @@ export const returnItem = async (req: AuthRequest, res: Response) => {
       const { createReturnRequest } = await import('./hardwareRequestService');
       const result = await createReturnRequest({
         borrowId: borrow_id,
+        itemId,
         returnQuantity: Number(req.body.returnQuantity || req.body.return_quantity || req.body.quantity) || 1,
         userId,
         userName: req.user?.name,

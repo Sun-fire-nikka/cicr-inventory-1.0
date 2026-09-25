@@ -224,6 +224,7 @@ export interface LockHandle {
 const RELEASE_LUA =
   'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
 
+let lastLockWarningTime = 0;
 export const acquireLock = async (key: string, ttlMs: number): Promise<LockHandle> => {
   const token = crypto.randomUUID();
   if (!redisClient) return { acquired: false, token, reason: 'redis-unavailable' };
@@ -231,7 +232,11 @@ export const acquireLock = async (key: string, ttlMs: number): Promise<LockHandl
     const res = await redisClient.set(key, token, 'PX', Math.max(1000, ttlMs), 'NX');
     return { acquired: res === 'OK', token };
   } catch (err: any) {
-    console.warn('[REDIS] acquireLock failed:', err?.message);
+    const now = Date.now();
+    if (now - lastLockWarningTime > 300000) {
+      console.warn('[REDIS] acquireLock failed (in-memory fallback active):', err?.message);
+      lastLockWarningTime = now;
+    }
     return { acquired: false, token, reason: 'redis-error' };
   }
 };
@@ -240,8 +245,8 @@ export const releaseLock = async (key: string, token: string): Promise<void> => 
   if (!redisClient) return;
   try {
     await redisClient.eval(RELEASE_LUA, 1, key, token);
-  } catch (err: any) {
-    console.warn('[REDIS] releaseLock failed:', err?.message);
+  } catch {
+    /* ignore release failures */
   }
 };
 

@@ -107,6 +107,7 @@ export const getTransporter = () => {
     pool: true,
     maxConnections: 3,
     maxMessages: 100,
+    family: 4, // Force IPv4 to prevent ENETUNREACH on platforms without IPv6 routing (e.g. Render)
     auth: {
       user,
       pass,
@@ -117,7 +118,7 @@ export const getTransporter = () => {
     tls: {
       rejectUnauthorized: false
     }
-  });
+  } as any);
 
   return cachedTransporter;
 };

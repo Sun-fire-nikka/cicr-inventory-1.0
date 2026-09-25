@@ -29,6 +29,10 @@ export interface HardwareIssueRequest {
   rollNumber?: string | null;
   userId?: string;
   quantity: number;
+  originalQuantity?: number;
+  queuePosition?: number;
+  queueAvailable?: number;
+  queueAllocated?: number;
   purpose: string;
   durationDays: number;
   dueDate: string;
@@ -135,17 +139,40 @@ export const createHardwareRequest = async (payload: {
 
   let itemName = payload.itemName || 'Hardware Component';
   let category = 'Robotics';
+  const origQty = Math.max(1, Number(payload.quantity) || 1);
+  let effectiveQty = origQty;
+  let queuePos = 1;
+  let queueAvail = origQty;
 
   // Fetch actual item details from database if possible
   try {
     const { data: item } = await dbRead
       .from('inventory')
-      .select('name, category')
+      .select('name, category, available_quantity, quantity')
       .eq('id', payload.itemId)
       .single();
     if (item) {
       itemName = item.name;
       category = item.category || 'Robotics';
+      const totalStock = Number(item.available_quantity ?? item.quantity) || 0;
+
+      // Calculate prior pending requests for this item in FIFO queue order
+      const priorPendingRequests = Object.values(requestsState)
+        .filter(r => r && r.status === 'PENDING' && r.type !== 'RETURN' && r.itemId === payload.itemId)
+        .sort((a, b) => new Date(a.requestedAt).getTime() - new Date(b.requestedAt).getTime());
+
+      queuePos = priorPendingRequests.length + 1;
+      const priorPendingSum = priorPendingRequests.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+      const remainingForThisReq = Math.max(0, totalStock - priorPendingSum);
+      queueAvail = remainingForThisReq;
+
+      // Queue math: if remaining stock in queue is less than user's requested amount,
+      // auto-adjust this request's quantity to the remaining available stock
+      if (remainingForThisReq > 0) {
+        effectiveQty = Math.min(origQty, remainingForThisReq);
+      } else {
+        effectiveQty = Math.min(origQty, 1);
+      }
     }
   } catch (e) {
     // Non-blocking
@@ -163,8 +190,14 @@ export const createHardwareRequest = async (payload: {
     borrowerEmail: payload.borrowerEmail,
     rollNumber: payload.rollNumber || null,
     userId: payload.userId,
-    quantity: payload.quantity,
-    purpose: payload.purpose,
+    quantity: effectiveQty,
+    originalQuantity: origQty,
+    queuePosition: queuePos,
+    queueAvailable: queueAvail,
+    queueAllocated: queueAvail > 0 ? effectiveQty : 0,
+    purpose: effectiveQty < origQty
+      ? `${payload.purpose} (Queue Adjusted: ${effectiveQty} of ${origQty} units available)`
+      : payload.purpose,
     durationDays,
     dueDate,
     status: 'PENDING',
@@ -189,8 +222,8 @@ export const createHardwareRequest = async (payload: {
           borrower_name: payload.borrowerName,
           roll_number: payload.rollNumber || null,
           inventory_id: safeItemId,
-          quantity: payload.quantity,
-          purpose: payload.purpose,
+          quantity: effectiveQty,
+          purpose: newRequest.purpose,
           borrowed_at: requestedAt,
           due_date: dueDate,
           status: 'PENDING'
@@ -308,7 +341,8 @@ export const createBulkHardwareRequest = async (
 };
 
 export const createReturnRequest = async (payload: {
-  borrowId: string;
+  borrowId?: string;
+  itemId?: string;
   returnQuantity: number;
   userId?: string;
   userName?: string;
@@ -316,19 +350,59 @@ export const createReturnRequest = async (payload: {
   userRoll?: string;
   userRole?: string;
 }): Promise<{ success: boolean; request?: HardwareIssueRequest; message?: string }> => {
-  const { borrowId, returnQuantity } = payload;
-  if (!borrowId) {
-    return { success: false, message: 'borrowId is required.' };
+  const { borrowId, itemId, returnQuantity } = payload;
+  if (!borrowId && !itemId) {
+    return { success: false, message: 'borrowId or itemId is required.' };
   }
 
   // 1. Fetch borrow record from database
-  const { data: record, error } = await dbRead
-    .from('borrow_records')
-    .select('*, inventory(name, category)')
-    .eq('id', borrowId)
-    .maybeSingle();
+  let record: any = null;
+  if (borrowId) {
+    const { data } = await dbRead
+      .from('borrow_records')
+      .select('*, inventory(name, category)')
+      .eq('id', borrowId)
+      .maybeSingle();
+    record = data;
+  }
 
-  if (error || !record) {
+  // Fallback 1b: If borrowId matches a request in requestsState that holds a borrowId
+  if (!record && borrowId) {
+    const matchingReq = requestsState[borrowId] || Object.values(requestsState).find(r => r && (r.id === borrowId || r.borrowId === borrowId));
+    if (matchingReq?.borrowId && matchingReq.borrowId !== borrowId) {
+      const { data: recByReq } = await dbRead
+        .from('borrow_records')
+        .select('*, inventory(name, category)')
+        .eq('id', matchingReq.borrowId)
+        .maybeSingle();
+      record = recByReq;
+    }
+  }
+
+  // Fallback 1c: Match active loan in borrow_records by itemId and user identity
+  if (!record) {
+    const targetItemId = itemId || (borrowId && requestsState[borrowId]?.itemId);
+    let q = dbRead
+      .from('borrow_records')
+      .select('*, inventory(name, category)')
+      .in('status', ['BORROWED', 'RETURN_REQUESTED']);
+    if (targetItemId) {
+      q = q.eq('inventory_id', targetItemId);
+    }
+    if (payload.userId) {
+      q = q.eq('user_id', payload.userId);
+    } else if (payload.userRoll) {
+      q = q.eq('roll_number', payload.userRoll);
+    } else if (payload.userName) {
+      q = q.eq('borrower_name', payload.userName);
+    }
+    const { data: matches } = await q.order('borrowed_at', { ascending: false }).limit(1);
+    if (matches && matches.length > 0) {
+      record = matches[0];
+    }
+  }
+
+  if (!record) {
     return { success: false, message: 'Active borrow record not found in system.' };
   }
 
@@ -589,6 +663,93 @@ export const invalidateHardwareRequestsCache = () => {
   lastHardwareRequestsFetchTime = 0;
 };
 
+export const applyQueueMathToRequests = async (
+  requestsList: HardwareIssueRequest[]
+): Promise<HardwareIssueRequest[]> => {
+  if (!requestsList || requestsList.length === 0) return requestsList;
+
+  // 1. Group pending issue requests by itemId
+  const pendingByItem = new Map<string, HardwareIssueRequest[]>();
+  for (const r of requestsList) {
+    if (r && r.status === 'PENDING' && r.type !== 'RETURN' && r.itemId) {
+      if (!pendingByItem.has(r.itemId)) {
+        pendingByItem.set(r.itemId, []);
+      }
+      pendingByItem.get(r.itemId)!.push(r);
+    }
+  }
+
+  if (pendingByItem.size === 0) return requestsList;
+
+  // 2. Fetch current available_quantity from inventory
+  const itemIds = Array.from(pendingByItem.keys());
+  const itemStockMap = new Map<string, number>();
+  try {
+    const { data: items } = await dbRead
+      .from('inventory')
+      .select('id, available_quantity, quantity')
+      .in('id', itemIds);
+    if (items) {
+      for (const it of items) {
+        itemStockMap.set(it.id, Number(it.available_quantity ?? it.quantity) || 0);
+      }
+    }
+  } catch (err) {
+    console.warn('[QUEUE MATH] Error fetching inventory stock:', err);
+  }
+
+  let stateChanged = false;
+
+  // 3. For each item, sort pending requests in FIFO order (earliest requestedAt first)
+  for (const [itemId, queue] of pendingByItem.entries()) {
+    queue.sort((a, b) => new Date(a.requestedAt).getTime() - new Date(b.requestedAt).getTime());
+    const totalAvail = itemStockMap.get(itemId) ?? 0;
+    let runningAvail = totalAvail;
+
+    queue.forEach((req, idx) => {
+      req.queuePosition = idx + 1;
+      req.queueAvailable = Math.max(0, runningAvail);
+
+      if (!req.originalQuantity) {
+        req.originalQuantity = Number(req.quantity) || 1;
+      }
+      const orig = req.originalQuantity;
+
+      if (runningAvail > 0) {
+        const allocated = Math.min(orig, runningAvail);
+        if (req.quantity !== allocated) {
+          req.quantity = allocated;
+          stateChanged = true;
+        }
+        req.queueAllocated = allocated;
+        runningAvail = Math.max(0, runningAvail - allocated);
+      } else {
+        const queueFallback = Math.min(orig, 1);
+        if (req.quantity !== queueFallback) {
+          req.quantity = queueFallback;
+          stateChanged = true;
+        }
+        req.queueAllocated = 0;
+      }
+
+      // Sync into requestsState
+      if (requestsState[req.id]) {
+        requestsState[req.id].originalQuantity = req.originalQuantity;
+        requestsState[req.id].quantity = req.quantity;
+        requestsState[req.id].queuePosition = req.queuePosition;
+        requestsState[req.id].queueAvailable = req.queueAvailable;
+        requestsState[req.id].queueAllocated = req.queueAllocated;
+      }
+    });
+  }
+
+  if (stateChanged) {
+    saveState();
+  }
+
+  return requestsList;
+};
+
 export const getAllHardwareRequests = async (force = false): Promise<HardwareIssueRequest[]> => {
   // Ensure fresh disk state replaces in-memory state
   try {
@@ -692,6 +853,8 @@ export const getAllHardwareRequests = async (force = false): Promise<HardwareIss
   const sorted = Array.from(canonicalMap.values()).sort((a, b) => {
     return new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime();
   });
+
+  await applyQueueMathToRequests(sorted);
 
   cachedHardwareRequests = sorted;
   lastHardwareRequestsFetchTime = Date.now();
@@ -823,7 +986,9 @@ export const getUserHardwareRequests = async (identity: {
     }
   }
 
-  return Array.from(canonicalOwn.values()).sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+  const memberSorted = Array.from(canonicalOwn.values()).sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+  await applyQueueMathToRequests(memberSorted);
+  return memberSorted;
 };
 
 export const getHardwareRequestById = (id: string): HardwareIssueRequest | undefined => {
@@ -1120,6 +1285,10 @@ export const approveHardwareRequest = async (
     }
 
     return { success: true, request: req };
+  }
+
+  if (result.grantedQuantity) {
+    req.quantity = result.grantedQuantity;
   }
 
   resolveMatchingInRequestsState(req, id, 'APPROVED', adminName, adminEmail);
