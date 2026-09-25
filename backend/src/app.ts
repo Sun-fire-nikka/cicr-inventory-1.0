@@ -73,7 +73,7 @@ app.get(['/', '/api', '/api/'], (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'online',
     service: 'CICR Robotics Inventory System API',
-    version: '2.14.4',
+    version: '2.14.5',
     uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
   });

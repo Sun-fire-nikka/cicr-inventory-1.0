@@ -631,38 +631,21 @@ class DatabaseManager {
     static async syncFromBackend() {
         try {
             const token = localStorage.getItem('cicr_token');
-            const isAuth = (document.body.classList.contains('authenticated') || document.documentElement.classList.contains('is-authenticated')) && Boolean(token);
             const headers: Record<string, string> = {};
             if (token) headers['Authorization'] = `Bearer ${token}`;
 
-            // 1. Fetch items (public), and borrow records/audit/requests strictly when authenticated
-            const [itemsOutcome, borrowOutcome, auditOutcome, requestsOutcome] = await Promise.allSettled([
-                fetch(`${API_BASE}/items`, { headers }),
-                isAuth ? fetch(`${API_BASE}/borrow/history`, { headers }) : Promise.reject('Not authenticated'),
-                isAuth ? fetch(`${API_BASE}/audit`, { headers }) : Promise.reject('Not authenticated'),
-                isAuth ? fetch(`${API_BASE}/borrow/requests`, { headers }) : Promise.reject('Not authenticated')
-            ]);
-
+            // Fetch public inventory catalog items (strictly lazy-load audit, history & users on-demand)
+            const itemsRes = await fetch(`${API_BASE}/items`, { headers });
             let dbItems: any[] = [];
-            if (itemsOutcome.status === 'fulfilled' && itemsOutcome.value.ok) {
+            if (itemsRes.ok) {
                 try {
-                    const json = await itemsOutcome.value.json();
+                    const json = await itemsRes.json();
                     dbItems = json.data || [];
                 } catch { }
             }
 
-            let liveBorrows: any[] = [];
-            if (borrowOutcome.status === 'fulfilled' && borrowOutcome.value.ok) {
-                try {
-                    const bJson = await borrowOutcome.value.json();
-                    liveBorrows = bJson.data || [];
-                } catch (be) {
-                    console.warn('Live borrow parse failed:', be);
-                }
-            }
-
             if (dbItems.length > 0) {
-                // Map Supabase inventory format to frontend InventoryItem format
+                // Map inventory items with available_quantity computed canonically by backend
                 inventory = dbItems.map((item: any) => {
                     let cat = (item.category || '').toLowerCase();
                     if (cat.includes('controller') || cat.includes('mcu') || cat.includes('board') || cat.includes('programmer')) cat = 'microcontrollers';
@@ -671,36 +654,17 @@ class DatabaseManager {
                     else if (cat.includes('power') || cat.includes('battery') || cat.includes('charge') || cat.includes('supply')) cat = 'power';
                     else if (cat.includes('tool') || cat.includes('comm') || cat.includes('display') || cat.includes('remote') || cat.includes('cable') || cat.includes('mechanical') || cat.includes('misc')) cat = 'tools';
 
-                    const itemBorrows = liveBorrows
-                        .filter((b: any) => (b.inventory_id === item.id || b.item_id === item.id) && (b.status === 'BORROWED' || b.status === 'RETURN_REQUESTED' || b.status === 'RETURNED'))
-                        .map((b: any) => ({
-                            id: b.id,
-                            userId: b.user_id || b.users?.id,
-                            email: b.users?.email || b.borrower_email || b.email,
-                            borrowerEmail: b.users?.email || b.borrower_email || b.email,
-                            name: b.users?.name || b.borrower_name || 'Student',
-                            roll: b.users?.roll_number || b.roll_number || 'ID',
-                            rollNumber: b.users?.roll_number || b.roll_number,
-                            qty: Number(b.quantity) || 1,
-                            purpose: b.purpose || 'Robotics Project',
-                            date: b.borrowed_at ? b.borrowed_at.split('T')[0] : new Date().toISOString().split('T')[0],
-                            dueDate: b.due_date ? b.due_date.split('T')[0] : '',
-                            status: b.status || 'BORROWED',
-                            returned: b.status === 'RETURNED',
-                            returnedAt: b.returned_at
-                        }));
-
-                    const activeBorrows = itemBorrows.filter((b: any) => !b.returned);
-                    const borrowedSum = activeBorrows.reduce((sum: number, rec: any) => sum + rec.qty, 0);
                     const totalQty = Number(item.quantity) || 0;
                     const availableQty = (item.available_quantity !== undefined && item.available_quantity !== null)
                         ? Math.min(totalQty, Math.max(0, Number(item.available_quantity)))
-                        : Math.max(0, totalQty - borrowedSum);
+                        : totalQty;
 
                     let cleanName = (item.name || '').trim();
                     if (cleanName.toLowerCase().includes('model unclear') || cleanName.toLowerCase() === 'arduino board') {
                         cleanName = 'Arduino Uno R3';
                     }
+
+                    const existingItem = inventory.find(i => String(i.id) === String(item.id));
 
                     return {
                         id: String(item.id),
@@ -712,67 +676,12 @@ class DatabaseManager {
                         specs: item.description || 'No specifications provided.',
                         image: item.image || (cat === 'sensors' ? 'drone.jpg' : cat === 'actuators' || cat === 'power' ? 'rover.jpg' : 'microchip.jpg'),
                         tags: Array.isArray(item.tags) ? item.tags : typeof item.tags === 'string' ? JSON.parse(item.tags || '[]') : [],
-                        borrowedBy: itemBorrows
+                        borrowedBy: existingItem?.borrowedBy || []
                     };
                 });
 
                 // Save to localStorage cache
                 this.save();
-            }
-
-            // Process audit logs
-            if (auditOutcome.status === 'fulfilled' && auditOutcome.value.ok) {
-                try {
-                    const aJson = await auditOutcome.value.json();
-                    if (Array.isArray(aJson.data)) {
-                        logs = aJson.data.map((l: any) => ({
-                            type: l.action.toLowerCase().includes('borrow') ? 'borrow'
-                                : l.action.toLowerCase().includes('return') ? 'return'
-                                    : l.action.toLowerCase().includes('add') ? 'add' : 'system',
-                            timestamp: l.created_at || new Date().toISOString(),
-                            text: l.description || l.action
-                        }));
-                        localStorage.setItem('cicr_logs', JSON.stringify(logs));
-                    }
-                } catch (ae) {
-                    console.warn('Live audit parse failed:', ae);
-                }
-            }
-
-            // Sync canonical request statuses from server
-            if (requestsOutcome.status === 'fulfilled' && requestsOutcome.value.ok) {
-                try {
-                    const rJson = await requestsOutcome.value.json();
-                    const serverRequests = Array.isArray(rJson.data) ? rJson.data : [];
-                    if (serverRequests.length === 0) {
-                        requests = [];
-                        localStorage.setItem('cicr_requests', JSON.stringify([]));
-                    } else {
-                        const mappedServerReqs: RequestRecord[] = serverRequests.map((r: any) => ({
-                            id: r.id,
-                            type: r.type || 'ISSUE',
-                            borrowId: r.borrowId,
-                            returnQuantity: r.returnQuantity,
-                            itemId: r.itemId,
-                            itemName: r.itemName,
-                            name: r.borrowerName,
-                            roll: r.rollNumber,
-                            qty: r.type === 'RETURN' ? (r.returnQuantity || r.quantity || 1) : (r.quantity || 1),
-                            purpose: r.purpose,
-                            dueDate: r.dueDate,
-                            status: r.status,
-                            requestedAt: r.requestedAt,
-                            reviewedAt: r.reviewedAt,
-                            reviewedBy: r.reviewedBy,
-                            reviewNote: r.reviewNote
-                        }));
-
-                        requests = mappedServerReqs;
-                        localStorage.setItem('cicr_requests', JSON.stringify(requests));
-                    }
-                } catch (re) {
-                    console.warn('Live request status parse failed:', re);
-                }
             }
 
             if (window.dashboard && dbItems.length > 0) {
@@ -1013,7 +922,7 @@ class DatabaseManager {
             try {
                 await this.syncFromBackend();
                 const role = ModalManager.getCurrentRole();
-                if (role === 'ADMIN' && typeof AdminManager !== 'undefined') {
+                if (role === 'ADMIN' && typeof AdminManager !== 'undefined' && document.body.classList.contains('view-admin-view')) {
                     await AdminManager.loadHardwareRequests();
                 }
                 this.updateNotificationBadges();
@@ -5380,7 +5289,6 @@ class AuthManager {
 
         if (effectiveRole === 'ADMIN') {
             AdminManager.init();
-            AdminManager.loadUsers();
         }
     }
 
@@ -10532,9 +10440,6 @@ document.addEventListener('DOMContentLoaded', () => {
     NotificationCenterManager.init();
     window.bg3D = new Background3D();
     AdminManager.init();
-    if (document.body.classList.contains('authenticated') && localStorage.getItem('cicr_role') === 'ADMIN') {
-        AdminManager.loadHardwareRequests(true);
-    }
     DatabaseManager.updateNotificationBadges();
     DatabaseManager.startAutoSync(45000);
     lucide.createIcons();
