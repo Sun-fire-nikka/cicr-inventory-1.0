@@ -2485,7 +2485,7 @@ class CartManager {
                         </div>
                         <div class="cart-item-meta">
                             <span><i data-lucide="map-pin" style="width:11px;height:11px;vertical-align:middle;"></i> ${AdminManager.escapeHtml(it.location)}</span>
-                            <span>&bull; Max Available: <strong style="color:#e2e8f0;">${it.maxAvailable}</strong></span>
+                            <span>&bull; Max Available: <strong class="cart-max-val">${it.maxAvailable}</strong></span>
                         </div>
                     </div>
                     <div class="cart-item-right">
