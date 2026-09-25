@@ -549,7 +549,7 @@ class Background3D {
 class DatabaseManager {
     static init() {
         // Enforce clean fresh start across all browsers and users
-        const CURRENT_STATE_EPOCH = 'cicr_v9_purge_all_logs_complete';
+        const CURRENT_STATE_EPOCH = 'cicr_v10_all_returned_restocked';
         if (localStorage.getItem('cicr_fresh_epoch') !== CURRENT_STATE_EPOCH) {
             localStorage.removeItem('cicr_requests');
             localStorage.removeItem('cicr_logs');
@@ -581,6 +581,16 @@ class DatabaseManager {
                     const nm = (item.name || '').toLowerCase();
                     if (nm.includes('model unclear') || nm === 'arduino board') {
                         item.name = 'Arduino Uno R3';
+                    }
+                    const total = Number(item.quantity) || 0;
+                    const avail = (item.availableQuantity !== undefined && item.availableQuantity !== null)
+                        ? Number(item.availableQuantity)
+                        : total;
+                    if (avail >= total && Array.isArray(item.borrowedBy)) {
+                        item.borrowedBy.forEach((b: any) => {
+                            b.returned = true;
+                            b.status = 'RETURNED';
+                        });
                     }
                     if (Array.isArray(item.borrowedBy)) {
                         item.borrowedBy = item.borrowedBy.filter((b: any) => !b.returned && b.status !== 'RETURNED');
@@ -709,6 +719,10 @@ class DatabaseManager {
                     const existingLoans = existingItem?.borrowedBy || [];
                     const mergedBorrowedBy = [...itemActiveLoans];
                     for (const ex of existingLoans) {
+                        if (availableQty >= totalQty) {
+                            ex.returned = true;
+                            ex.status = 'RETURNED';
+                        }
                         if (!mergedBorrowedBy.some(m => m.id === ex.id)) {
                             mergedBorrowedBy.push(ex);
                         }
@@ -1790,24 +1804,36 @@ class DashboardManager {
         const isAdmin = role === 'ADMIN';
 
         inventory.forEach(item => {
-            totalUnits += item.quantity;
+            const total = Number(item.quantity) || 0;
+            totalUnits += total;
 
-            const activeBorrows = (item.borrowedBy || []).filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED');
-            const borrowedSum = activeBorrows.reduce((sum, rec) => sum + rec.qty, 0);
             const currentAvailable = typeof item.availableQuantity === 'number'
-                ? Math.min(item.quantity, Math.max(0, item.availableQuantity))
-                : Math.max(0, item.quantity - borrowedSum);
+                ? Math.min(total, Math.max(0, item.availableQuantity))
+                : total;
 
             availableUnits += currentAvailable;
             if (currentAvailable > 0) {
                 availableItemsCount++;
             }
 
+            // An item can only have active loans if available < total in the vault
+            const maxPossibleLoans = Math.max(0, total - currentAvailable);
+
+            // Clean up any stale records if all units are returned in inventory
+            if (maxPossibleLoans === 0 && Array.isArray(item.borrowedBy)) {
+                item.borrowedBy.forEach((r: any) => {
+                    r.returned = true;
+                    r.status = 'RETURNED';
+                });
+            }
+
+            const activeBorrows = (item.borrowedBy || []).filter((r: any) => !r.returned && (r as any).status !== 'RETURNED' && (r as any).status !== 'REJECTED');
+
             if (isAdmin) {
-                checkedOutQty += borrowedSum;
+                checkedOutQty += maxPossibleLoans;
             } else {
                 const memberLoans = activeBorrows.filter((r: any) => ModalManager.isUserLoanMatch(r));
-                checkedOutQty += memberLoans.reduce((sum, rec) => sum + rec.qty, 0);
+                checkedOutQty += Math.min(maxPossibleLoans, memberLoans.reduce((sum, rec) => sum + rec.qty, 0));
             }
 
             const status = getItemStockStatus(item.quantity, currentAvailable);
@@ -8843,7 +8869,7 @@ class ProfileViewManager {
         inventory.forEach(item => {
             (item.borrowedBy || []).forEach((rec, idx) => {
                 if (ModalManager.isUserLoanMatch(rec)) {
-                    if (rec.returned) {
+                    if (rec.returned || (rec as any).status === 'RETURNED') {
                         totalReturnedCount += (rec.qty || (rec as any).quantity || 1);
                     } else {
                         activeLoans.push({ item, rec, origIdx: idx });
