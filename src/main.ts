@@ -775,24 +775,8 @@ class DatabaseManager {
         const role = ModalManager.getCurrentRole();
         const isAdmin = role === 'ADMIN';
 
-        const storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}');
-        const authName = (localStorage.getItem('cicr_auth') || '').toLowerCase().trim();
-        const userName = (storedUser.name || '').toLowerCase().trim();
-        const userEmail = (storedUser.email || '').toLowerCase().trim();
-        const userRoll = (storedUser.roll_number || storedUser.roll || '').toLowerCase().trim();
-
         const isUserLoan = (rec: BorrowRecord) => ModalManager.isUserLoanMatch(rec);
-
-        const isUserRequest = (req: any) => {
-            const rName = (req.name || req.borrowerName || '').toLowerCase().trim();
-            const rRoll = (req.roll || req.rollNumber || '').toLowerCase().trim();
-            const rEmail = (req.email || req.borrowerEmail || '').toLowerCase().trim();
-            if (userRoll && rRoll && rRoll === userRoll) return true;
-            if (userEmail && rEmail && rEmail === userEmail) return true;
-            if (userName && rName && (rName === userName || rName.includes(userName) || userName.includes(rName))) return true;
-            if (authName && (rName === authName || rEmail === authName)) return true;
-            return false;
-        };
+        const isUserRequest = (req: any) => ModalManager.isUserRequestMatch(req);
 
         let overdueCount = 0;
         let activeLoansCount = 0;
@@ -3078,28 +3062,62 @@ class ModalManager {
     }
 
     public static isUserLoanMatch(rec: BorrowRecord): boolean {
-        const storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}');
+        if (!rec) return false;
+        let storedUser: any = {};
+        try { storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch {}
         const authName = (localStorage.getItem('cicr_auth') || '').toLowerCase().trim();
-        const userName = (storedUser.name || '').toLowerCase().trim();
+        const userName = (storedUser.name || storedUser.username || '').toLowerCase().trim();
         const userEmail = (storedUser.email || '').toLowerCase().trim();
         const userRoll = (storedUser.roll_number || storedUser.roll || '').toLowerCase().trim();
-        const userId = storedUser.id || '';
+        const userId = storedUser.id || storedUser.userId || '';
         const recUserId = (rec as any).userId || (rec as any).user_id || '';
 
         // 1. Direct User ID match (most authoritative)
-        if (userId && recUserId && userId === recUserId) return true;
+        if (userId && recUserId && String(userId) === String(recUserId)) return true;
 
         // 2. Exact Roll Number match
-        const rRoll = (rec.roll || '').toLowerCase().trim();
+        const rRoll = ((rec as any).roll || (rec as any).rollNumber || (rec as any).roll_number || (rec as any).borrower_roll || (rec as any).userRoll || '').toLowerCase().trim();
         if (userRoll && rRoll && userRoll === rRoll) return true;
         if (userEmail && rRoll && (userEmail.startsWith(`${rRoll}@`) || userEmail === `${rRoll}@mail.jiit.ac.in`)) return true;
 
-        // 3. Exact Email match if rec has email
-        const recEmail = ((rec as any).email || (rec as any).borrowerEmail || '').toLowerCase().trim();
+        // 3. Exact Email match
+        const recEmail = ((rec as any).email || (rec as any).userEmail || (rec as any).borrowerEmail || (rec as any).borrower_email || '').toLowerCase().trim();
         if (userEmail && recEmail && userEmail === recEmail) return true;
 
         // 4. Exact Name match (guarding against generic placeholders like "member", "student", "user", "admin")
-        const rName = (rec.name || '').toLowerCase().trim();
+        const rName = ((rec as any).userName || (rec as any).borrowerName || (rec as any).borrower_name || rec.name || '').toLowerCase().trim();
+        const isGenericName = (n: string) => !n || ['member', 'student', 'user', 'admin', 'borrower', 'guest'].includes(n) || n.length < 3;
+        if (!isGenericName(userName) && !isGenericName(rName) && userName === rName) return true;
+        if (!isGenericName(authName) && !isGenericName(rName) && authName === rName) return true;
+
+        return false;
+    }
+
+    public static isUserRequestMatch(req: any): boolean {
+        if (!req) return false;
+        let storedUser: any = {};
+        try { storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch {}
+        const authName = (localStorage.getItem('cicr_auth') || '').toLowerCase().trim();
+        const userName = (storedUser.name || storedUser.username || '').toLowerCase().trim();
+        const userEmail = (storedUser.email || '').toLowerCase().trim();
+        const userRoll = (storedUser.roll_number || storedUser.roll || '').toLowerCase().trim();
+        const userId = storedUser.id || storedUser.userId || '';
+        const reqUserId = req.userId || req.user_id || '';
+
+        // 1. Direct User ID match (most authoritative)
+        if (userId && reqUserId && String(userId) === String(reqUserId)) return true;
+
+        // 2. Exact Roll Number match
+        const rRoll = (req.roll || req.rollNumber || req.roll_number || req.borrower_roll || req.userRoll || '').toLowerCase().trim();
+        if (userRoll && rRoll && userRoll === rRoll) return true;
+        if (userEmail && rRoll && (userEmail.startsWith(`${rRoll}@`) || userEmail === `${rRoll}@mail.jiit.ac.in`)) return true;
+
+        // 3. Exact Email match
+        const rEmail = (req.email || req.borrowerEmail || req.borrower_email || req.userEmail || '').toLowerCase().trim();
+        if (userEmail && rEmail && userEmail === rEmail) return true;
+
+        // 4. Exact Name match (guarding against generic placeholders like "member", "student", "user", "admin")
+        const rName = (req.name || req.borrowerName || req.borrower_name || req.userName || '').toLowerCase().trim();
         const isGenericName = (n: string) => !n || ['member', 'student', 'user', 'admin', 'borrower', 'guest'].includes(n) || n.length < 3;
         if (!isGenericName(userName) && !isGenericName(rName) && userName === rName) return true;
         if (!isGenericName(authName) && !isGenericName(rName) && authName === rName) return true;
@@ -3789,21 +3807,7 @@ class ModalManager {
         const isAdmin = role === 'ADMIN';
 
         const storedUser = JSON.parse(localStorage.getItem('cicr_user') || '{}');
-        const authName = (localStorage.getItem('cicr_auth') || '').toLowerCase().trim();
-        const userName = (storedUser.name || '').toLowerCase().trim();
-        const userEmail = (storedUser.email || '').toLowerCase().trim();
-        const userRoll = (storedUser.roll_number || storedUser.roll || '').toLowerCase().trim();
-
-        const isUserRequest = (req: any) => {
-            const rName = (req.name || req.borrowerName || '').toLowerCase().trim();
-            const rRoll = (req.roll || req.rollNumber || '').toLowerCase().trim();
-            const rEmail = (req.email || req.borrowerEmail || '').toLowerCase().trim();
-            if (userRoll && rRoll && rRoll === userRoll) return true;
-            if (userEmail && rEmail && rEmail === userEmail) return true;
-            if (userName && rName && (rName === userName || rName.includes(userName) || userName.includes(rName))) return true;
-            if (authName && (rName === authName || rEmail === authName)) return true;
-            return false;
-        };
+        const isUserRequest = (req: any): boolean => ModalManager.isUserRequestMatch(req);
 
         // Update Header Badge, Title, and Subtitle
         const roleBadgeEl = document.getElementById('notif-drawer-role-badge');
@@ -3953,23 +3957,31 @@ class ModalManager {
             if (borrowId) idToKeyMap.set(borrowId, key);
         };
 
-        // For non-admin, process AdminManager.userHardwareRequests
+        // 1. For non-admin, ONLY process their own requests from userHardwareRequests
         if (!isAdmin && typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.userHardwareRequests)) {
-            AdminManager.userHardwareRequests.forEach(addOrMergeDrawerRequest);
+            AdminManager.userHardwareRequests.forEach(r => {
+                if (isUserRequest(r)) addOrMergeDrawerRequest(r);
+            });
         }
 
-        if (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.hardwareRequests)) {
+        // 2. For admin, process full hardware queue across all members
+        if (isAdmin && typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.hardwareRequests)) {
             AdminManager.hardwareRequests.forEach(addOrMergeDrawerRequest);
         }
 
-        (requests || []).forEach(addOrMergeDrawerRequest);
+        // 3. Process requests state
+        (requests || []).forEach(r => {
+            if (isAdmin || isUserRequest(r)) addOrMergeDrawerRequest(r);
+        });
 
-        // Connect all historical & active checkout requests from backend Hardware Ledger
+        // 4. Connect historical & active checkout requests from backend Hardware Ledger
         if (typeof HardwareLedgerManager !== 'undefined' && typeof HardwareLedgerManager.getRecords === 'function') {
             const ledgerRecords = HardwareLedgerManager.getRecords();
             if (Array.isArray(ledgerRecords)) {
                 ledgerRecords.forEach((rec: any) => {
                     if (!rec) return;
+                    if (!isAdmin && !isUserRequest(rec)) return; // Strictly ignore other members' ledger entries!
+
                     const isRet = rec.action_type === 'RETURNED' || Boolean(rec.return_date) || rec.status === 'RETURNED';
                     const isPend = rec.action_type === 'PENDING_APPROVAL' || rec.status === 'PENDING';
                     const statusVal: 'PENDING' | 'APPROVED' | 'REJECTED' = isPend ? 'PENDING' : (rec.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
@@ -6665,8 +6677,8 @@ class AdminManager {
             this.userHardwareRequests = serverList.slice().sort((a, b) => {
                 return new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime();
             });
-            // Also keep local pending submissions if any
-            for (const lp of localPending) {
+            // Also keep local pending submissions if any (only belonging to current user)
+            for (const lp of localPending.filter(r => ModalManager.isUserRequestMatch(r))) {
                 if (!this.userHardwareRequests.some(r => r.id === lp.id || (r.borrowId && r.borrowId === lp.borrowId))) {
                     this.userHardwareRequests.unshift(lp);
                 }
@@ -10271,8 +10283,12 @@ class NotificationCenterManager {
                 e.stopPropagation();
                 if (dropdown) dropdown.style.display = 'none';
                 if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
-                const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
-                (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
+                if (typeof ModalManager !== 'undefined' && typeof ModalManager.openLogsDrawer === 'function') {
+                    ModalManager.openLogsDrawer();
+                } else {
+                    const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
+                    (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
+                }
             });
         }
 
@@ -10290,12 +10306,6 @@ class NotificationCenterManager {
         linkAction?: () => void;
     }> {
         this.ensureReadIds();
-        let currentUser: any = {};
-        try { currentUser = JSON.parse(localStorage.getItem('cicr_user') || '{}'); } catch {}
-        const authName = localStorage.getItem('cicr_auth') || '';
-        const userEmail = (currentUser.email || '').toLowerCase().trim();
-        const userRoll = (currentUser.roll_number || currentUser.roll || '').toLowerCase().trim();
-        const userName = (currentUser.name || currentUser.username || authName || '').toLowerCase().trim();
         const isAdmin = ModalManager.getCurrentRole() === 'ADMIN';
         const lastReadAllTime = Number(localStorage.getItem('cicr_last_read_all_time') || 0);
         const notifsCleared = localStorage.getItem('cicr_notifs_cleared') === 'true';
@@ -10331,7 +10341,16 @@ class NotificationCenterManager {
             if (raw) localRequests = JSON.parse(raw);
         } catch {}
 
-        const combinedReqs = [...(requests || []), ...localRequests];
+        const adminQueue = (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.hardwareRequests))
+            ? AdminManager.hardwareRequests
+            : [];
+        const memberQueue = (typeof AdminManager !== 'undefined' && Array.isArray(AdminManager.userHardwareRequests))
+            ? AdminManager.userHardwareRequests
+            : [];
+
+        const combinedReqs = isAdmin
+            ? [...adminQueue, ...(requests || []), ...localRequests]
+            : [...memberQueue, ...(requests || []).filter(r => ModalManager.isUserRequestMatch(r)), ...localRequests.filter(r => ModalManager.isUserRequestMatch(r))];
         const seenReqIds = new Set<string>();
 
         if (isAdmin) {
@@ -10339,23 +10358,65 @@ class NotificationCenterManager {
                 if (!req || !req.id || seenReqIds.has(String(req.id))) return;
                 seenReqIds.add(String(req.id));
 
+                const reqTime = req.requestedAt ? Math.min(Date.now(), new Date(req.requestedAt).getTime()) : Date.now();
+                const isReturn = req.type === 'RETURN' || Boolean(req.borrowId);
+                const reqName = req.borrowerName || req.name || 'Member';
+                const reqItem = req.itemName || 'Hardware Component';
+                const reqQty = Number(req.quantity || req.qty || req.returnQuantity) || 1;
+
                 if (req.status === 'PENDING') {
-                    const reqTime = req.requestedAt ? Math.min(Date.now(), new Date(req.requestedAt).getTime()) : Date.now();
                     const notifId = `req-admin-${req.id}`;
                     notifs.push({
                         id: notifId,
                         type: 'admin_alert',
-                        title: 'New Hardware Request',
-                        message: `${req.name || 'Student'} requested ${req.qty || 1}x ${req.itemName || 'item'}`,
+                        title: isReturn ? 'Hardware Return Pending' : 'New Hardware Request',
+                        message: isReturn
+                            ? `${reqName} submitted return for ${reqQty}x ${reqItem}`
+                            : `${reqName} requested ${reqQty}x ${reqItem}`,
                         time: this.formatRelativeTime(reqTime),
                         timestamp: reqTime,
                         unread: isUnread(notifId, reqTime),
                         linkAction: () => {
-                            (window as any).switchSection?.('admin-view');
-                            setTimeout(() => {
-                                const tab = document.querySelector('[data-tab="tab-hardware-requests"]') as HTMLElement;
-                                if (tab) tab.click();
-                            }, 100);
+                            if (typeof ModalManager !== 'undefined' && typeof ModalManager.openLogsDrawer === 'function') {
+                                ModalManager.activeNotifTab = 'pending';
+                                ModalManager.openLogsDrawer();
+                            } else {
+                                (window as any).switchSection?.('admin-view');
+                            }
+                        }
+                    });
+                } else if (req.status === 'APPROVED' && (Date.now() - reqTime < 48 * 60 * 60 * 1000)) {
+                    const notifId = `req-admin-app-${req.id}`;
+                    notifs.push({
+                        id: notifId,
+                        type: 'issued',
+                        title: isReturn ? 'Return Accepted' : 'Hardware Request Approved',
+                        message: `${reqName} - ${reqQty}x ${reqItem} (${isReturn ? 'Return Accepted' : 'Issued'})`,
+                        time: this.formatRelativeTime(reqTime),
+                        timestamp: reqTime,
+                        unread: isUnread(notifId, reqTime),
+                        linkAction: () => {
+                            if (typeof ModalManager !== 'undefined' && typeof ModalManager.openLogsDrawer === 'function') {
+                                ModalManager.activeNotifTab = 'approved';
+                                ModalManager.openLogsDrawer();
+                            }
+                        }
+                    });
+                } else if (req.status === 'REJECTED' && (Date.now() - reqTime < 48 * 60 * 60 * 1000)) {
+                    const notifId = `req-admin-rej-${req.id}`;
+                    notifs.push({
+                        id: notifId,
+                        type: 'request',
+                        title: 'Request Declined',
+                        message: `${reqName} - ${reqItem} declined`,
+                        time: this.formatRelativeTime(reqTime),
+                        timestamp: reqTime,
+                        unread: isUnread(notifId, reqTime),
+                        linkAction: () => {
+                            if (typeof ModalManager !== 'undefined' && typeof ModalManager.openLogsDrawer === 'function') {
+                                ModalManager.activeNotifTab = 'rejected';
+                                ModalManager.openLogsDrawer();
+                            }
                         }
                     });
                 }
@@ -10365,33 +10426,53 @@ class NotificationCenterManager {
                 if (!req || !req.id || seenReqIds.has(String(req.id))) return;
                 seenReqIds.add(String(req.id));
 
-                const reqEmail = (req.email || req.borrowerEmail || '').toLowerCase();
-                const reqRoll = (req.roll || '').toLowerCase();
-                const reqName = (req.name || '').toLowerCase();
+                if (!ModalManager.isUserRequestMatch(req)) return;
 
-                const isMyReq = (userEmail && reqEmail === userEmail) ||
-                                (userRoll && reqRoll === userRoll) ||
-                                (userName && reqName === userName);
+                const reqTime = req.requestedAt ? Math.min(Date.now(), new Date(req.requestedAt).getTime()) : Date.now();
+                const status = (req.status || 'PENDING').toUpperCase();
+                const isReturn = req.type === 'RETURN' || Boolean(req.borrowId);
+                const reqItem = req.itemName || 'Hardware Component';
+                const reqQty = Number(req.quantity || req.qty || req.returnQuantity) || 1;
+                const notifId = `my-req-${req.id}`;
 
-                if (isMyReq) {
-                    const reqTime = req.requestedAt ? Math.min(Date.now(), new Date(req.requestedAt).getTime()) : Date.now();
-                    const status = (req.status || 'PENDING').toUpperCase();
-                    const notifId = `my-req-${req.id}`;
-                    notifs.push({
-                        id: notifId,
-                        type: status === 'APPROVED' ? 'issued' : 'request',
-                        title: status === 'APPROVED' ? 'Request Approved' : 'Request In Review',
-                        message: status === 'APPROVED'
-                            ? `Your request for ${req.itemName} was approved and issued!`
-                            : `Request for ${req.qty || 1}x ${req.itemName} is awaiting admin approval.`,
-                        time: this.formatRelativeTime(reqTime),
-                        timestamp: reqTime,
-                        unread: isUnread(notifId, reqTime),
-                        linkAction: () => {
+                let title = 'Request In Review';
+                let message = `Request for ${reqQty}x ${reqItem} is awaiting admin approval.`;
+                let type: 'request' | 'issued' | 'returned' = 'request';
+
+                if (status === 'APPROVED') {
+                    type = isReturn ? 'returned' : 'issued';
+                    title = isReturn ? 'Return Accepted' : 'Request Approved';
+                    message = isReturn
+                        ? `Your return of ${reqItem} (${reqQty}x) was accepted.`
+                        : `Your request for ${reqItem} was approved and issued!`;
+                } else if (status === 'REJECTED') {
+                    type = 'request';
+                    title = 'Request Declined';
+                    message = `Your request for ${reqItem} was declined.`;
+                } else {
+                    title = isReturn ? 'Return Under Review' : 'Request In Review';
+                    message = isReturn
+                        ? `Return request for ${reqQty}x ${reqItem} is awaiting admin verification.`
+                        : `Request for ${reqQty}x ${reqItem} is awaiting admin approval.`;
+                }
+
+                notifs.push({
+                    id: notifId,
+                    type,
+                    title,
+                    message,
+                    time: this.formatRelativeTime(reqTime),
+                    timestamp: reqTime,
+                    unread: isUnread(notifId, reqTime),
+                    linkAction: () => {
+                        if (typeof ModalManager !== 'undefined' && typeof ModalManager.openLogsDrawer === 'function') {
+                            ModalManager.activeNotifTab = status === 'APPROVED' ? 'approved' : (status === 'REJECTED' ? 'rejected' : 'pending');
+                            ModalManager.openLogsDrawer();
+                        } else {
                             (window as any).switchSection?.('profile-view');
                         }
-                    });
-                }
+                    }
+                });
             });
         }
 
@@ -10400,13 +10481,7 @@ class NotificationCenterManager {
             const now = Date.now();
             inventory.forEach((item: any) => {
                 (item.borrowedBy || []).forEach((b: any, idx: number) => {
-                    const borrowerEmail = (b.userEmail || b.email || '').toLowerCase();
-                    const borrowerRoll = (b.userRoll || b.roll || '').toLowerCase();
-                    const borrowerName = (b.userName || b.borrowerName || b.name || '').toLowerCase();
-
-                    const isMine = (userEmail && borrowerEmail === userEmail) ||
-                                   (userRoll && borrowerRoll === userRoll) ||
-                                   (userName && borrowerName === userName);
+                    const isMine = ModalManager.isUserLoanMatch(b);
 
                     if (isAdmin || isMine) {
                         const isReturned = b.returned || b.status === 'RETURNED';
@@ -10415,7 +10490,7 @@ class NotificationCenterManager {
 
                         if (isReturned) {
                             // Non-admins only see their own returns.
-                            // Admins only see returns from past 48 hours to avoid stale alerts from days ago
+                            // Admins see all returns from past 48 hours to avoid stale alerts from days ago
                             const isRecent = (now - loanTime) < (48 * 60 * 60 * 1000);
                             if (isMine || (isAdmin && isRecent)) {
                                 const notifId = `ret-${loanId}`;
@@ -10425,7 +10500,7 @@ class NotificationCenterManager {
                                     title: isMine ? 'Return Verified' : 'Return Logged',
                                     message: isMine
                                         ? `${item.name} (${b.qty || 1} units) return has been verified.`
-                                        : `${b.userName || 'Member'} returned ${item.name}`,
+                                        : `${b.userName || b.borrowerName || b.name || 'Member'} returned ${item.name}`,
                                     time: this.formatRelativeTime(loanTime),
                                     timestamp: loanTime,
                                     unread: isUnread(notifId, loanTime),
@@ -10444,13 +10519,15 @@ class NotificationCenterManager {
                                         notifs.push({
                                             id: dueNotifId,
                                             type: 'due',
-                                            title: 'Return Due Soon',
-                                            message: `${item.name} is due within 48 hours (${new Date(b.dueDate).toLocaleDateString()}).`,
+                                            title: isMine ? 'Return Due Soon' : 'Component Due Soon',
+                                            message: isMine
+                                                ? `${item.name} is due within 48 hours (${new Date(b.dueDate).toLocaleDateString()}).`
+                                                : `${item.name} loaned to ${b.userName || b.borrowerName || b.name || 'Member'} is due within 48 hours.`,
                                             time: 'Action Required',
                                             timestamp: dueTime,
                                             unread: isUnread(dueNotifId, dueTime),
                                             linkAction: () => {
-                                                (window as any).switchSection?.('hardware-logs-view');
+                                                (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
                                             }
                                         });
                                     } else if (diffHours <= 0) {
@@ -10459,33 +10536,38 @@ class NotificationCenterManager {
                                             id: overdueNotifId,
                                             type: 'due',
                                             title: 'Component Overdue',
-                                            message: `${item.name} is overdue! Please return to robotics lab.`,
+                                            message: isMine
+                                                ? `${item.name} is overdue! Please return to robotics lab.`
+                                                : `${item.name} loaned to ${b.userName || b.borrowerName || b.name || 'Member'} is overdue!`,
                                             time: 'Overdue',
                                             timestamp: dueTime,
                                             unread: isUnread(overdueNotifId, dueTime),
                                             linkAction: () => {
-                                                (window as any).switchSection?.('hardware-logs-view');
+                                                (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
                                             }
                                         });
                                     }
                                 }
                             }
 
-                            const loanNotifId = `loan-${loanId}`;
-                            notifs.push({
-                                id: loanNotifId,
-                                type: 'issued',
-                                title: isMine ? 'Component Issued' : 'Loan Recorded',
-                                message: isMine
-                                    ? `${item.name} (${b.qty || 1} units) issued to you.`
-                                    : `${item.name} issued to ${b.userName || 'Member'}`,
-                                time: this.formatRelativeTime(loanTime),
-                                timestamp: loanTime,
-                                unread: isUnread(loanNotifId, loanTime),
-                                linkAction: () => {
-                                    (window as any).switchSection?.('hardware-logs-view');
-                                }
-                            });
+                            const isRecentLoan = (now - loanTime) < (48 * 60 * 60 * 1000);
+                            if (isMine || (isAdmin && isRecentLoan)) {
+                                const loanNotifId = `loan-${loanId}`;
+                                notifs.push({
+                                    id: loanNotifId,
+                                    type: 'issued',
+                                    title: isMine ? 'Component Issued' : 'Loan Recorded',
+                                    message: isMine
+                                        ? `${item.name} (${b.qty || 1} units) issued to you.`
+                                        : `${item.name} issued to ${b.userName || b.borrowerName || b.name || 'Member'}`,
+                                    time: this.formatRelativeTime(loanTime),
+                                    timestamp: loanTime,
+                                    unread: isUnread(loanNotifId, loanTime),
+                                    linkAction: () => {
+                                        (window as any).switchSection?.(isAdmin ? 'hardware-logs-view' : 'profile-view');
+                                    }
+                                });
+                            }
                         }
                     }
                 });
