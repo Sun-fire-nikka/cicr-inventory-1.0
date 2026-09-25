@@ -28543,18 +28543,14 @@ body.theme-light .viewport-header {
 
 html[data-theme="mono"] .viewport-header,
 body.theme-mono .viewport-header {
-    background: rgba(16, 16, 15, 0.94) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
+    background: #141413 !important;
     border: 1px solid #262522 !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
 }
 
 html[data-theme="light"] .viewport-header,
 body.theme-light .viewport-header {
-    background: rgba(250, 246, 255, 0.94) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
+    background: #FAF6FF !important;
     border: 1px solid rgba(130, 90, 210, 0.25) !important;
     box-shadow: 0 8px 32px rgba(100, 70, 160, 0.12) !important;
 }
@@ -29272,12 +29268,26 @@ button, a, select, input, .sidebar-nav-link, .sidebar-item, .dash-card, .invento
     }
 
     /* Component Vault Mobile Alignment & Toolbar Fix */
+    .vault-top-bar {
+        padding: 4px 2px 10px 2px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .vault-main-heading {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.3px !important;
+    }
+
     .vault-toolbar-card {
         padding: 12px 14px !important;
         border-radius: 14px !important;
         margin-bottom: 14px !important;
         box-sizing: border-box !important;
         overflow: hidden !important;
+        height: auto !important;
+        min-height: unset !important;
+        max-height: unset !important;
     }
 
     .vault-search-row {
@@ -29288,6 +29298,7 @@ button, a, select, input, .sidebar-nav-link, .sidebar-item, .dash-card, .invento
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
+        height: auto !important;
         box-sizing: border-box !important;
     }
 
@@ -29297,6 +29308,8 @@ button, a, select, input, .sidebar-nav-link, .sidebar-item, .dash-card, .invento
         min-width: 0 !important;
         max-width: 100% !important;
         height: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
         position: relative !important;
         box-sizing: border-box !important;
     }
@@ -29304,6 +29317,8 @@ button, a, select, input, .sidebar-nav-link, .sidebar-item, .dash-card, .invento
     .vault-search-input-wrap input {
         width: 100% !important;
         height: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
         box-sizing: border-box !important;
         padding: 8px 36px 8px 36px !important;
         font-size: 13px !important;
