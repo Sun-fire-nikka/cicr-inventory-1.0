@@ -28900,35 +28900,164 @@ button, a, select, input, .sidebar-nav-link, .sidebar-item, .dash-card, .invento
     -webkit-backface-visibility: hidden;
 }
 
-/* 5. Mobile & Tablet Responsiveness Enhancements */
+/* 5. Mobile & Tablet Responsiveness Enhancements (v2.14.2) */
 @media (max-width: 768px) {
     .viewport-header {
-        padding: 0 12px !important;
+        padding: 0 10px !important;
         height: 52px !important;
         min-height: 52px !important;
         max-height: 52px !important;
-        gap: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
     }
 
+    .header-left {
+        display: flex !important;
+        align-items: center !important;
+        flex-shrink: 0 !important;
+    }
+
+    .mobile-sidebar-toggle {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 50% !important;
+    }
+
+    .mobile-sidebar-toggle span {
+        display: none !important;
+    }
+
+    /* Hide squashed breadcrumbs on mobile to prevent overlapping header controls */
     .breadcrumbs {
-        max-width: 140px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        display: none !important;
     }
 
     .header-right {
+        display: flex !important;
+        align-items: center !important;
         gap: 6px !important;
+        margin-left: auto !important;
+        flex-shrink: 0 !important;
+    }
+
+    .header-cart-text,
+    .header-notif-text {
+        display: none !important;
+    }
+
+    .header-cart-btn,
+    .header-notif-btn {
+        padding: 4px 8px !important;
+        height: 36px !important;
+        gap: 4px !important;
+        border-radius: 9999px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+
+    .header-cart-icon-box,
+    .header-notif-icon-box {
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .header-cart-icon-box svg,
+    .header-cart-icon-box i,
+    .header-notif-icon-box svg,
+    .header-notif-icon-box i {
+        width: 13px !important;
+        height: 13px !important;
+    }
+
+    .header-cart-badge,
+    .header-notif-badge {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        border-radius: 9999px !important;
+        min-width: 18px !important;
+        text-align: center !important;
     }
 
     .header-theme-box {
-        padding: 4px 8px !important;
-        font-size: 11px !important;
+        padding: 4px 8px 4px 6px !important;
+        height: 36px !important;
+        max-width: 108px !important;
+        gap: 4px !important;
+        border-radius: 9999px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        flex-shrink: 0 !important;
     }
 
-    .header-notif-btn,
-    .header-cart-btn {
-        padding: 6px 10px !important;
+    .header-theme-box select {
+        max-width: 74px !important;
+        font-size: 11px !important;
+        padding: 0 14px 0 2px !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    /* Swipeable Category Carousel on Mobile (Never Truncates "Actuators" to "Actuat...") */
+    .vault-toolbar-card {
+        padding: 12px 14px !important;
+        border-radius: 14px !important;
+    }
+
+    .vault-search-row {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .vault-search-input-wrap {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .vault-category-pills {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x proximity;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 2px 2px 6px 2px !important;
+        gap: 8px !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    .vault-category-pills::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    .vault-category-pills .tag-pill {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+    }
+
+    /* Bottom padding to guarantee content scrolls completely clear of floating cart FAB */
+    .main-content,
+    .vault-view,
+    .main-viewport-wrapper {
+        padding-bottom: 84px !important;
     }
 
     .dashboard-grid {
@@ -28976,6 +29105,40 @@ button, a, select, input, .sidebar-nav-link, .sidebar-item, .dash-card, .invento
 
     .dash-card-desc {
         font-size: 12px !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .viewport-header {
+        padding: 0 8px !important;
+        gap: 4px !important;
+    }
+
+    .mobile-sidebar-toggle {
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+    }
+
+    .header-right {
+        gap: 4px !important;
+    }
+
+    .header-cart-btn,
+    .header-notif-btn {
+        padding: 3px 6px !important;
+        height: 34px !important;
+    }
+
+    .header-theme-box {
+        padding: 3px 6px 3px 4px !important;
+        height: 34px !important;
+        max-width: 92px !important;
+    }
+
+    .header-theme-box select {
+        max-width: 60px !important;
+        font-size: 10px !important;
     }
 }
 
