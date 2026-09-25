@@ -590,16 +590,24 @@ export const invalidateHardwareRequestsCache = () => {
 };
 
 export const getAllHardwareRequests = async (force = false): Promise<HardwareIssueRequest[]> => {
-  // Ensure fresh disk state is merged with in-memory state
+  // Ensure fresh disk state replaces in-memory state
   try {
     if (fs.existsSync(STORAGE_FILE)) {
       const raw = fs.readFileSync(STORAGE_FILE, 'utf-8');
       const diskData = JSON.parse(raw);
-      requestsState = { ...diskData, ...requestsState };
+      requestsState = diskData ? { ...diskData } : {};
     }
   } catch (err) {
     console.warn('[HARDWARE REQUESTS] Failed to reload request storage file:', err);
   }
+
+  const isTestRequest = (r: { borrowerEmail?: string; borrowerName?: string }): boolean => {
+    const em = (r.borrowerEmail || '').toLowerCase().trim();
+    const nm = (r.borrowerName || '').toLowerCase().trim();
+    if (em.endsWith('.test') || em.includes('cicr.test') || em === 'member@cicr.test') return true;
+    if (nm === 'stu' || nm === 'test member' || nm === 'test user') return true;
+    return false;
+  };
 
   // Strictly collect PENDING requests with canonical deduplication
   const canonicalMap = new Map<string, HardwareIssueRequest>();
@@ -619,7 +627,7 @@ export const getAllHardwareRequests = async (force = false): Promise<HardwareIss
   };
 
   for (const r of Object.values(requestsState)) {
-    if (r) {
+    if (r && !isTestRequest(r)) {
       const status = r.status || 'PENDING';
       const key = `${getCanonicalKey(r)}__${status}`;
       if (!canonicalMap.has(key) && !canonicalMap.has(r.id)) {

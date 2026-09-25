@@ -87,17 +87,33 @@ const saveState = () => {
   }
 };
 
+export const isTestOrPurgedEmail = (email: string): boolean => {
+  const normEmail = email.trim().toLowerCase();
+  if (isSuperAdminEmail(normEmail)) return false;
+  if (purgedEmails.has(normEmail)) return true;
+  if (normEmail.endsWith('.test') || normEmail.includes('cicr.test')) return true;
+  if (
+    normEmail.startsWith('admin1@') ||
+    normEmail.startsWith('9990001111') ||
+    normEmail.startsWith('9923103001') ||
+    normEmail.startsWith('992501714955')
+  ) {
+    return true;
+  }
+  return false;
+};
+
 export const isManagedUser = (email: string): boolean => {
   const normEmail = email.trim().toLowerCase();
   if (isSuperAdminEmail(normEmail)) return true;
-  if (purgedEmails.has(normEmail)) return false;
+  if (isTestOrPurgedEmail(normEmail)) return false;
   return Boolean(approvalState[normEmail]);
 };
 
 export const isPurgedUser = (email: string): boolean => {
   const normEmail = email.trim().toLowerCase();
   if (isSuperAdminEmail(normEmail)) return false;
-  return purgedEmails.has(normEmail);
+  return isTestOrPurgedEmail(normEmail);
 };
 
 export const unpurgeEmail = (email: string) => {
@@ -265,8 +281,14 @@ export const getAllUserApprovals = (): Record<string, UserApprovalRecord> => {
       name: adm.toLowerCase() === 'vardaansaxena096@gmail.com' ? 'Vardaan' : 'CICR Admin'
     };
   });
+  const filtered: Record<string, UserApprovalRecord> = {};
+  for (const [em, rec] of Object.entries(approvalState)) {
+    if (!isTestOrPurgedEmail(em)) {
+      filtered[em] = rec;
+    }
+  }
   return {
-    ...approvalState,
+    ...filtered,
     ...base
   };
 };
@@ -346,7 +368,7 @@ export const syncApprovalsFromDatabase = async (force = false): Promise<void> =>
         const match = log.description?.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
         if (match) {
           const email = match[1].trim().toLowerCase();
-          if (isSuperAdminEmail(email)) continue;
+          if (isSuperAdminEmail(email) || isTestOrPurgedEmail(email)) continue;
 
           if (log.action === 'User Deleted') {
             delete approvalState[email];

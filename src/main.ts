@@ -6240,7 +6240,14 @@ class AdminManager {
                 if (res.ok) {
                     const result = await res.json();
                     if (Array.isArray(result.data) && result.data.length > 0) {
-                        this.users = result.data;
+                        this.users = result.data.filter((u: any) => {
+                            const email = (u?.email || '').toLowerCase().trim();
+                            const name = (u?.name || '').toLowerCase().trim();
+                            if (email.endsWith('.test') || email.includes('cicr.test')) return false;
+                            if (email.startsWith('admin1@') || email.startsWith('9990001111') || email.startsWith('9923103001') || email.startsWith('992501714955')) return false;
+                            if (name === 'test user' || name === 'test admin' || name === 'admin user' || name === 'test student') return false;
+                            return true;
+                        });
                     }
                 } else if (res.status === 401 || res.status === 403) {
                     console.warn('[AdminManager] Admin users access restricted.');
@@ -6462,13 +6469,30 @@ class AdminManager {
             console.error('Failed to fetch hardware requests:', err);
         }
 
+        const isTestItem = (r: any): boolean => {
+            const em = (r?.email || r?.borrowerEmail || '').toLowerCase().trim();
+            const nm = (r?.name || r?.borrowerName || '').toLowerCase().trim();
+            if (em.includes('.test') || em.includes('cicr.test') || em === 'member@cicr.test') return true;
+            if (nm === 'stu' || nm === 'test member' || nm === 'test user') return true;
+            return false;
+        };
+
+        serverList = serverList.filter(item => !isTestItem(item));
+
         // 2. Collect from local requests state and localStorage
         const localStoredRaw = localStorage.getItem('cicr_requests');
         let localRequests: RequestRecord[] = [];
         if (localStoredRaw) {
-            try { localRequests = JSON.parse(localStoredRaw); } catch { }
+            try {
+                localRequests = JSON.parse(localStoredRaw);
+                const cleaned = localRequests.filter(r => !isTestItem(r));
+                if (cleaned.length !== localRequests.length) {
+                    localStorage.setItem('cicr_requests', JSON.stringify(cleaned));
+                    localRequests = cleaned;
+                }
+            } catch { }
         }
-        const combinedLocal = [...(requests || []), ...localRequests];
+        const combinedLocal = [...(requests || []).filter(r => !isTestItem(r)), ...localRequests];
         const localPending: AdminHardwareRequest[] = combinedLocal
             .filter((r) => r.status === 'PENDING')
             .map((r) => ({
